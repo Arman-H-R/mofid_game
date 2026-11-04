@@ -1,6 +1,10 @@
 """
-Settings side panel for the pygame window.
+Settings side panel for the pygame window. It starts closed and slides in from the right.
 
+    click the side tab     open / close
+    swipe                  drag the tab (or the panel's empty space) left to open, right to close,
+                           drag in from the window's right edge, or swipe sideways with two
+                           fingers on a touchpad
     click a tab            show that group of settings
     drag a slider          change a value
     mouse wheel on a row   fine tune, one step per tick
@@ -8,6 +12,7 @@ Settings side panel for the pygame window.
 """
 
 import time
+from collections import deque
 
 import pygame
 
@@ -16,6 +21,12 @@ from settings import TABS
 
 PAD = 16
 ROW_HEIGHT = {"number": 56, "bool": 40, "choice": 66}
+
+SLIDE_SPEED = 16        # 1/s, how fast the panel slides in and out (eases out)
+TAB_SIZE = (28, 120)    # the side tab on the panel's left edge
+EDGE = 16               # px at the window's right edge where a swipe in can start
+WHEEL_SWIPE = 0.1       # share of the panel per touchpad side swipe step
+FLICK = 300             # px/s, a faster swipe opens / closes in its direction
 
 BACK = (22, 24, 30)
 ROW_HOVER = (30, 33, 42)
@@ -88,6 +99,155 @@ class SettingsPanel:
 
         self.status = ""
         self.status_until = 0.0
+
+        self.open = False           # where the panel is going; closed at start
+        self.pos = 0.0              # 0 = closed .. 1 = open
+        self.swipe = None           # (mouse x, pos, started on the tab) while the panel is dragged
+        self.moves = deque(maxlen=6)    # (time, mouse x) of the last drag moves
+        self.wheel_at = None        # time of the last touchpad side swipe step
+        self.wheel_dir = 0
+        self.last_tick = time.time()
+        self.window = (0, 0)
+        self.tab_rect = pygame.Rect(0, 0, *TAB_SIZE)
+        self.tab_label = pygame.transform.rotate(self.small.render("Settings", True, TEXT), 90)
+
+        shade = pygame.Surface((12, 1), pygame.SRCALPHA)
+        for i in range(12):
+            shade.set_at((i, 0), (0, 0, 0, 7 * i))
+        self.shade = shade
+
+
+    # -------------------------
+    # SLIDE IN / OUT
+    # -------------------------
+
+    def shown_width(self):
+        """Width of the panel that is on screen now."""
+
+        return round(self.width * self.pos)
+
+
+    def place(self, size):
+        """Lay the panel out against the right edge of a window of this size. Call once per frame."""
+
+        w, h = size
+        self.window = size
+        x = w - self.shown_width()
+        self.layout(pygame.Rect(x, 0, self.width, h))
+        self.tab_rect = pygame.Rect(x - TAB_SIZE[0], h // 2 - TAB_SIZE[1] // 2, *TAB_SIZE)
+
+
+    def show(self, flag):
+        """Open (True) or close (False). Closing keeps a half typed number or a held change."""
+
+        if not flag:
+
+            if self.edit is not None:
+                self._commit_edit()
+
+            if self.drag is not None or self.commit_at is not None:
+                self.drag = None
+                self.commit_at = None
+                self.on_change(True)
+
+        self.open = flag
+
+
+    def slide(self, event):
+        """Opening and closing by click or swipe. Returns True when it used the event."""
+
+        if event.type == pygame.MOUSEWHEEL:
+
+            dx = getattr(event, "precise_x", event.x)
+            dy = getattr(event, "precise_y", event.y)
+
+            if abs(dx) <= abs(dy) or self.swipe is not None:
+                return False
+
+            # two fingers moving left give dx > 0: the panel follows the fingers
+            self.pos = min(max(self.pos + dx * WHEEL_SWIPE, 0.0), 1.0)
+            self.wheel_dir = 1 if dx > 0 else -1
+            self.wheel_at = time.time()
+            return True
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.drag is None:
+
+            x = event.pos[0]
+            on_tab = self.tab_rect.collidepoint(event.pos)
+            on_edge = self.pos == 0 and x >= self.window[0] - EDGE
+            on_empty = self.pos > 0 and self.rect.collidepoint(event.pos) and not self._control_at(event.pos)
+
+            if not (on_tab or on_edge or on_empty):
+                return False
+
+            if self.edit is not None:
+                self._commit_edit()
+
+            self.swipe = (x, self.pos, on_tab)
+            self.moves.clear()
+            self.moves.append((time.time(), x))
+            return True
+
+        if self.swipe is None:
+            return False
+
+        if event.type == pygame.MOUSEMOTION:
+            start_x, start_pos, _ = self.swipe
+            self.pos = min(max(start_pos + (start_x - event.pos[0]) / self.width, 0.0), 1.0)
+            self.moves.append((time.time(), event.pos[0]))
+            return True
+
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+
+            start_x, _, on_tab = self.swipe
+            self.swipe = None
+
+            if abs(event.pos[0] - start_x) < 6:
+                if on_tab:
+                    self.show(not self.open)        # a click on the tab
+                return True
+
+            # a quick flick goes its way, a slow drag goes to the nearer side
+            t0, x0 = self.moves[0]
+            t1, x1 = self.moves[-1]
+            speed = (x1 - x0) / max(t1 - t0, 1e-3) if time.time() - t1 < 0.1 else 0.0
+
+            if abs(speed) > FLICK:
+                self.show(speed < 0)
+            else:
+                self.show(self.pos > 0.5)
+
+            return True
+
+        return False
+
+
+    def _animate(self):
+
+        now = time.time()
+        dt = min(now - self.last_tick, 0.1)
+        self.last_tick = now
+
+        # a touchpad swipe ends when its steps stop; it goes the way the fingers last moved
+        if self.wheel_at is not None and now - self.wheel_at > 0.15:
+            self.wheel_at = None
+            self.show(self.wheel_dir > 0)
+
+        if self.swipe is not None or self.wheel_at is not None:
+            return
+
+        target = 1.0 if self.open else 0.0
+        self.pos += (target - self.pos) * min(1.0, dt * SLIDE_SPEED)
+
+        if abs(target - self.pos) < 0.003:
+            self.pos = target
+
+
+    def _control_at(self, pos):
+
+        rects = self.tab_rects + self.button_rects + [row for _, row, _ in self.rows]
+
+        return any(r.collidepoint(pos) for r in rects)
 
 
     # -------------------------
@@ -317,6 +477,8 @@ class SettingsPanel:
     def tick(self):
         """Call once per frame."""
 
+        self._animate()
+
         if self.commit_at is not None and time.time() >= self.commit_at:
             self.commit_at = None
             self.on_change(True)
@@ -328,9 +490,36 @@ class SettingsPanel:
 
     def draw(self, screen):
 
-        rect = self.rect
         mouse = pygame.mouse.get_pos()
 
+        if self.shown_width() > 0:
+            self._draw_panel(screen, mouse)
+
+        self._draw_tab(screen, mouse)
+
+
+    def _draw_tab(self, screen, mouse):
+
+        r = self.tab_rect
+        hover = r.collidepoint(mouse) or self.swipe is not None
+        corners = {"border_top_left_radius": 8, "border_bottom_left_radius": 8}
+
+        pygame.draw.rect(screen, BUTTON_HOVER if hover else BACK, r, **corners)
+        pygame.draw.rect(screen, BORDER, r, 1, **corners)
+
+        # arrow: "<" pulls the panel out, ">" pushes it back
+        cx, cy = r.centerx, r.y + 20
+        d = 4 if self.open else -4
+        pygame.draw.lines(screen, ACCENT, False, [(cx - d, cy - 7), (cx + d, cy), (cx - d, cy + 7)], 3)
+
+        screen.blit(self.tab_label, self.tab_label.get_rect(center=(r.centerx, r.y + 72)))
+
+
+    def _draw_panel(self, screen, mouse):
+
+        rect = self.rect
+
+        screen.blit(pygame.transform.scale(self.shade, (12, rect.height)), (rect.x - 12, rect.y))
         pygame.draw.rect(screen, BACK, rect)
         pygame.draw.line(screen, BORDER, rect.topleft, rect.bottomleft, 1)
 

@@ -1,0 +1,4 @@
+numpy>=1.24
+pygame>=2.1
+pyserial>=3.5
+python-osc>=1.8

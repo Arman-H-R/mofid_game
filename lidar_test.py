@@ -3,15 +3,18 @@ Lidar test (STL27L): a small, separate test program.
 It does not use or change the main program (use_lib.py, lib.py, settings).
 
     1. Keep the laser plane empty: the first 10 s learn the background.
-    2. After that, every point closer than the background is shown BIG on the
-       window, even a single point. Each detection stays on screen for
-       HOLD_TIME seconds, so an object seen in only one scan (a fast ball)
-       can still be seen.
+    2. After that, every point closer than the background is a sighting,
+       even a single point. No noise filter: every point is drawn BIG.
+    3. A thrown ball can be seen twice: on its way in and on its way back.
+       After the first sighting the program waits TOUCH_WINDOW seconds for
+       the way back, then shows TOUCHED once, at the middle of all the
+       sightings (in only, out only, or in + out).
 
 Run:   python lidar_test.py              (port COM14)
        python lidar_test.py --port COM5
 
 Keys:  B = learn the background again    C = clear the list
+       Up / Down = background threshold (lowest = OFF, raw)
        mouse wheel = zoom    drag = move    Esc = quit
 
 Only one program can open the port: close use_lib.py first.
@@ -33,14 +36,28 @@ PORT = "COM14"
 BAUD = 921600
 
 BACKGROUND_TIME = 10.0  # s, the plane must be empty while it learns
-MARGIN = 40             # mm, a point must be this much closer than the background
-MIN_RANGE = 20          # mm, closer = no echo
-MAX_RANGE = 5000        # mm, farther points are ignored
+MIN_RANGE = 20          # mm, 0 = no echo
+MAX_RANGE = 25000       # mm, the sensor's full range
+
+# A point is new when it is closer than the background by
+# MARGIN_MM + MARGIN_PCT % of the background distance (40 mm at 3 m).
+# Measured with the area empty: 0 false points in 20 s. Without it the wall
+# itself flickers. Up / Down scale it live, the lowest level turns it off.
+MARGIN_MM = 10
+MARGIN_PCT = 1.0
+LEVELS = [0, 0.25, 0.5, 1, 1.5, 2, 3]
+
 BIN_DEG = 0.25          # background angle resolution
 GROUP_GAP = 100         # mm, new points closer than this are one object
-HOLD_TIME = 1.0         # s, a detection stays on screen this long
+
+TOUCH_WINDOW = 0.25     # s after the first sighting: wait for the way back, then decide
+MATCH_RADIUS = 400      # mm, sightings this close (in the window) are the same ball
+FOLLOW_GAP = 0.3        # s, a touched ball still seen near its touch (falling, rolling)
+                        # makes no new touch until it is gone this long
+HOLD_TIME = 1.0         # s, a touch stays on screen this long
 
 WIDTH, HEIGHT = 1280, 800
+PANEL_WIDTH = 520       # list of touches on the right, never over the map
 
 PACKET_SIZE = 47
 HEADER = b"\x54\x2C"
@@ -50,9 +67,25 @@ GREY = (90, 90, 100)
 RING = (45, 45, 55)
 CYAN = (0, 220, 255)
 RED = (255, 40, 40)
+ORANGE = (255, 150, 0)
 YELLOW = (255, 230, 0)
 GREEN = (60, 220, 90)
 WHITE = (240, 240, 240)
+
+# one colour per ball: #1, #2, #3 ... (in and out of one ball share it)
+BALL_COLORS = [
+    (255, 40, 40),
+    (40, 140, 255),
+    (40, 230, 90),
+    (255, 60, 255),
+    (255, 150, 0),
+    (0, 230, 230),
+]
+
+
+def ball_color(num):
+
+    return BALL_COLORS[(num - 1) % len(BALL_COLORS)]
 
 
 # =========================
@@ -196,8 +229,34 @@ class Lidar:
 # TEST
 # =========================
 
-# One scan that saw something: its new points and the objects (cx, cy, n points).
-Mark = namedtuple("Mark", "t x y groups")
+# One scan's new points, and the ball number of each point (for colours).
+Mark = namedtuple("Mark", "t x y ball")
+
+# A decided touch: where (middle of all sightings), and every sighting [t, cx, cy, n].
+Touch = namedtuple("Touch", "t num x y seen")
+
+
+class Ball:
+    """One ball while we wait for its way back: one sighting per scan."""
+
+    def __init__(self, num, t):
+
+        self.num = num
+        self.t0 = t
+        self.seen = []          # [t, cx, cy, n points] per scan
+
+
+    def add(self, t, cx, cy, n):
+
+        if self.seen and self.seen[-1][0] == t:
+            # a second group of the same ball in the same scan: merge
+            last = self.seen[-1]
+            m = last[3] + n
+            last[1] = (last[1] * last[3] + cx * n) / m
+            last[2] = (last[2] * last[3] + cy * n) / m
+            last[3] = m
+        else:
+            self.seen.append([t, cx, cy, n])
 
 
 class LidarTest:
@@ -206,15 +265,21 @@ class LidarTest:
 
         self.zoom = 0.1             # pixels per mm
         self.pan = [0.0, 0.0]       # pixels
-        self.fit = MAX_RANGE        # mm to fit in the window at the next draw
+        self.fit = 5000             # mm to fit in the window at the next draw
 
-        self.marks = deque()
-        self.log = deque(maxlen=14)
-        self.detections = 0
+        self.level = LEVELS.index(1)
+
+        self.marks = deque()        # sightings, drawn as dots
+        self.balls = []             # seen, waiting for the way back
+        self.followed = []          # touched and still seen: [num, x, y, last time]
+        self.touches = deque()      # decided, on screen for HOLD_TIME
+        self.log = deque(maxlen=16) # (text, colour)
+        self.touch_count = 0
+        self.ball_num = 0
 
         self.hz = 0.0
         self.beams = 0
-        self.live = None            # newest scan: x, y, new
+        self.live = None            # newest scan: x, y
 
         self.fonts = {}
 
@@ -224,17 +289,52 @@ class LidarTest:
     def learn_again(self):
 
         self.near = np.full(N_BINS, np.inf)     # closest distance seen per angle
+        self.bg = None
         self.limit = None                       # None = still learning
         self.learn_start = None
         self.learn_scans = 0
         self.marks.clear()
+        self.balls = []
+        self.followed = []
+        self.touches.clear()
 
 
     def clear(self):
 
         self.marks.clear()
+        self.balls = []
+        self.followed = []
+        self.touches.clear()
         self.log.clear()
-        self.detections = 0
+        self.touch_count = 0
+
+
+    def set_level(self, step):
+
+        self.level = min(max(self.level + step, 0), len(LEVELS) - 1)
+
+        if self.bg is not None:
+            self.update_limit()
+
+
+    def update_limit(self):
+
+        # angles where the background had no echo: anything there is new
+        margin = np.where(np.isfinite(self.bg), MARGIN_MM + self.bg * MARGIN_PCT / 100, 0)
+        self.limit = self.bg - LEVELS[self.level] * margin
+
+
+    def threshold_text(self):
+
+        k = LEVELS[self.level]
+
+        if k == 0:
+            return "Threshold OFF (raw: any point closer than the background)"
+
+        at1 = k * (MARGIN_MM + 1000 * MARGIN_PCT / 100)
+        at3 = k * (MARGIN_MM + 3000 * MARGIN_PCT / 100)
+
+        return f"Threshold x{k:g}: {at1:.0f} mm at 1 m, {at3:.0f} mm at 3 m"
 
 
     def add_scan(self, scan, now):
@@ -247,6 +347,8 @@ class LidarTest:
         y = np.sin(r) * scan.dist
         bins = (scan.angle / BIN_DEG).astype(int) % N_BINS
 
+        self.live = (x, y)
+
         # ---- learning the background ----
         if self.limit is None:
 
@@ -258,17 +360,17 @@ class LidarTest:
 
             if now - self.learn_start >= BACKGROUND_TIME and self.learn_scans >= 20:
                 # each angle also takes its neighbours (beam angles jitter a little)
-                near = np.minimum(self.near, np.minimum(np.roll(self.near, 1), np.roll(self.near, -1)))
-                self.limit = near - MARGIN
-                seen = near[np.isfinite(near)]
-                self.fit = np.percentile(seen, 95) if len(seen) else MAX_RANGE
+                self.bg = np.minimum(self.near, np.minimum(np.roll(self.near, 1), np.roll(self.near, -1)))
+                self.update_limit()
+                seen = self.bg[np.isfinite(self.bg)]
+                self.fit = np.percentile(seen, 75) if len(seen) else 5000
 
-            self.live = (x, y, np.zeros(len(x), bool))
             return
 
-        # ---- detecting: anything closer than the background ----
+        # ---- detecting: every point closer than the background ----
+        self.update(now)
+
         new = scan.dist < self.limit[bins]
-        self.live = (x, y, new)
 
         if not new.any():
             return
@@ -278,22 +380,110 @@ class LidarTest:
 
         # points in scan order; a jump bigger than GROUP_GAP starts a new object
         cuts = np.flatnonzero(np.hypot(np.diff(nx), np.diff(ny)) > GROUP_GAP) + 1
-        groups = [(nx[i].mean(), ny[i].mean(), len(i)) for i in np.split(np.arange(len(nx)), cuts)]
+        ball_of_point = np.zeros(len(nx), int)
 
-        self.marks.append(Mark(now, nx, ny, groups))
-        self.detections += 1
+        for idx in np.split(np.arange(len(nx)), cuts):
 
-        stamp = time.strftime("%H:%M:%S") + f".{int(time.time() * 1000) % 1000:03d}"
+            cx = nx[idx].mean()
+            cy = ny[idx].mean()
 
-        for cx, cy, n in groups:
-            line = f"{stamp} {n:4d} pt {math.hypot(cx, cy):5.0f} mm {math.degrees(math.atan2(cy, cx)) % 360:5.1f} deg"
-            self.log.appendleft(line)
-            print(line)
+            # the same ball as a sighting just before (way in -> way back)?
+            ball = self.match(cx, cy)
+
+            if ball is None:
+                # a ball that already made its touch, still in view
+                old = self.match_followed(cx, cy)
+                if old is not None:
+                    old[1:] = [cx, cy, now]
+                    ball_of_point[idx] = old[0]
+                    continue
+
+                self.ball_num += 1
+                ball = Ball(self.ball_num, now)
+                self.balls.append(ball)
+
+            ball.add(now, cx, cy, len(idx))
+            ball_of_point[idx] = ball.num
+
+        self.marks.append(Mark(now, nx, ny, ball_of_point))
+
+
+    def match(self, cx, cy):
+        """Nearest waiting ball within MATCH_RADIUS of its last sighting, or None."""
+
+        best = None
+        best_d = MATCH_RADIUS
+
+        for ball in self.balls:
+            d = math.hypot(cx - ball.seen[-1][1], cy - ball.seen[-1][2])
+            if d < best_d:
+                best = ball
+                best_d = d
+
+        return best
+
+
+    def match_followed(self, cx, cy):
+
+        best = None
+        best_d = MATCH_RADIUS
+
+        for old in self.followed:
+            d = math.hypot(cx - old[1], cy - old[2])
+            if d < best_d:
+                best = old
+                best_d = d
+
+        return best
+
+
+    def update(self, now):
+        """Decide the balls whose window is over, forget old dots and touches."""
+
+        for ball in [b for b in self.balls if now - b.t0 >= TOUCH_WINDOW]:
+
+            self.balls.remove(ball)
+
+            # middle of all sightings: with in + out, the wall is hit between them
+            x = float(np.mean([s[1] for s in ball.seen]))
+            y = float(np.mean([s[2] for s in ball.seen]))
+
+            self.touches.append(Touch(now, ball.num, x, y, ball.seen))
+            self.followed.append([ball.num, ball.seen[-1][1], ball.seen[-1][2], ball.seen[-1][0]])
+            self.touch_count += 1
+
+            stamp = time.strftime("%H:%M:%S") + f".{int(time.time() * 1000) % 1000:03d}"
+            first, last = ball.seen[0], ball.seen[-1]
+
+            if len(ball.seen) == 1:
+                detail = f"seen once ({first[3]} pt)"
+            elif len(ball.seen) == 2:
+                detail = f"in {first[1]:.0f},{first[2]:.0f}  out {last[1]:.0f},{last[2]:.0f}"
+            else:
+                detail = f"seen {len(ball.seen)}x  {first[1]:.0f},{first[2]:.0f} .. {last[1]:.0f},{last[2]:.0f}"
+
+            line = f"{stamp} #{ball.num} TOUCHED x{x:6.0f} y{y:6.0f}"
+            self.log.appendleft(("    " + detail, WHITE))
+            self.log.appendleft((line, ball_color(ball.num)))
+            print(line, "|", detail)
+
+        self.followed = [old for old in self.followed if now - old[3] < FOLLOW_GAP]
+
+        while self.marks and now - self.marks[0].t > TOUCH_WINDOW + HOLD_TIME:
+            self.marks.popleft()
+
+        while self.touches and now - self.touches[0].t > HOLD_TIME:
+            self.touches.popleft()
 
 
     # -------------------------
     # VIEW
     # -------------------------
+
+    def map_size(self, size):
+
+        return max(size[0] - PANEL_WIDTH, 200), size[1]
+
 
     def to_screen(self, x, y, size):
 
@@ -324,36 +514,42 @@ class LidarTest:
         return self.fonts[key]
 
 
-    def text(self, screen, s, pos, size, color, center=False, mono=False):
+    def text(self, screen, s, pos, size, color, center=False, mono=False, box=None):
 
-        img = self.font(size, mono).render(s, True, color)
+        img = self.font(size, mono).render(s, True, color, box)
         rect = img.get_rect(center=pos) if center else img.get_rect(topleft=pos)
         screen.blit(img, rect)
 
 
+    def point(self, x, y, size):
+
+        sx, sy = self.to_screen(x, y, size)
+
+        return int(sx), int(sy)
+
+
     def draw(self, screen, now, crc_errors=0, error=None):
 
-        size = w, h = screen.get_size()
+        full_w = screen.get_width()
+        size = w, h = self.map_size(screen.get_size())
 
         if self.fit:
             self.zoom = 0.45 * min(w, h) / max(self.fit, 500)
             self.pan = [0.0, 0.0]
             self.fit = None
 
-        while self.marks and now - self.marks[0].t > HOLD_TIME:
-            self.marks.popleft()
+        touched = bool(self.touches)
+        waiting = bool(self.balls)
 
-        seeing = bool(self.marks)
-
-        screen.fill((45, 8, 8) if seeing else (14, 14, 20))
+        screen.fill((45, 8, 8) if touched else (35, 22, 0) if waiting else (14, 14, 20))
 
         # distance rings, 1 m apart
-        ox, oy = self.to_screen(0, 0, size)
+        ox, oy = self.point(0, 0, size)
 
         for m in range(1, int(MAX_RANGE / 1000) + 1):
             r = int(m * 1000 * self.zoom)
-            if r > 4:
-                pygame.draw.circle(screen, RING, (int(ox), int(oy)), r, 1)
+            if 4 < r < w + h:
+                pygame.draw.circle(screen, RING, (ox, oy), r, 1)
                 self.text(screen, f"{m} m", (ox + r + 4, oy - 22), 16, RING)
 
         pygame.draw.line(screen, RING, (0, oy), (w, oy))
@@ -365,26 +561,45 @@ class LidarTest:
             for px, py in zip(sx.astype(int).tolist(), sy.astype(int).tolist()):
                 screen.fill(GREY, (px - 1, py - 1, 3, 3))
 
-        pygame.draw.circle(screen, CYAN, (int(ox), int(oy)), 9)
+        pygame.draw.circle(screen, CYAN, (ox, oy), 9)
 
-        # detections: every new point is a big dot, every object gets a ring and a label
+        # balls seen, still waiting for the way back: thin ring
+        for ball in self.balls:
+            color = ball_color(ball.num)
+            bx, by = self.point(ball.seen[-1][1], ball.seen[-1][2], size)
+            pygame.draw.circle(screen, color, (bx, by), 45, 2)
+            self.text(screen, f"#{ball.num} seen {len(ball.seen)}x, waiting...", (bx + 50, by - 12), 22, color, box=(0, 0, 0))
+
+        # touches: each sighting a small ring (in -> out joined by a line),
+        # the touch point (middle) a cross with a thick ring and a label
+        for touch in self.touches:
+
+            color = ball_color(touch.num)
+            spots = [self.point(s[1], s[2], size) for s in touch.seen]
+
+            if len(spots) > 1:
+                pygame.draw.lines(screen, color, False, spots, 3)
+            for spot in spots:
+                pygame.draw.circle(screen, color, spot, 16, 3)
+
+            tx, ty = self.point(touch.x, touch.y, size)
+            pygame.draw.line(screen, color, (ox, oy), (tx, ty), 2)
+            pygame.draw.circle(screen, color, (tx, ty), 45, 6)
+            pygame.draw.line(screen, WHITE, (tx - 30, ty), (tx + 30, ty), 3)
+            pygame.draw.line(screen, WHITE, (tx, ty - 30), (tx, ty + 30), 3)
+
+            how = "in + out" if len(touch.seen) == 2 else "seen once" if len(touch.seen) == 1 else f"seen {len(touch.seen)}x"
+            self.text(screen, f"#{touch.num} TOUCHED  {how}", (tx + 52, ty - 16), 26, color, box=(0, 0, 0))
+
+        # every new point: a big dot in its ball's colour (drawn last, nothing covers it)
         for mark in self.marks:
-
             sx, sy = self.to_screen(mark.x, mark.y, size)
-
-            for px, py in zip(sx.astype(int).tolist(), sy.astype(int).tolist()):
-                pygame.draw.circle(screen, RED, (px, py), 11)
+            for px, py, num in zip(sx.astype(int).tolist(), sy.astype(int).tolist(), mark.ball.tolist()):
+                pygame.draw.circle(screen, ball_color(num), (px, py), 11)
                 pygame.draw.circle(screen, YELLOW, (px, py), 5)
 
-            for cx, cy, n in mark.groups:
-                gx, gy = self.to_screen(cx, cy, size)
-                gx, gy = int(gx), int(gy)
-                pygame.draw.line(screen, YELLOW, (ox, oy), (gx, gy), 2)
-                pygame.draw.circle(screen, WHITE, (gx, gy), 45, 4)
-                label = f"{n} pt  {math.hypot(cx, cy):.0f} mm"
-                self.text(screen, label, (gx + 52, gy - 16), 30, WHITE)
-
-        # big status line
+        # big status, in the bottom half: the lidar is near the floor,
+        # touches show up in the top half
         if self.limit is None:
 
             left = BACKGROUND_TIME if self.learn_start is None else max(BACKGROUND_TIME - (now - self.learn_start), 0)
@@ -398,27 +613,38 @@ class LidarTest:
             pygame.draw.rect(screen, GREY, bar, 2)
             pygame.draw.rect(screen, YELLOW, (bar.x + 3, bar.y + 3, (bar.w - 6) * done, bar.h - 6))
 
-        elif seeing:
+        elif touched:
 
-            newest = self.marks[-1]
-            points = sum(n for _, _, n in newest.groups)
-            objects = len(newest.groups)
-            what = f"{objects} OBJECTS" if objects > 1 else "OBJECT"
+            newest = self.touches[-1]
+            count = len(self.touches)
+            how = "in + out" if len(newest.seen) == 2 else "seen once" if len(newest.seen) == 1 else f"seen {len(newest.seen)}x"
 
-            pygame.draw.rect(screen, RED, (0, 0, w, h), 14)
-            self.text(screen, f"{what} DETECTED  -  {points} point{'s' if points > 1 else ''}", (w / 2, 60), 64, YELLOW, center=True)
+            self.text(screen, "TOUCHED" if count == 1 else f"TOUCHED  x{count}", (w / 2, h - 230), 96, YELLOW, center=True)
+            self.text(screen, f"#{newest.num}   x {newest.x:.0f}   y {newest.y:.0f}   ({how})", (w / 2, h - 160), 36, YELLOW, center=True)
+
+        elif waiting:
+            self.text(screen, "BALL SEEN  -  waiting for the way back", (w / 2, h - 200), 40, ORANGE, center=True)
 
         else:
-            self.text(screen, "READY  -  nothing in the plane", (w / 2, 50), 40, GREEN, center=True)
+            self.text(screen, "READY  -  not touched", (w / 2, h - 200), 40, GREEN, center=True)
 
-        # info, list of detections, keys
-        self.text(screen, f"Lidar {self.hz:.1f} Hz   {self.beams} points   CRC errors {crc_errors}   detections {self.detections}",
-                  (16, h - 64), 20, WHITE)
+        # list of touches, in its own panel on the right
+        pygame.draw.rect(screen, (8, 8, 12), (w, 0, full_w - w, h))
+        pygame.draw.line(screen, GREY, (w, 0), (w, h), 2)
+        self.text(screen, "Touches (newest first)", (w + 16, 16), 26, WHITE)
+
+        for i, (line, color) in enumerate(self.log):
+            self.text(screen, line, (w + 16, 60 + i * 28), 20, color, mono=True)
+
+        if touched:
+            pygame.draw.rect(screen, RED, (0, 0, full_w, h), 14)
+
+        # info and keys
+        self.text(screen, f"Lidar {self.hz:.1f} Hz   {self.beams} points   CRC errors {crc_errors}   touches {self.touch_count}",
+                  (16, h - 92), 20, WHITE)
+        self.text(screen, self.threshold_text() + "   (Up / Down)", (16, h - 64), 20, YELLOW if self.level == 0 else WHITE)
         self.text(screen, "B = learn background again   C = clear   wheel = zoom   drag = move   Esc = quit",
                   (16, h - 36), 18, GREY)
-
-        for i, line in enumerate(self.log):
-            self.text(screen, line, (w - 560, 110 + i * 30), 22, YELLOW if i == 0 else WHITE, mono=True)
 
         if error:
             self.text(screen, error, (w / 2, h / 2), 48, RED, center=True)
@@ -467,9 +693,12 @@ def main():
                     print("Learning the background again")
                 elif event.key == pygame.K_c:
                     test.clear()
+                elif event.key in (pygame.K_UP, pygame.K_DOWN):
+                    test.set_level(1 if event.key == pygame.K_UP else -1)
+                    print(test.threshold_text())
 
             elif event.type == pygame.MOUSEWHEEL:
-                test.zoom_at(1.2 ** event.y, pygame.mouse.get_pos(), screen.get_size())
+                test.zoom_at(1.2 ** event.y, pygame.mouse.get_pos(), test.map_size(screen.get_size()))
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 drag = event.pos
@@ -490,7 +719,12 @@ def main():
                 break
             test.add_scan(scan, time.monotonic())
 
-        test.draw(screen, time.monotonic(), lidar.crc_errors, lidar.error)
+        now = time.monotonic()
+
+        if test.limit is not None:
+            test.update(now)
+
+        test.draw(screen, now, lidar.crc_errors, lidar.error)
         pygame.display.flip()
         clock.tick(60)
 

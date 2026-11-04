@@ -20,14 +20,16 @@ How it works
 
 Settings   all tuning values live in settings.py and are changed live in
            the window's settings panel; they are saved to settings.json and
-           also used by --headless.
+           also used by --headless. The panel starts closed: click the
+           "Settings" tab on the right edge, swipe it left / right, or press H.
 
 OSC   /touch [x, y, id, state]   state: 1 = down, 0 = move, -1 = up
       x, y in mm on the map, or 0..1 inside the area ("Send 0..1")
 
-Keys  ESC quit | B scan background again | H hide / show settings
-      V reset view | UP / DOWN zoom
+Keys  ESC quit | B scan background again | H open / close settings
+      V fit the whole background again | UP / DOWN zoom
 Mouse wheel zoom | right drag pan | left drag the area to move it
+      the view fits the whole background until you zoom or pan
 
 Run   python use_lib.py                 (window)
       python use_lib.py --headless      (console only)
@@ -670,7 +672,7 @@ def run_window(lidar, osc, detector):
 
     zoom = ZOOM
     view_x = view_y = 0.0       # map point (mm) in the middle of the map view
-    show_panel = True
+    view_auto = True            # the view fits the whole background until you zoom or pan
     drag = None                 # ("area", dx, dy) or ("pan", mouse, view_x, view_y)
     rescan = False
     area_image = None
@@ -685,7 +687,7 @@ def run_window(lidar, osc, detector):
 
         w, h = screen.get_size()
 
-        return max(w - PANEL_WIDTH if show_panel else w, 2), max(h, 2)
+        return max(w - panel.shown_width(), 2), max(h, 2)
 
 
     def origin():
@@ -713,13 +715,36 @@ def run_window(lidar, osc, detector):
     def zoom_at(factor, pos):
         """Zoom and keep the map point under the mouse in place."""
 
-        nonlocal zoom, view_x, view_y
+        nonlocal zoom, view_x, view_y, view_auto
 
+        view_auto = False
         wx, wy = to_map(*pos)
         zoom = min(max(zoom * factor, 0.02), 5.0)
         mw, mh = map_size()
         view_x = (mw / 2 - pos[0] + wx * zoom) / zoom
         view_y = (pos[1] + wy * zoom - mh / 2) / zoom
+
+
+    def fit_view():
+        """Zoom and centre so the whole background and the lidar fit the map view."""
+
+        nonlocal zoom, view_x, view_y
+
+        if bg.distance is None or not np.isfinite(bg.distance).any():
+            return
+
+        ok = np.isfinite(bg.distance)
+        bx, by = cfg.to_world(centers[ok], bg.distance[ok])
+        x0, x1 = min(bx.min(), 0.0), max(bx.max(), 0.0)
+        y0, y1 = min(by.min(), 0.0), max(by.max(), 0.0)
+
+        mw, mh = map_size()
+        top, bottom, side = 64, 32, 40      # room for the text lines and the side tab
+
+        zoom = min((mw - 2 * side) / max(x1 - x0, 1.0), (mh - top - bottom) / max(y1 - y0, 1.0))
+        zoom = min(max(zoom, 0.02), 5.0)
+        view_x = (x0 + x1) / 2
+        view_y = (y0 + y1) / 2 + (top - bottom) / 2 / zoom
 
 
     def draw_points(xs, ys, color, size):
@@ -851,14 +876,11 @@ def run_window(lidar, osc, detector):
 
     scan = None
     running = True
+    panel.place(screen.get_size())
 
     while running:
 
         screen = pygame.display.get_surface()
-
-        if show_panel:
-            w, h = screen.get_size()
-            panel.layout(pygame.Rect(w - PANEL_WIDTH, 0, PANEL_WIDTH, h))
 
         for event in pygame.event.get():
 
@@ -869,7 +891,10 @@ def run_window(lidar, osc, detector):
             # a drag on the map ends on the map even if the mouse is over the panel
             map_drag = drag is not None and event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP)
 
-            if show_panel and not map_drag and panel.handle(event):
+            if not map_drag and panel.slide(event):
+                continue
+
+            if panel.shown_width() > 0 and not map_drag and panel.handle(event):
                 continue
 
             if event.type == pygame.KEYDOWN:
@@ -887,10 +912,10 @@ def run_window(lidar, osc, detector):
                     rescan = True
 
                 elif event.key == pygame.K_h:
-                    show_panel = not show_panel
+                    panel.show(not panel.open)
 
                 elif event.key == pygame.K_v:
-                    zoom, view_x, view_y = ZOOM, 0.0, 0.0
+                    view_auto = True
 
             elif event.type == pygame.MOUSEWHEEL:
                 zoom_at(1.15 ** event.y, pygame.mouse.get_pos())
@@ -904,6 +929,7 @@ def run_window(lidar, osc, detector):
 
                 elif event.button == 3:
                     drag = ("pan", event.pos, view_x, view_y)
+                    view_auto = False
 
             elif event.type == pygame.MOUSEMOTION and drag is not None:
 
@@ -932,6 +958,10 @@ def run_window(lidar, osc, detector):
                 running = False
 
         panel.tick()
+        panel.place(screen.get_size())
+
+        if view_auto:
+            fit_view()
 
         # every scan is processed (a thrown ball may be in only one of them),
         # only the newest is drawn
@@ -1085,13 +1115,12 @@ def run_window(lidar, osc, detector):
             screen.blit(mouse, (10, 36))
 
         keys = small.render(
-            "wheel zoom | right drag pan | drag area to move | B background | H settings | V view | ESC quit",
+            "wheel zoom | right drag pan | drag area to move | B background | H / swipe settings | V fit view | ESC quit",
             True, (100, 100, 100)
         )
         screen.blit(keys, (10, mh - 24))
 
-        if show_panel:
-            panel.draw(screen)
+        panel.draw(screen)
 
         pygame.display.flip()
         clock.tick(60)

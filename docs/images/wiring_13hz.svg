@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" width="960" height="470" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="960" height="470" rx="14" fill="#ffffff"/>
+
+  <text x="40" y="44" font-size="19" font-weight="600" fill="#1f2430">Optional: spin the lidar at 13 Hz with an ESP-12F</text>
+  <text x="40" y="66" font-size="13" fill="#4a4f5a">sketch: lidar_speed/lidar_speed.ino (not tested on hardware yet)</text>
+
+  <!-- lidar -->
+  <rect x="40" y="110" width="200" height="190" rx="10" fill="#f3f5f8" stroke="#9aa3b2" stroke-width="1.5"/>
+  <text x="60" y="140" font-size="16" font-weight="600" fill="#1f2430">STL27L lidar</text>
+  <text x="60" y="160" font-size="12" fill="#4a4f5a">4-pin cable</text>
+  <g font-size="13" fill="#1f2430" text-anchor="end">
+    <text x="228" y="184">1  Tx</text>
+    <text x="228" y="219">2  PWM</text>
+    <text x="228" y="254">3  GND</text>
+    <text x="228" y="289">4  P5V</text>
+  </g>
+
+  <!-- USB serial adapter -->
+  <rect x="640" y="90" width="270" height="120" rx="10" fill="#f3f5f8" stroke="#9aa3b2" stroke-width="1.5"/>
+  <text x="730" y="120" font-size="16" font-weight="600" fill="#1f2430">USB-serial adapter</text>
+  <text x="730" y="140" font-size="12" fill="#4a4f5a">to the PC: COM14, 921600 baud</text>
+  <g font-size="13" fill="#1f2430">
+    <text x="652" y="124">RX</text>
+    <text x="652" y="159">GND</text>
+    <text x="652" y="194">5V</text>
+  </g>
+
+  <!-- ESP -->
+  <rect x="640" y="235" width="270" height="120" rx="10" fill="#f3f5f8" stroke="#9aa3b2" stroke-width="1.5"/>
+  <text x="790" y="265" font-size="16" font-weight="600" fill="#1f2430">ESP-12F</text>
+  <text x="790" y="285" font-size="12" fill="#4a4f5a">(ESP8266)</text>
+  <g font-size="13" fill="#1f2430">
+    <text x="652" y="269">GPIO13 (D7)</text>
+    <text x="652" y="304">GPIO4 (D2)</text>
+    <text x="652" y="339">GND</text>
+  </g>
+
+  <!-- wires: verticals first, horizontals with a white gap so crossings read as not connected -->
+  <g fill="none" stroke-width="2.6" stroke-linecap="round">
+    <path d="M330,180 V120 M330,180 V265" stroke="#2e9d4f"/>
+    <path d="M390,215 V300" stroke="#ef8a17"/>
+    <path d="M450,250 V155 M450,250 V335" stroke="#333"/>
+    <path d="M510,285 V190" stroke="#d93025"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="8">
+    <path d="M240,180 H330 M330,120 H640 M330,265 H640"/>
+    <path d="M240,215 H390 M390,300 H640"/>
+    <path d="M240,250 H450 M450,155 H640 M450,335 H640"/>
+    <path d="M240,285 H510 M510,190 H640"/>
+  </g>
+  <g fill="none" stroke-width="2.6" stroke-linecap="round">
+    <path d="M240,180 H330 M330,120 H640 M330,265 H640" stroke="#2e9d4f"/>
+    <path d="M240,215 H390 M390,300 H640" stroke="#ef8a17"/>
+    <path d="M240,250 H450 M450,155 H640 M450,335 H640" stroke="#333"/>
+    <path d="M240,285 H510 M510,190 H640" stroke="#d93025"/>
+  </g>
+
+  <!-- pins and junctions -->
+  <g fill="#1f2430">
+    <circle cx="240" cy="180" r="4"/><circle cx="240" cy="215" r="4"/>
+    <circle cx="240" cy="250" r="4"/><circle cx="240" cy="285" r="4"/>
+    <circle cx="640" cy="120" r="4"/><circle cx="640" cy="155" r="4"/><circle cx="640" cy="190" r="4"/>
+    <circle cx="640" cy="265" r="4"/><circle cx="640" cy="300" r="4"/><circle cx="640" cy="335" r="4"/>
+  </g>
+  <circle cx="330" cy="180" r="5" fill="#2e9d4f"/>
+  <circle cx="450" cy="250" r="5" fill="#333"/>
+
+  <!-- wire labels -->
+  <text x="252" y="173" font-size="11.5" fill="#2e9d4f">data</text>
+  <text x="252" y="208" font-size="11.5" fill="#ef8a17">PWM 30 kHz</text>
+  <text x="520" y="113" font-size="11.5" fill="#2e9d4f">scans to the PC</text>
+  <text x="520" y="258" font-size="11.5" fill="#2e9d4f">speed field</text>
+
+  <!-- notes -->
+  <rect x="40" y="375" width="870" height="78" rx="10" fill="#fff7e6" stroke="#f0c36d"/>
+  <text x="58" y="400" font-size="13" fill="#1f2430"><tspan font-weight="600">How it works:</tspan> the ESP reads the speed in the lidar's own packets and adjusts the PWM duty (PI loop) until it spins at 13 Hz.</text>
+  <text x="58" y="420" font-size="13" fill="#1f2430">The on-board LED (GPIO2) is on when the speed is locked. To go back to 10 Hz: PWM wire to GND, then power-cycle the lidar.</text>
+  <text x="58" y="440" font-size="13" fill="#1f2430"><tspan font-weight="600">Bare ESP-12F:</tspan> its own 3.3 V supply (300 mA or more), EN and RST 10 kΩ to 3.3 V, GPIO15 10 kΩ to GND, GPIO0 to GND only while flashing.</text>
+</svg>
