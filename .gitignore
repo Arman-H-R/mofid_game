@@ -8,6 +8,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 
+# YOLOv4-tiny model (24 MB, public download, see README "Model file")
+*.weights
+
 # camera_viewer.py snapshots (pictures of people)
 camera/snapshots/
 

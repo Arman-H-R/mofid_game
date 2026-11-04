@@ -62,6 +62,15 @@ python -m venv .venv
 `--simulate` uses mouse clicks instead of balls. On the wall, run `python main.py`
 (full screen, sensor input). Use **pygame-ce**, not `pygame`, so Persian text is shaped.
 
+**Model file.** The player replay needs `yolov4-tiny.weights` (24 MB, not in the repo) in
+`Game/market_target/models/`. Download it once from the repo root:
+
+```bash
+curl -L -o Game/market_target/models/yolov4-tiny.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights
+```
+
+`camera/camera_viewer.py` downloads its own copy into `camera/models/` the first time it runs.
+
 **Lidar tool:**
 
 ```bash
@@ -92,4 +101,5 @@ python camera_viewer.py
 - `market_target.rar` and `market_pulse_full_project.zip`: archives of this folder (too big for GitHub).
 - `Game/market_target/.venv`, `build/`, `dist/`: rebuild them. `tools/build_exe.py` makes `dist/MarketPulse.exe`.
 - `Game/market_target/logs/` and `data/results.jsonl` (player results).
+- `yolov4-tiny.weights` (24 MB public model, see **Model file** above).
 - Five design screenshots that show a real player's photo or real names (listed in `.gitignore`).
