@@ -1,0 +1,16 @@
+{
+  "_about": "Colour tokens for everything the game draws, from Mofid Brand Book v0.4 pages 8-9 (primary and secondary colours with the tints printed under them) and the neutrals used in its layouts (pages 22-24). Change a value here and restart the game: shapes drawn in code use it directly, and the 'themed' SVGs in manifest.json are recoloured from the default value to the new one. The logos are never recoloured. See documentation/design-system.md before changing anything: the brand book limits where each colour may be used.",
+  "color": {
+    "turquoise": "#00A796",
+    "dark_blue": "#004C6A",
+    "purple": "#832C73",
+    "red": "#F3716D",
+    "white": "#FFFFFF",
+    "turquoise_ramp": ["#00817D", "#008F8A", "#009B97", "#00AAA5", "#00B6B5", "#58C5C7", "#DEF1EE"],
+    "blue_ramp": ["#00243D", "#003754", "#004667", "#004C6A", "#006F95", "#3D8DB2", "#B5D5E5"],
+    "grey": "#B1BAC0",
+    "grey_light": "#CED8DE",
+    "text_grey": "#546670",
+    "pattern_blue": "#005379"
+  }
+}

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-48.04 -48.04 96.08 96.08" width="96.08" height="96.08">
+  <title>Start-box pulse ring, start of each beat (grows 16 cm, turns dark blue); units: wall cm</title>
+  <circle id="ring-1" cx="0" cy="0" r="46.44" fill="none" stroke="#00A796" stroke-width="1.2"/>
+</svg>

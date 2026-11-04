@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#004C6A">
+<title>ورود بازیکن</title>
+<style>
+@font-face{font-family:IRANSansX;font-weight:400;src:url(/files/IRANSansX-Regular.ttf) format("truetype");font-display:swap}
+@font-face{font-family:IRANSansX;font-weight:700;src:url(/files/IRANSansX-Bold.ttf) format("truetype");font-display:swap}
+@font-face{font-family:IRANSansX;font-weight:900;src:url(/files/IRANSansX-Black.ttf) format("truetype");font-display:swap}
+:root{--blue:#004C6A;--teal:#00A796;--line:#CED8DE;--grey:#546670;--red:#F3716D;--purple:#832C73;--bg:#F4F7F8;--card:#fff}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--blue);font-family:IRANSansX,Tahoma,sans-serif;font-size:16px;line-height:1.6}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+header img{height:30px;display:block}
+header h1{margin:0;font-size:19px;font-weight:900}
+main{max-width:520px;margin:0 auto;padding:14px 16px 32px;display:flex;flex-direction:column;gap:14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+h2{margin:0 0 8px;font-size:16px;font-weight:700}
+#status{border-width:2px;transition:border-color .2s}
+#status.ready{border-color:var(--teal)}#status.busy{border-color:var(--purple)}#status.off{border-color:var(--red)}
+#state{font-weight:900;font-size:19px}
+#detail{color:var(--grey);font-size:14px;min-height:22px}
+.live{display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.live.on{display:grid}
+.live div{background:var(--bg);border-radius:10px;text-align:center;padding:6px 2px}
+.live b{display:block;font-size:24px;font-weight:900;line-height:1.3}.live span{font-size:12.5px;color:var(--grey)}
+label{display:block;font-weight:700;margin-bottom:6px}
+input{width:100%;font:inherit;font-size:18px;color:inherit;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;background:#fff;outline:none}
+input:focus{border-color:var(--teal)}
+button,.link{display:block;width:100%;font:inherit;font-weight:700;border:0;border-radius:11px;padding:12px;text-align:center;text-decoration:none;cursor:pointer;min-height:48px}
+#play{margin-top:10px;background:var(--teal);color:#fff;font-size:22px;font-weight:900;min-height:66px}
+#play:disabled{background:var(--line);color:var(--grey);cursor:default}
+#hint{margin:8px 0 0;font-size:14px;color:var(--grey);min-height:22px}#hint.bad{color:var(--blue);font-weight:700}#hint.good{color:var(--teal);font-weight:700}
+#cancel{display:none;margin-top:10px;background:#fff;color:var(--blue);border:1.5px solid var(--blue)}#cancel.on{display:block}
+.link{background:var(--blue);color:#fff;margin-bottom:10px}
+.head{display:flex;justify-content:space-between;align-items:baseline}.head small{color:var(--grey)}
+#rounds{list-style:none;margin:0;padding:0}
+#rounds li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+#rounds .who{flex:1;min-width:0}#rounds .who b{display:block;font-weight:700;overflow-wrap:anywhere}#rounds small{display:block;color:var(--grey);font-size:12.5px;line-height:1.5}
+#rounds .pts{font-size:21px;font-weight:900}
+#empty{color:var(--grey);font-size:14px;margin:0}
+#lock{display:none}#lock.on{display:block}
+#lock button{margin-top:10px;background:var(--blue);color:#fff}
+</style>
+</head>
+<body>
+<header><h1 id="title"></h1><img src="/files/logo_fa_horizontal.png" alt="کارگزاری مفید"></header>
+<main>
+  <section id="lock">
+    <label for="pin">رمز ورود</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off">
+    <button id="unlock" type="button">ورود</button>
+  </section>
+
+  <section id="status" class="off">
+    <div id="state">در حال اتصال…</div>
+    <div id="detail"></div>
+    <div class="live" id="live">
+      <div><b id="score"></b><span>امتیاز</span></div>
+      <div><b id="seconds"></b><span>ثانیه</span></div>
+      <div><b id="balls"></b><span>توپ</span></div>
+    </div>
+    <button id="cancel" type="button">لغو این دور</button>
+  </section>
+
+  <section>
+    <form id="form" autocomplete="off">
+      <label for="name">نام بازیکن</label>
+      <input id="name" enterkeyhint="go" autocomplete="off" autocapitalize="words" placeholder="نام را بنویسید">
+      <button id="play" type="submit" disabled>شروع بازی</button>
+    </form>
+    <p id="hint"></p>
+  </section>
+
+  <section>
+    <div class="head"><h2>تاریخچه‌ی بازی‌ها</h2><small id="total"></small></div>
+    <a class="link" href="/export.csv" download>دانلود فایل CSV</a>
+    <p id="empty">هنوز بازی‌ای ثبت نشده است.</p>
+    <ul id="rounds"></ul>
+  </section>
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const fa = v => String(v).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+const FREE = ["attract", "instructions", "register", "results"];
+let free = false, sending = false, seenRounds = null, failures = 0, hintUntil = 0;
+
+function hint(text, cls) {
+  $("hint").textContent = text;
+  $("hint").className = cls || "";
+  hintUntil = cls ? Date.now() + 5000 : 0;
+}
+function refreshPlay() {
+  $("play").disabled = !free || sending || !$("name").value.trim();
+}
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {cache: "no-store"} : {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const data = await res.json();
+  if (res.status === 401) { $("lock").classList.add("on"); throw new Error("pin"); }
+  $("lock").classList.remove("on");
+  return data;
+}
+function show(s) {
+  document.title = "ورود بازیکن | " + s.title;
+  $("title").textContent = s.title;
+  $("name").maxLength = s.name_max;
+  const playing = s.state === "intro" || s.state === "countdown" || s.state === "playing";
+  free = FREE.includes(s.state) && !s.paused;
+  $("status").className = free ? "ready" : "busy";
+  $("live").classList.toggle("on", s.state === "playing");
+  $("cancel").classList.toggle("on", playing);
+  let state = "آماده‌ی شروع", detail = "";
+  if (s.paused) { state = "بازی متوقف است"; detail = s.name || ""; }
+  else if (s.state === "intro" || s.state === "countdown") { state = "شمارش معکوس"; detail = "نوبت " + s.name; }
+  else if (s.state === "playing") { state = "در حال بازی"; detail = s.name; }
+  else if (s.state === "ending") { state = "پایان دور"; detail = s.name; }
+  else if (s.state === "results" && s.result) {
+    detail = "نتیجه‌ی " + (s.result.name || "بازیکن") + ": " + fa(s.result.score) + " امتیاز" +
+             (s.result.rank ? "، رتبه‌ی " + fa(s.result.rank) + " امروز" : "");
+  }
+  $("state").textContent = state;
+  $("detail").textContent = detail;
+  if (s.state === "playing") {
+    $("score").textContent = fa(s.score);
+    $("seconds").textContent = fa(s.seconds);
+    $("balls").textContent = fa(s.balls_left);
+  }
+  if (Date.now() > hintUntil) hint(free ? "" : "بعد از پایان این دور می‌توانید بازیکن بعدی را شروع کنید.");
+  refreshPlay();
+  if (s.rounds_played !== seenRounds) { seenRounds = s.rounds_played; loadHistory(); }
+}
+function offline() {
+  free = false;
+  $("status").className = "off";
+  $("state").textContent = "ارتباط با بازی قطع است";
+  $("detail").textContent = "وای‌فای گوشی و باز بودن بازی را بررسی کنید.";
+  $("live").classList.remove("on");
+  $("cancel").classList.remove("on");
+  refreshPlay();
+}
+async function poll() {
+  try { show(await api("/api/state")); failures = 0; }
+  catch (e) { if (e.message !== "pin" && ++failures >= 2) offline(); }
+  setTimeout(poll, 1000);
+}
+async function loadHistory() {
+  try {
+    const h = await api("/api/history");
+    $("total").textContent = fa(h.total) + " بازی";
+    $("empty").style.display = h.total ? "none" : "";
+    $("rounds").replaceChildren(...h.rounds.map(r => {
+      const li = document.createElement("li"), who = document.createElement("div"), b = document.createElement("b");
+      const small = document.createElement("small"), style = document.createElement("small"), pts = document.createElement("div");
+      const when = new Date(r.timestamp * 1000);
+      who.className = "who"; pts.className = "pts";
+      b.textContent = r.name || "مهمان";
+      small.textContent = when.toLocaleDateString("fa-IR") + "، " + when.toLocaleTimeString("fa-IR", {hour: "2-digit", minute: "2-digit"}) +
+        " | " + fa(r.hits) + " برخورد از " + fa(r.throws) + " پرتاب";
+      style.textContent = r.style;
+      pts.textContent = fa(r.score);
+      who.append(b, small, style); li.append(who, pts);
+      return li;
+    }));
+  } catch (e) { seenRounds = null; }
+}
+const ERRORS = {
+  name: "لطفاً یک نام درست بنویسید.",
+  busy: "یک دور در جریان است. بعد از پایان آن دوباره بزنید.",
+  no_answer: "بازی پاسخ نداد. دوباره امتحان کنید.",
+};
+$("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  if ($("play").disabled) return;
+  sending = true; refreshPlay();
+  try {
+    const r = await api("/api/play", {name: $("name").value});
+    if (r.ok) {
+      hint("بازی برای " + r.name + " شروع شد.", "good");
+      $("name").value = ""; $("name").blur();
+      show(await api("/api/state"));
+    }
+    else hint(ERRORS[r.error] || "شروع نشد. دوباره امتحان کنید.", "bad");
+  } catch (e) { if (e.message !== "pin") hint("ارتباط با بازی قطع است.", "bad"); }
+  sending = false; refreshPlay();
+});
+$("name").addEventListener("input", refreshPlay);
+$("cancel").addEventListener("click", async () => {
+  if (!confirm("این دور لغو شود؟ امتیاز آن ذخیره نمی‌شود.")) return;
+  try {
+    const r = await api("/api/cancel", {});
+    hint(r.ok ? "دور لغو شد." : "این دور دیگر قابل لغو نیست.", r.ok ? "good" : "bad");
+  } catch (e) { if (e.message !== "pin") hint("ارتباط با بازی قطع است.", "bad"); }
+});
+$("unlock").addEventListener("click", () => {
+  document.cookie = "pin=" + encodeURIComponent($("pin").value) + ";max-age=31536000;path=/;samesite=strict";
+  $("pin").value = "";
+  seenRounds = null;
+});
+poll();
+</script>
+</body>
+</html>

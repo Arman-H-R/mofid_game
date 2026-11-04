@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 80" width="256" height="80">
+  <title>Attract card (how to play / leaderboard); units: wall cm</title>
+  <rect id="card" x="0" y="0" width="256" height="80" rx="5" fill="#FFFFFF"/>
+</svg>

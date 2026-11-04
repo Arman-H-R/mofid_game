@@ -1,0 +1,31 @@
+{
+  "_about": "Every image the game loads, by the name the code asks for. Paths are relative to this folder. Replace a file (same name, same viewBox) to change the artwork; remove an entry to fall back to the shape drawn in code. 'brand' files are used exactly as they are; 'themed' files are drawn in the default palette and follow design-tokens.json.",
+  "brand": {
+    "logo.fa_horizontal": "brand/logo-fa-horizontal.svg",
+    "logo.fa_horizontal_white": "brand/logo-fa-horizontal-white.svg",
+    "logo.fa_stacked": "brand/logo-fa-stacked.svg",
+    "logo.fa_stacked_white": "brand/logo-fa-stacked-white.svg",
+    "logo.mark": "brand/logo-mark.svg"
+  },
+  "themed": {
+    "_symbols": "Shape only: the game paints these in the colour each use needs (particles, background accents).",
+    "symbol.plus": "brand/elements/plus.svg",
+    "symbol.minus": "brand/elements/minus.svg",
+    "symbol.times": "brand/elements/times.svg",
+    "symbol.slash": "brand/elements/slash.svg",
+    "symbol.dot": "brand/elements/dot.svg",
+    "target.green": "gameplay/target-green.svg",
+    "target.blue": "gameplay/target-blue.svg",
+    "target.red": "gameplay/target-red.svg",
+    "button.start": "interface/buttons/start-button.svg",
+    "panel.attract_card": "interface/panels/attract-card.svg",
+    "panel.results_card": "interface/panels/results-card.svg",
+    "indicator.ball_remaining": "interface/indicators/ball-remaining.svg",
+    "indicator.ball_used": "interface/indicators/ball-used.svg",
+    "indicator.multiplier_active": "interface/indicators/multiplier-active.svg",
+    "indicator.multiplier_inactive": "interface/indicators/multiplier-inactive.svg",
+    "indicator.points": "interface/indicators/points-pill.svg",
+    "indicator.rank_first": "interface/indicators/rank-badge-first.svg",
+    "indicator.rank": "interface/indicators/rank-badge.svg"
+  }
+}

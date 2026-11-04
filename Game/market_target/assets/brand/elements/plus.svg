@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <title>Mofid graphic element: plus</title>
+  <g id="plus" fill="#004C6A">
+    <polygon points="16,0 32,0 32,16 48,16 48,32 32,32 32,48 16,48 16,32 0,32 0,16 16,16"/>
+  </g>
+</svg>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400">
+  <title>Calibration overlay (operator, F2); labels are live text; units: wall cm</title>
+  <rect id="shade" x="0" y="0" width="300" height="400" fill="#FFFFFF" fill-opacity="0.588"/>
+  <g id="grid" stroke="#3D8DB2" stroke-width="0.2">
+    <line x1="0" y1="0" x2="0" y2="400"/>
+    <line x1="50" y1="0" x2="50" y2="400"/>
+    <line x1="100" y1="0" x2="100" y2="400"/>
+    <line x1="150" y1="0" x2="150" y2="400"/>
+    <line x1="200" y1="0" x2="200" y2="400"/>
+    <line x1="250" y1="0" x2="250" y2="400"/>
+    <line x1="300" y1="0" x2="300" y2="400"/>
+    <line x1="0" y1="0" x2="300" y2="0"/>
+    <line x1="0" y1="50" x2="300" y2="50"/>
+    <line x1="0" y1="100" x2="300" y2="100"/>
+    <line x1="0" y1="150" x2="300" y2="150"/>
+    <line x1="0" y1="200" x2="300" y2="200"/>
+    <line x1="0" y1="250" x2="300" y2="250"/>
+    <line x1="0" y1="300" x2="300" y2="300"/>
+    <line x1="0" y1="350" x2="300" y2="350"/>
+    <line x1="0" y1="400" x2="300" y2="400"/>
+  </g>
+  <rect id="field" x="12.2" y="64.2" width="275.6" height="305.6" fill="none" stroke="#832C73" stroke-width="0.4"/>
+  <rect id="start-box" x="108.1" y="240.1" width="83.8" height="83.8" fill="none" stroke="#00A796" stroke-width="0.2"/>
+  <g id="crosses" stroke="#F3716D" stroke-width="0.6">
+    <line x1="17" y1="25" x2="33" y2="25"/>
+    <line x1="25" y1="17" x2="25" y2="33"/>
+    <line x1="267" y1="25" x2="283" y2="25"/>
+    <line x1="275" y1="17" x2="275" y2="33"/>
+    <line x1="17" y1="375" x2="33" y2="375"/>
+    <line x1="25" y1="367" x2="25" y2="383"/>
+    <line x1="267" y1="375" x2="283" y2="375"/>
+    <line x1="275" y1="367" x2="275" y2="383"/>
+    <line x1="142" y1="200" x2="158" y2="200"/>
+    <line x1="150" y1="192" x2="150" y2="208"/>
+  </g>
+</svg>

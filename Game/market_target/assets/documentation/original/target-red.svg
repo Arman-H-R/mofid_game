@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Target, red (times), previous symbol geometry; 100 units = the side of the box</title>
+  <rect id="tile" x="0" y="0" width="100" height="100" rx="18" fill="#F3716D"/>
+  <g id="symbol" fill="#FFFFFF">
+    <polygon points="61.582,30.399 69.601,38.418 58.019,50 69.601,61.582 61.582,69.601 50,58.019 38.418,69.601 30.399,61.582 41.981,50 30.399,38.418 38.418,30.399 50,41.981"/>
+  </g>
+</svg>
