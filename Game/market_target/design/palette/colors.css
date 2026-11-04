@@ -1,0 +1,25 @@
+:root {
+  --turquoise: #00A796;  /* Turquoise · Mofid colour, green box, CTA */
+  --dark-blue: #004C6A;  /* Dark blue · blue box, HUD band, backgrounds */
+  --purple: #832C73;  /* Purple · multiplier, highlights */
+  --red: #F3716D;  /* Red · red box, time warning, volatility */
+  --white: #FFFFFF;  /* White · play field, cards, symbols */
+  --turquoise-1: #00817D;  /* Turquoise tint 1 (dark to light) */
+  --turquoise-2: #008F8A;  /* Turquoise tint 2 (dark to light) */
+  --turquoise-3: #009B97;  /* Turquoise tint 3 (dark to light) */
+  --turquoise-4: #00AAA5;  /* Turquoise tint 4 (dark to light) */
+  --turquoise-5: #00B6B5;  /* Turquoise tint 5 (dark to light) */
+  --turquoise-6: #58C5C7;  /* Turquoise tint 6 (dark to light) */
+  --turquoise-7: #DEF1EE;  /* Turquoise tint 7 (dark to light) */
+  --blue-1: #00243D;  /* Blue tint 1 (dark to light) */
+  --blue-2: #003754;  /* Blue tint 2 (dark to light) */
+  --blue-3: #004667;  /* Blue tint 3 (dark to light) */
+  --blue-4: #004C6A;  /* Blue tint 4 (dark to light) */
+  --blue-5: #006F95;  /* Blue tint 5 (dark to light) */
+  --blue-6: #3D8DB2;  /* Blue tint 6 (dark to light) */
+  --blue-7: #B5D5E5;  /* Blue tint 7 (dark to light) */
+  --grey: #B1BAC0;  /* Grey · miss ripple */
+  --grey-light: #CED8DE;  /* Light grey · field dots, dividers, bar track */
+  --text-grey: #546670;  /* Text grey · secondary text */
+  --pattern-blue: #005379;  /* Pattern blue · dots on dark blue */
+}

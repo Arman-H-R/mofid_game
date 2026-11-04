@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 5.5" width="60" height="5.5">
+  <title>Status pill, sensor offline (reference: width follows the text); units: wall cm</title>
+  <rect id="pill" x="0" y="0" width="60" height="5.5" rx="2.5" fill="#F3716D"/>
+</svg>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500px" height="2000px" viewBox="0 0 300 400">
+<title>Wall layer, HUD_time; 1 unit = 1 cm on the wall</title>
+<g id="HUD_time">
+<text x="14" y="13" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="6" fill="#B5D5E5" text-anchor="end" direction="rtl" unicode-bidi="embed">ثانیه</text>
+<text x="14" y="45.75" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="31" fill="#FFFFFF" text-anchor="start">۴۲</text>
+</g>
+</svg>

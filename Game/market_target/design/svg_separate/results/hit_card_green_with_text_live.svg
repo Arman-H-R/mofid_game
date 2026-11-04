@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80px" height="46px" viewBox="0 0 80 46">
+<title>Hits card, green, with a sample; units: wall cm</title>
+<rect id="Card" x="0" y="0" width="80" height="46" rx="4" fill="#FFFFFF"/>
+<g id="Tile">
+<rect x="33.5" y="4.5" width="13" height="13" rx="2.34" fill="#00A796"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<rect x="36.49" y="12.04" width="1.95" height="2.47"/>
+<rect x="39.025" y="9.96" width="1.95" height="4.55"/>
+<rect x="41.56" y="7.49" width="1.95" height="7.02"/>
+</g>
+<text id="Hits" x="40" y="28.75" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="11" fill="#004C6A" text-anchor="middle">۳</text>
+<text id="Word" x="40" y="39.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="5" fill="#546670" text-anchor="middle" direction="rtl" unicode-bidi="embed">رشد</text>
+</svg>

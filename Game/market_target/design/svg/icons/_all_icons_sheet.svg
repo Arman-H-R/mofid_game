@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="894px" height="864px" viewBox="0 0 894 864">
+<title>All icons</title>
+<rect id="Artboard_background" x="0" y="0" width="894" height="864" fill="#00243D"/>
+<g id="Tile_plus">
+<rect x="24" y="24" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(38 38) scale(1.22)">
+<g fill="#FFFFFF"><polygon points="40,20 60,20 60,40 80,40 80,60 60,60 60,80 40,80 40,60 20,60 20,40 40,40"/></g>
+</g>
+<text x="99" y="192.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">plus</text>
+</g>
+<g id="Tile_plus_dark">
+<rect x="198" y="24" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(212 38) scale(1.22)">
+<g fill="#004C6A"><polygon points="40,20 60,20 60,40 80,40 80,60 60,60 60,80 40,80 40,60 20,60 20,40 40,40"/></g>
+</g>
+<text x="273" y="192.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">plus_dark</text>
+</g>
+<g id="Tile_minus">
+<rect x="372" y="24" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(386 38) scale(1.22)">
+<g fill="#FFFFFF"><rect x="20" y="40" width="60" height="20"/></g>
+</g>
+<text x="447" y="192.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">minus</text>
+</g>
+<g id="Tile_minus_dark">
+<rect x="546" y="24" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(560 38) scale(1.22)">
+<g fill="#004C6A"><rect x="20" y="40" width="60" height="20"/></g>
+</g>
+<text x="621" y="192.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">minus_dark</text>
+</g>
+<g id="Tile_times">
+<rect x="720" y="24" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(734 38) scale(1.22)">
+<g fill="#FFFFFF"><polygon points="64.142,21.716 78.284,35.858 64.142,50 78.284,64.142 64.142,78.284 50,64.142 35.858,78.284 21.716,64.142 35.858,50 21.716,35.858 35.858,21.716 50,35.858"/></g>
+</g>
+<text x="795" y="192.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">times</text>
+</g>
+<g id="Tile_times_dark">
+<rect x="24" y="228" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(38 242) scale(1.22)">
+<g fill="#004C6A"><polygon points="64.142,21.716 78.284,35.858 64.142,50 78.284,64.142 64.142,78.284 50,64.142 35.858,78.284 21.716,64.142 35.858,50 21.716,35.858 35.858,21.716 50,35.858"/></g>
+</g>
+<text x="99" y="396.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">times_dark</text>
+</g>
+<g id="Tile_slash">
+<rect x="198" y="228" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(212 242) scale(1.22)">
+<g fill="#FFFFFF"><polygon points="21.716,64.142 64.142,21.716 78.284,35.858 35.858,78.284"/></g>
+</g>
+<text x="273" y="396.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">slash</text>
+</g>
+<g id="Tile_slash_dark">
+<rect x="372" y="228" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(386 242) scale(1.22)">
+<g fill="#004C6A"><polygon points="21.716,64.142 64.142,21.716 78.284,35.858 35.858,78.284"/></g>
+</g>
+<text x="447" y="396.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">slash_dark</text>
+</g>
+<g id="Tile_dot">
+<rect x="546" y="228" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(560 242) scale(1.22)">
+<g fill="#FFFFFF"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="621" y="396.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">dot</text>
+</g>
+<g id="Tile_dot_dark">
+<rect x="720" y="228" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(734 242) scale(1.22)">
+<g fill="#004C6A"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="795" y="396.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">dot_dark</text>
+</g>
+<g id="Tile_ball_remaining">
+<rect x="24" y="432" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(38 446) scale(1.22)">
+<g fill="#FFFFFF"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="99" y="600.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">ball_remaining</text>
+</g>
+<g id="Tile_ball_remaining_dark">
+<rect x="198" y="432" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(212 446) scale(1.22)">
+<g fill="#004C6A"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="273" y="600.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">ball_remaining_dark</text>
+</g>
+<g id="Tile_ball_used">
+<rect x="372" y="432" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(386 446) scale(1.22)">
+<g fill="none" stroke="#FFFFFF" stroke-width="5"><circle cx="50" cy="50" r="27.5"/></g>
+</g>
+<text x="447" y="600.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">ball_used</text>
+</g>
+<g id="Tile_ball_used_dark">
+<rect x="546" y="432" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(560 446) scale(1.22)">
+<g fill="none" stroke="#004C6A" stroke-width="5"><circle cx="50" cy="50" r="27.5"/></g>
+</g>
+<text x="621" y="600.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">ball_used_dark</text>
+</g>
+<g id="Tile_calibration_cross">
+<rect x="720" y="432" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(734 446) scale(1.22)">
+<g stroke="#FFFFFF" stroke-width="2.25"><line x1="20" y1="50" x2="80" y2="50"/><line x1="50" y1="20" x2="50" y2="80"/></g>
+</g>
+<text x="795" y="600.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">calibration_cross</text>
+</g>
+<g id="Tile_calibration_cross_dark">
+<rect x="24" y="636" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(38 650) scale(1.22)">
+<g stroke="#004C6A" stroke-width="2.25"><line x1="20" y1="50" x2="80" y2="50"/><line x1="50" y1="20" x2="50" y2="80"/></g>
+</g>
+<text x="99" y="804.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">calibration_cross_dark</text>
+</g>
+<g id="Tile_impact_accepted">
+<rect x="198" y="636" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(212 650) scale(1.22)">
+<g fill="#FFFFFF"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="273" y="804.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">impact_accepted</text>
+</g>
+<g id="Tile_impact_accepted_dark">
+<rect x="372" y="636" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(386 650) scale(1.22)">
+<g fill="#004C6A"><circle cx="50" cy="50" r="30"/></g>
+</g>
+<text x="447" y="804.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">impact_accepted_dark</text>
+</g>
+<g id="Tile_impact_rejected">
+<rect x="546" y="636" width="150" height="150" rx="24" fill="#004C6A"/>
+<g transform="translate(560 650) scale(1.22)">
+<g fill="none" stroke="#FFFFFF" stroke-width="5"><circle cx="50" cy="50" r="27.5"/></g>
+</g>
+<text x="621" y="804.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">impact_rejected</text>
+</g>
+<g id="Tile_impact_rejected_dark">
+<rect x="720" y="636" width="150" height="150" rx="24" fill="#FFFFFF"/>
+<g transform="translate(734 650) scale(1.22)">
+<g fill="none" stroke="#004C6A" stroke-width="5"><circle cx="50" cy="50" r="27.5"/></g>
+</g>
+<text x="795" y="804.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="13" fill="#B5D5E5" text-anchor="middle">impact_rejected_dark</text>
+</g>
+</svg>

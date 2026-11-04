@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-52.125 -52.125 104.25 104.25" width="104.25" height="104.25">
+  <title>Hit ripple, blue box, half-way; units: wall cm</title>
+  <circle id="ring-1" cx="0" cy="0" r="39.23" fill="none" stroke="#004C6A" stroke-width="1.54"/>
+  <circle id="ring-2" cx="0" cy="0" r="50.81" fill="none" stroke="#004C6A" stroke-width="0.63"/>
+</svg>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="300px" height="306px" viewBox="0 0 300 306">
+<title>Candlestick strip; repeats sideways; units: wall cm</title>
+<g id="Candles_up" fill="#004956">
+<rect x="5.156" y="97.286" width="0.8" height="67.748"/>
+<rect x="2.756" y="100.41" width="5.6" height="52.59"/>
+<rect x="49.6" y="138.199" width="0.8" height="27.554"/>
+<rect x="47.2" y="145.043" width="5.6" height="10.685"/>
+<rect x="82.933" y="136.624" width="0.8" height="24.741"/>
+<rect x="80.533" y="145.668" width="5.6" height="6.246"/>
+<rect x="94.044" y="118.249" width="0.8" height="37.992"/>
+<rect x="91.644" y="124.514" width="5.6" height="21.154"/>
+<rect x="127.378" y="127.773" width="0.8" height="23.109"/>
+<rect x="124.978" y="134.906" width="5.6" height="7.268"/>
+<rect x="160.711" y="145.921" width="0.8" height="17.805"/>
+<rect x="158.311" y="151.16" width="5.6" height="9.934"/>
+<rect x="171.822" y="133.018" width="0.8" height="26.655"/>
+<rect x="169.422" y="144.262" width="5.6" height="6.898"/>
+<rect x="194.044" y="127.866" width="0.8" height="40.232"/>
+<rect x="191.644" y="136.117" width="5.6" height="21.212"/>
+<rect x="216.267" y="126.337" width="0.8" height="25.098"/>
+<rect x="213.867" y="131.162" width="5.6" height="8.942"/>
+<rect x="249.6" y="152.678" width="0.8" height="45.792"/>
+<rect x="247.2" y="163.799" width="5.6" height="32.211"/>
+<rect x="260.711" y="140.055" width="0.8" height="33.517"/>
+<rect x="258.311" y="152.985" width="5.6" height="10.814"/>
+<rect x="271.822" y="119.895" width="0.8" height="41.227"/>
+<rect x="269.422" y="132.984" width="5.6" height="20.001"/>
+<rect x="294.044" y="158.361" width="0.8" height="38.562"/>
+<rect x="291.644" y="161.4" width="5.6" height="31.19"/>
+</g>
+<g id="Candles_down" fill="#443A4A">
+<rect x="16.267" y="93.539" width="0.8" height="52.966"/>
+<rect x="13.867" y="100.41" width="5.6" height="37.37"/>
+<rect x="27.378" y="130.679" width="0.8" height="27.041"/>
+<rect x="24.978" y="137.78" width="5.6" height="15.622"/>
+<rect x="38.489" y="146.186" width="0.8" height="14.18"/>
+<rect x="36.089" y="153.402" width="5.6" height="2.326"/>
+<rect x="60.711" y="134.752" width="0.8" height="18.142"/>
+<rect x="58.311" y="145.043" width="5.6" height="1"/>
+<rect x="71.822" y="136.351" width="0.8" height="26.393"/>
+<rect x="69.422" y="145.044" width="5.6" height="6.87"/>
+<rect x="105.156" y="115.034" width="0.8" height="27.889"/>
+<rect x="102.756" y="124.514" width="5.6" height="9.904"/>
+<rect x="116.267" y="124.306" width="0.8" height="25.293"/>
+<rect x="113.867" y="134.418" width="5.6" height="7.756"/>
+<rect x="138.489" y="129.14" width="0.8" height="23.17"/>
+<rect x="136.089" y="134.906" width="5.6" height="13.234"/>
+<rect x="149.6" y="143.782" width="0.8" height="28.504"/>
+<rect x="147.2" y="148.14" width="5.6" height="12.955"/>
+<rect x="182.933" y="138.701" width="0.8" height="24.009"/>
+<rect x="180.533" y="144.262" width="5.6" height="13.067"/>
+<rect x="205.156" y="126.124" width="0.8" height="24.817"/>
+<rect x="202.756" y="136.117" width="5.6" height="3.987"/>
+<rect x="227.378" y="118.543" width="0.8" height="77.818"/>
+<rect x="224.978" y="131.162" width="5.6" height="56.467"/>
+<rect x="238.489" y="174.685" width="0.8" height="25.37"/>
+<rect x="236.089" y="187.629" width="5.6" height="8.381"/>
+<rect x="282.933" y="126.968" width="0.8" height="76.077"/>
+<rect x="280.533" y="132.984" width="5.6" height="59.606"/>
+</g>
+</svg>

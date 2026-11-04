@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="47.6px" height="47.6px" viewBox="0 0 47.6 47.6">
+<title>blue box on the Market Rush field; units: wall cm</title>
+<rect id="White_edge" x="0" y="0" width="47.6" height="47.6" rx="8.568" fill="#FFFFFF"/>
+<g id="Tile">
+<rect x="1.3" y="1.3" width="45" height="45" rx="8.1" fill="#004C6A"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<path d="M25.65 9.746 A14.175 14.175 0 0 1 25.65 37.854 L24.769 31.161 A7.425 7.425 0 0 0 24.769 16.439 Z"/>
+<path d="M21.95 37.854 A14.175 14.175 0 0 1 9.862 21.217 L16.499 22.447 A7.425 7.425 0 0 0 22.831 31.161 Z"/>
+<path d="M11.006 17.698 A14.175 14.175 0 0 1 21.95 9.746 L22.831 16.439 A7.425 7.425 0 0 0 17.098 20.603 Z"/>
+</g>
+</svg>

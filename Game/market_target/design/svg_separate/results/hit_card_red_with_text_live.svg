@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80px" height="46px" viewBox="0 0 80 46">
+<title>Hits card, red, with a sample; units: wall cm</title>
+<rect id="Card" x="0" y="0" width="80" height="46" rx="4" fill="#FFFFFF"/>
+<g id="Tile">
+<rect x="33.5" y="4.5" width="13" height="13" rx="2.34" fill="#F3716D"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<polygon points="35.854,13.099 37.289,10.767 39.31,13.865 41.164,10.156 42.947,15.376 45.621,10.601 44.259,9.839 43.293,11.564 41.436,6.124 39.13,10.735 37.251,7.853 34.526,12.281"/>
+</g>
+<text id="Hits" x="40" y="28.75" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="11" fill="#004C6A" text-anchor="middle">۳</text>
+<text id="Word" x="40" y="39.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="5" fill="#546670" text-anchor="middle" direction="rtl" unicode-bidi="embed">نوسان</text>
+</svg>

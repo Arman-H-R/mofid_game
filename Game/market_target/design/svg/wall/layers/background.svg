@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500px" height="2000px" viewBox="0 0 300 400">
+<title>Wall layer, Background; 1 unit = 1 cm on the wall</title>
+<g id="Background">
+<rect x="0" y="0" width="300" height="400" fill="#FFFFFF"/>
+</g>
+</svg>

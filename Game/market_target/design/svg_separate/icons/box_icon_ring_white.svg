@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100px" height="100px" viewBox="0 0 100 100">
+<title>Box icon, ring (white); 100 units = the side of the box</title>
+<g id="Icon_ring" fill="#FFFFFF">
+<path d="M54.112 18.769 A31.5 31.5 0 0 1 54.112 81.231 L52.154 66.359 A16.5 16.5 0 0 0 52.154 33.641 Z"/>
+<path d="M45.888 81.231 A31.5 31.5 0 0 1 19.027 44.26 L33.776 46.993 A16.5 16.5 0 0 0 47.846 66.359 Z"/>
+<path d="M21.569 36.439 A31.5 31.5 0 0 1 45.888 18.769 L47.846 33.641 A16.5 16.5 0 0 0 35.107 42.897 Z"/>
+</g>
+</svg>

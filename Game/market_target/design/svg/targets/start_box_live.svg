@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240px" height="240px" viewBox="0 0 240 240">
+<title>Start box with its pulse ring and label</title>
+<g id="Pulse_ring">
+<circle cx="120" cy="120" r="115.124" fill="none" stroke="#007A80" stroke-width="2.286"/>
+</g>
+<g id="Tile">
+<rect x="40" y="40" width="160" height="160" rx="28.8" fill="#00A796"/>
+</g>
+<g id="Label">
+<text x="120" y="130" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="40" fill="#FFFFFF" text-anchor="middle" direction="rtl" unicode-bidi="embed">شروع</text>
+</g>
+</svg>

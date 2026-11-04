@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240px" height="240px" viewBox="0 0 240 240">
+<title>Target, green, no shadow</title>
+<g id="Tile">
+<rect x="40" y="40" width="160" height="160" rx="28.8" fill="#00A796"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<rect x="76.8" y="132.8" width="24" height="30.4"/>
+<rect x="108" y="107.2" width="24" height="56"/>
+<rect x="139.2" y="76.8" width="24" height="86.4"/>
+</g>
+</svg>

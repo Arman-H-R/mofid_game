@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="84px" height="84px" viewBox="0 0 84 84">
+<title>Start Game button, disabled; units: wall cm</title>
+<rect id="Button" x="0" y="0" width="84" height="84" rx="15.12" fill="#006F95"/>
+<text id="Label" x="42" y="45.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="14" fill="#B5D5E5" text-anchor="middle" direction="rtl" unicode-bidi="embed">شروع بازی</text>
+</svg>

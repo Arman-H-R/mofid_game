@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 11" width="110" height="11">
+  <title>Banner pill (reference: width = text + 12 cm, height = 1.2 x text); units: wall cm</title>
+  <rect id="pill" x="0" y="0" width="110" height="11" rx="5.5" fill="#FFFFFF"/>
+</svg>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="268px" height="84px" viewBox="0 0 268 84">
+<title>Play style card with a sample; units: wall cm</title>
+<rect id="Card" x="0" y="0" width="268" height="84" rx="5" fill="#FFFFFF"/>
+<text id="Title" x="134" y="12.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="6" fill="#546670" text-anchor="middle" direction="rtl" unicode-bidi="embed">سبک بازی شما</text>
+<text id="Style" x="134" y="31.75" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="15" fill="#00817D" text-anchor="middle" direction="rtl" unicode-bidi="embed">سرمایه‌گذار متعادل</text>
+<text x="134" y="47.875" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="7.5" fill="#004C6A" text-anchor="middle" direction="rtl" unicode-bidi="embed">شما به دنبال تعادل میان ریسک و بازده بودید و فرصت‌ها را با دقت انتخاب کردید.</text>
+</svg>

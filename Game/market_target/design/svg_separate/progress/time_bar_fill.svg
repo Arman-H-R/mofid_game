@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="300px" height="2.2px" viewBox="0 0 300 2.2">
+<title>Time bar, fill at 100 %; units: wall cm</title>
+<defs><linearGradient id="time-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="0"><stop offset="0" stop-color="#004C6A"/><stop offset="1" stop-color="#00A796"/></linearGradient></defs>
+
+<rect id="Fill" x="0" y="0" width="300" height="2.2" fill="url(#time-gradient)"/>
+</svg>

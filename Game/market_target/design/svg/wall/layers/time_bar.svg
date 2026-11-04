@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500px" height="2000px" viewBox="0 0 300 400">
+<title>Wall layer, Time_bar; 1 unit = 1 cm on the wall</title>
+<defs><linearGradient id="time-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="0"><stop offset="0" stop-color="#004C6A"/><stop offset="1" stop-color="#00A796"/></linearGradient></defs>
+<g id="Time_bar">
+
+<rect id="Track" x="0" y="64" width="300" height="2.2" fill="#CED8DE"/>
+<rect id="Fill" x="90" y="64" width="210" height="2.2" fill="url(#time-gradient)"/>
+</g>
+</svg>

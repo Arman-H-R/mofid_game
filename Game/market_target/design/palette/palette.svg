@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080px" height="1100px" viewBox="0 0 1080 1100">
+<title>Market Pulse palette (Mofid Brand Book v0.4)</title>
+<rect id="Artboard_background" x="0" y="0" width="1080" height="1100" fill="#FFFFFF"/>
+<text x="40" y="57.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start">Primary</text>
+<g id="Swatch_turquoise">
+<rect x="40" y="82" width="130.8" height="92" rx="12" fill="#00A796"/>
+<text x="40" y="192.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise</text>
+<text x="40" y="210" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#00A796</text>
+<text x="40" y="226.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 167 150</text>
+</g>
+<g id="Swatch_dark_blue">
+<rect x="184.8" y="82" width="130.8" height="92" rx="12" fill="#004C6A"/>
+<text x="184.8" y="192.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">dark_blue</text>
+<text x="184.8" y="210" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#004C6A</text>
+<text x="184.8" y="226.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 76 106</text>
+</g>
+<text x="40" y="267.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start">Secondary</text>
+<g id="Swatch_purple">
+<rect x="40" y="292" width="130.8" height="92" rx="12" fill="#832C73"/>
+<text x="40" y="402.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">purple</text>
+<text x="40" y="420" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#832C73</text>
+<text x="40" y="436.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">131 44 115</text>
+</g>
+<g id="Swatch_red">
+<rect x="184.8" y="292" width="130.8" height="92" rx="12" fill="#F3716D"/>
+<text x="184.8" y="402.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">red</text>
+<text x="184.8" y="420" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#F3716D</text>
+<text x="184.8" y="436.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">243 113 109</text>
+</g>
+<g id="Swatch_white">
+<rect x="329.6" y="292" width="130.8" height="92" rx="12" fill="#FFFFFF" stroke="#CED8DE" stroke-width="1"/>
+<text x="329.6" y="402.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">white</text>
+<text x="329.6" y="420" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#FFFFFF</text>
+<text x="329.6" y="436.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">255 255 255</text>
+</g>
+<text x="40" y="477.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start">Turquoise tints</text>
+<g id="Swatch_turquoise_1">
+<rect x="40" y="502" width="130.8" height="92" rx="12" fill="#00817D"/>
+<text x="40" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_1</text>
+<text x="40" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#00817D</text>
+<text x="40" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 129 125</text>
+</g>
+<g id="Swatch_turquoise_2">
+<rect x="184.8" y="502" width="130.8" height="92" rx="12" fill="#008F8A"/>
+<text x="184.8" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_2</text>
+<text x="184.8" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#008F8A</text>
+<text x="184.8" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 143 138</text>
+</g>
+<g id="Swatch_turquoise_3">
+<rect x="329.6" y="502" width="130.8" height="92" rx="12" fill="#009B97"/>
+<text x="329.6" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_3</text>
+<text x="329.6" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#009B97</text>
+<text x="329.6" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 155 151</text>
+</g>
+<g id="Swatch_turquoise_4">
+<rect x="474.4" y="502" width="130.8" height="92" rx="12" fill="#00AAA5"/>
+<text x="474.4" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_4</text>
+<text x="474.4" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#00AAA5</text>
+<text x="474.4" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 170 165</text>
+</g>
+<g id="Swatch_turquoise_5">
+<rect x="619.2" y="502" width="130.8" height="92" rx="12" fill="#00B6B5"/>
+<text x="619.2" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_5</text>
+<text x="619.2" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#00B6B5</text>
+<text x="619.2" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 182 181</text>
+</g>
+<g id="Swatch_turquoise_6">
+<rect x="764" y="502" width="130.8" height="92" rx="12" fill="#58C5C7"/>
+<text x="764" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_6</text>
+<text x="764" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#58C5C7</text>
+<text x="764" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">88 197 199</text>
+</g>
+<g id="Swatch_turquoise_7">
+<rect x="908.8" y="502" width="130.8" height="92" rx="12" fill="#DEF1EE"/>
+<text x="908.8" y="612.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">turquoise_7</text>
+<text x="908.8" y="630" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#DEF1EE</text>
+<text x="908.8" y="646.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">222 241 238</text>
+</g>
+<text x="40" y="687.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start">Blue tints</text>
+<g id="Swatch_blue_1">
+<rect x="40" y="712" width="130.8" height="92" rx="12" fill="#00243D"/>
+<text x="40" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_1</text>
+<text x="40" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#00243D</text>
+<text x="40" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 36 61</text>
+</g>
+<g id="Swatch_blue_2">
+<rect x="184.8" y="712" width="130.8" height="92" rx="12" fill="#003754"/>
+<text x="184.8" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_2</text>
+<text x="184.8" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#003754</text>
+<text x="184.8" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 55 84</text>
+</g>
+<g id="Swatch_blue_3">
+<rect x="329.6" y="712" width="130.8" height="92" rx="12" fill="#004667"/>
+<text x="329.6" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_3</text>
+<text x="329.6" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#004667</text>
+<text x="329.6" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 70 103</text>
+</g>
+<g id="Swatch_blue_4">
+<rect x="474.4" y="712" width="130.8" height="92" rx="12" fill="#004C6A"/>
+<text x="474.4" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_4</text>
+<text x="474.4" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#004C6A</text>
+<text x="474.4" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 76 106</text>
+</g>
+<g id="Swatch_blue_5">
+<rect x="619.2" y="712" width="130.8" height="92" rx="12" fill="#006F95"/>
+<text x="619.2" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_5</text>
+<text x="619.2" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#006F95</text>
+<text x="619.2" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 111 149</text>
+</g>
+<g id="Swatch_blue_6">
+<rect x="764" y="712" width="130.8" height="92" rx="12" fill="#3D8DB2"/>
+<text x="764" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_6</text>
+<text x="764" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#3D8DB2</text>
+<text x="764" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">61 141 178</text>
+</g>
+<g id="Swatch_blue_7">
+<rect x="908.8" y="712" width="130.8" height="92" rx="12" fill="#B5D5E5"/>
+<text x="908.8" y="822.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">blue_7</text>
+<text x="908.8" y="840" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#B5D5E5</text>
+<text x="908.8" y="856.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">181 213 229</text>
+</g>
+<text x="40" y="897.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start">Neutrals</text>
+<g id="Swatch_grey">
+<rect x="40" y="922" width="130.8" height="92" rx="12" fill="#B1BAC0"/>
+<text x="40" y="1032.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">grey</text>
+<text x="40" y="1050" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#B1BAC0</text>
+<text x="40" y="1066.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">177 186 192</text>
+</g>
+<g id="Swatch_grey_light">
+<rect x="184.8" y="922" width="130.8" height="92" rx="12" fill="#CED8DE"/>
+<text x="184.8" y="1032.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">grey_light</text>
+<text x="184.8" y="1050" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#CED8DE</text>
+<text x="184.8" y="1066.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">206 216 222</text>
+</g>
+<g id="Swatch_text_grey">
+<rect x="329.6" y="922" width="130.8" height="92" rx="12" fill="#546670"/>
+<text x="329.6" y="1032.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">text_grey</text>
+<text x="329.6" y="1050" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#546670</text>
+<text x="329.6" y="1066.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">84 102 112</text>
+</g>
+<g id="Swatch_pattern_blue">
+<rect x="474.4" y="922" width="130.8" height="92" rx="12" fill="#005379"/>
+<text x="474.4" y="1032.25" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="13" fill="#004C6A" text-anchor="start">pattern_blue</text>
+<text x="474.4" y="1050" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="12" fill="#546670" text-anchor="start">#005379</text>
+<text x="474.4" y="1066.75" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="11" fill="#546670" text-anchor="start">0 83 121</text>
+</g>
+</svg>

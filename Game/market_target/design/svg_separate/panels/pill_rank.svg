@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 12" width="80" height="12">
+  <title>Results pill, leaderboard rank (reference: width follows the text); units: wall cm</title>
+  <rect id="pill" x="0" y="0" width="80" height="12" rx="6" fill="#00A796"/>
+</svg>

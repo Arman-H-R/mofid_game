@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080px" height="1250px" viewBox="0 0 1080 1250">
+<title>Typography</title>
+<rect id="Artboard_background" x="0" y="0" width="1080" height="1250" fill="#FFFFFF"/>
+<text x="1040" y="68.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="34" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">تایپوگرافی نبض بازار</text>
+<text x="1040" y="197.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="110" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نبض بازار</text>
+<text x="40" y="180" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="40" fill="#00A796" text-anchor="start" letter-spacing="10">MARKET PULSE</text>
+<g id="Role_title">
+<text x="1040" y="311" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="44" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نبض بازار</text>
+<text x="40" y="287" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">title</text>
+<text x="40" y="312.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">IRANSansX-Black</text>
+<text x="40" y="335.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 38 · 34 · 30 · 21 · 15 · 12</text>
+</g>
+<g id="Role_heading">
+<text x="1040" y="411" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="44" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">راهنمای بازی</text>
+<text x="40" y="387" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">heading</text>
+<text x="40" y="412.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">IRANSansX-ExtraBold</text>
+<text x="40" y="435.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 14 · 12 · 11 · 10 · 8.5 · 8 · 7.5 · 7 · 6.5</text>
+</g>
+<g id="Role_bold">
+<text x="1040" y="511" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="44" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">حسگر متصل نیست</text>
+<text x="40" y="487" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">bold</text>
+<text x="40" y="512.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">IRANSansX-Bold</text>
+<text x="40" y="535.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 3.4</text>
+</g>
+<g id="Role_body">
+<text x="1040" y="611" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="44" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">فرصت رشد و انتخاب سنجیده</text>
+<text x="40" y="587" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">body</text>
+<text x="40" y="612.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">IRANSansX-Medium</text>
+<text x="40" y="635.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 9 · 8 · 7.5 · 6.5 · 6.3 · 6 · 5.8 · 5.5 · 5.2</text>
+</g>
+<g id="Role_numbers">
+<text x="1040" y="711" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="44" fill="#004C6A" text-anchor="end">۰۱۲۳۴۵۶۷۸۹</text>
+<text x="40" y="687" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">numbers</text>
+<text x="40" y="712.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">IRANSansX-Black</text>
+<text x="40" y="735.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 80 · 72 · 31 · 15 · 9 · 7 · 5.5</text>
+</g>
+<g id="Role_latin">
+<text x="1040" y="811.787" font-family="'Helvetica', 'Arial', sans-serif" font-weight="400" font-size="34" fill="#004C6A" text-anchor="end">S T E A D Y   P R O G R E S S</text>
+<text x="40" y="787" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="20" fill="#00A796" text-anchor="start">latin</text>
+<text x="40" y="812.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="17" fill="#546670" text-anchor="start">Helvetica, or Arial where it is missing</text>
+<text x="40" y="835.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="14" fill="#546670" text-anchor="start">wall sizes (cm): 4.2 · 3.2</text>
+</g>
+<line x1="40" y1="896" x2="1040" y2="896" stroke="#CED8DE" stroke-width="1"/>
+<g id="Weight_Black">
+<text x="1040" y="947.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="944.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX Black</text>
+</g>
+<g id="Weight_ExtraBold">
+<text x="1040" y="997.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="994.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX ExtraBold</text>
+</g>
+<g id="Weight_Bold">
+<text x="1040" y="1047.5" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="1044.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX Bold</text>
+</g>
+<g id="Weight_DemiBold">
+<text x="1040" y="1097.5" font-family="'IRANSansX-DemiBold', 'IRANSansX', sans-serif" font-weight="600" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="1094.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX DemiBold</text>
+</g>
+<g id="Weight_Medium">
+<text x="1040" y="1147.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="1144.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX Medium</text>
+</g>
+<g id="Weight_Regular">
+<text x="1040" y="1197.5" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="30" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">کارگزاری مفید، پیشرفت مداوم</text>
+<text x="40" y="1194.5" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="18" fill="#546670" text-anchor="start">IRANSansX Regular</text>
+</g>
+</svg>

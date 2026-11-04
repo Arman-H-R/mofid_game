@@ -1,0 +1,209 @@
+{
+  "turquoise": {
+    "hex": "#00A796",
+    "rgb": [
+      0,
+      167,
+      150
+    ],
+    "name": "Turquoise · Mofid colour, green box, CTA"
+  },
+  "dark_blue": {
+    "hex": "#004C6A",
+    "rgb": [
+      0,
+      76,
+      106
+    ],
+    "name": "Dark blue · blue box, HUD band, backgrounds"
+  },
+  "purple": {
+    "hex": "#832C73",
+    "rgb": [
+      131,
+      44,
+      115
+    ],
+    "name": "Purple · multiplier, highlights"
+  },
+  "red": {
+    "hex": "#F3716D",
+    "rgb": [
+      243,
+      113,
+      109
+    ],
+    "name": "Red · red box, time warning, volatility"
+  },
+  "white": {
+    "hex": "#FFFFFF",
+    "rgb": [
+      255,
+      255,
+      255
+    ],
+    "name": "White · play field, cards, symbols"
+  },
+  "turquoise_1": {
+    "hex": "#00817D",
+    "rgb": [
+      0,
+      129,
+      125
+    ],
+    "name": "Turquoise tint 1 (dark to light)"
+  },
+  "turquoise_2": {
+    "hex": "#008F8A",
+    "rgb": [
+      0,
+      143,
+      138
+    ],
+    "name": "Turquoise tint 2 (dark to light)"
+  },
+  "turquoise_3": {
+    "hex": "#009B97",
+    "rgb": [
+      0,
+      155,
+      151
+    ],
+    "name": "Turquoise tint 3 (dark to light)"
+  },
+  "turquoise_4": {
+    "hex": "#00AAA5",
+    "rgb": [
+      0,
+      170,
+      165
+    ],
+    "name": "Turquoise tint 4 (dark to light)"
+  },
+  "turquoise_5": {
+    "hex": "#00B6B5",
+    "rgb": [
+      0,
+      182,
+      181
+    ],
+    "name": "Turquoise tint 5 (dark to light)"
+  },
+  "turquoise_6": {
+    "hex": "#58C5C7",
+    "rgb": [
+      88,
+      197,
+      199
+    ],
+    "name": "Turquoise tint 6 (dark to light)"
+  },
+  "turquoise_7": {
+    "hex": "#DEF1EE",
+    "rgb": [
+      222,
+      241,
+      238
+    ],
+    "name": "Turquoise tint 7 (dark to light)"
+  },
+  "blue_1": {
+    "hex": "#00243D",
+    "rgb": [
+      0,
+      36,
+      61
+    ],
+    "name": "Blue tint 1 (dark to light)"
+  },
+  "blue_2": {
+    "hex": "#003754",
+    "rgb": [
+      0,
+      55,
+      84
+    ],
+    "name": "Blue tint 2 (dark to light)"
+  },
+  "blue_3": {
+    "hex": "#004667",
+    "rgb": [
+      0,
+      70,
+      103
+    ],
+    "name": "Blue tint 3 (dark to light)"
+  },
+  "blue_4": {
+    "hex": "#004C6A",
+    "rgb": [
+      0,
+      76,
+      106
+    ],
+    "name": "Blue tint 4 (dark to light)"
+  },
+  "blue_5": {
+    "hex": "#006F95",
+    "rgb": [
+      0,
+      111,
+      149
+    ],
+    "name": "Blue tint 5 (dark to light)"
+  },
+  "blue_6": {
+    "hex": "#3D8DB2",
+    "rgb": [
+      61,
+      141,
+      178
+    ],
+    "name": "Blue tint 6 (dark to light)"
+  },
+  "blue_7": {
+    "hex": "#B5D5E5",
+    "rgb": [
+      181,
+      213,
+      229
+    ],
+    "name": "Blue tint 7 (dark to light)"
+  },
+  "grey": {
+    "hex": "#B1BAC0",
+    "rgb": [
+      177,
+      186,
+      192
+    ],
+    "name": "Grey · miss ripple"
+  },
+  "grey_light": {
+    "hex": "#CED8DE",
+    "rgb": [
+      206,
+      216,
+      222
+    ],
+    "name": "Light grey · field dots, dividers, bar track"
+  },
+  "text_grey": {
+    "hex": "#546670",
+    "rgb": [
+      84,
+      102,
+      112
+    ],
+    "name": "Text grey · secondary text"
+  },
+  "pattern_blue": {
+    "hex": "#005379",
+    "rgb": [
+      0,
+      83,
+      121
+    ],
+    "name": "Pattern blue · dots on dark blue"
+  }
+}

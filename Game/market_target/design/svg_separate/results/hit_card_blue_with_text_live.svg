@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80px" height="46px" viewBox="0 0 80 46">
+<title>Hits card, blue, with a sample; units: wall cm</title>
+<rect id="Card" x="0" y="0" width="80" height="46" rx="4" fill="#FFFFFF"/>
+<g id="Tile">
+<rect x="33.5" y="4.5" width="13" height="13" rx="2.34" fill="#004C6A"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<path d="M40.535 6.94 A4.095 4.095 0 0 1 40.535 15.06 L40.28 13.127 A2.145 2.145 0 0 0 40.28 8.873 Z"/>
+<path d="M39.465 15.06 A4.095 4.095 0 0 1 35.974 10.254 L37.891 10.609 A2.145 2.145 0 0 0 39.72 13.127 Z"/>
+<path d="M36.304 9.237 A4.095 4.095 0 0 1 39.465 6.94 L39.72 8.873 A2.145 2.145 0 0 0 38.064 10.077 Z"/>
+</g>
+<text id="Hits" x="40" y="28.75" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="11" fill="#004C6A" text-anchor="middle">۳</text>
+<text id="Word" x="40" y="39.25" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="5" fill="#546670" text-anchor="middle" direction="rtl" unicode-bidi="embed">تنوع سبد</text>
+</svg>

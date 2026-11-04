@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500px" height="2000px" viewBox="0 0 300 400">
+<title>Wall layer, HUD_multiplier; 1 unit = 1 cm on the wall</title>
+<g id="HUD_multiplier">
+<rect id="Badge" x="127" y="37.5" width="46" height="13" rx="6.5" fill="#832C73"/>
+<text x="150" y="45.75" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="7" fill="#FFFFFF" text-anchor="middle" direction="rtl" unicode-bidi="embed">ضریب ‎×۳</text>
+</g>
+</svg>

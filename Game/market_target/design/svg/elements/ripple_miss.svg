@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16.125 -16.125 32.25 32.25" width="32.25" height="32.25">
+  <title>Miss ripple, half-way; units: wall cm</title>
+  <circle id="ring-1" cx="0" cy="0" r="14.775" fill="none" stroke="#3D8DB2" stroke-width="0.7"/>
+  <circle id="ring-2" cx="0" cy="0" r="5.76" fill="none" stroke="#B1BAC0" stroke-width="0.98"/>
+</svg>

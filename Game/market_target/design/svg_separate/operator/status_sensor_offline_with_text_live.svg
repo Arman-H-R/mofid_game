@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32.639px" height="6.12px" viewBox="0 0 32.639 6.12">
+<title>status_sensor_offline with its label; units: wall cm</title>
+<rect id="Pill" x="0" y="0" width="32.639" height="6.12" rx="2.5" fill="#F3716D"/>
+<text id="Label" x="16.319" y="3.91" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="3.4" fill="#FFFFFF" text-anchor="middle" direction="rtl" unicode-bidi="embed">حسگر متصل نیست</text>
+</svg>

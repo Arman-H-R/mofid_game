@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="9px" height="9px" viewBox="0 0 9 9">
+<title>rank_badge with its label; units: wall cm</title>
+<circle id="Badge" cx="4.5" cy="4.5" r="4.5" fill="#B5D5E5"/>
+<text x="4.5" y="5.875" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="5.5" fill="#004C6A" text-anchor="middle">۲</text>
+</svg>

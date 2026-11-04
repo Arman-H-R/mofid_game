@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240px" height="240px" viewBox="0 0 240 240">
+<title>Target, blue (ring symbol), 160 units = the side of the box</title>
+<g id="Shadow">
+<rect x="30.4" y="38.4" width="179.2" height="179.2" rx="38.4" fill="#00243D" fill-opacity="0.039"/>
+<rect x="33.143" y="41.143" width="173.714" height="173.714" rx="35.657" fill="#00243D" fill-opacity="0.039"/>
+<rect x="35.886" y="43.886" width="168.229" height="168.229" rx="32.914" fill="#00243D" fill-opacity="0.039"/>
+<rect x="38.629" y="46.629" width="162.743" height="162.743" rx="30.171" fill="#00243D" fill-opacity="0.039"/>
+<rect x="41.371" y="49.371" width="157.257" height="157.257" rx="27.429" fill="#00243D" fill-opacity="0.039"/>
+<rect x="44.114" y="52.114" width="151.771" height="151.771" rx="24.686" fill="#00243D" fill-opacity="0.039"/>
+<rect x="46.857" y="54.857" width="146.286" height="146.286" rx="21.943" fill="#00243D" fill-opacity="0.039"/>
+<rect x="49.6" y="57.6" width="140.8" height="140.8" rx="19.2" fill="#00243D" fill-opacity="0.039"/>
+</g>
+<g id="Tile">
+<rect x="40" y="40" width="160" height="160" rx="28.8" fill="#004C6A"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<path d="M126.579 70.031 A50.4 50.4 0 0 1 126.579 169.969 L123.446 146.174 A26.4 26.4 0 0 0 123.446 93.826 Z"/>
+<path d="M113.421 169.969 A50.4 50.4 0 0 1 70.444 110.815 L94.042 115.189 A26.4 26.4 0 0 0 116.554 146.174 Z"/>
+<path d="M74.51 98.302 A50.4 50.4 0 0 1 113.421 70.031 L116.554 93.826 A26.4 26.4 0 0 0 96.172 108.635 Z"/>
+</g>
+</svg>

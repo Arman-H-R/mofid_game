@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080px" height="680px" viewBox="0 0 1080 680">
+<title>Title lockup, Market Pulse</title>
+<rect id="Artboard_background" x="0" y="0" width="1080" height="680" fill="#004C6A"/>
+<g id="Title">
+<text x="540" y="317.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="190" fill="#FFFFFF" text-anchor="middle" direction="rtl" unicode-bidi="embed">نبض بازار</text>
+</g>
+<g id="Subtitle">
+<text x="540" y="435" font-family="'IRANSansX-Medium', 'IRANSansX', sans-serif" font-weight="500" font-size="40" fill="#B5D5E5" text-anchor="middle" direction="rtl" unicode-bidi="embed">بازی تعاملی کارگزاری مفید</text>
+</g>
+<g id="Latin_name">
+<text x="540" y="540" font-family="'IRANSansX-Bold', 'IRANSansX', sans-serif" font-weight="700" font-size="40" fill="#00A796" text-anchor="middle" letter-spacing="10">MARKET PULSE</text>
+</g>
+</svg>

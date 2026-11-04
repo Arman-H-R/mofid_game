@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500px" height="2000px" viewBox="0 0 300 400">
+<title>Wall layer, HUD_balls; 1 unit = 1 cm on the wall</title>
+<g id="HUD_balls">
+<circle cx="187.8" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="179.4" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="171" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="162.6" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="154.2" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="145.8" cy="21" r="3" fill="#FFFFFF"/>
+<circle cx="137.4" cy="21" r="2.75" fill="none" stroke="#3D8DB2" stroke-width="0.5"/>
+<circle cx="129" cy="21" r="2.75" fill="none" stroke="#3D8DB2" stroke-width="0.5"/>
+<circle cx="120.6" cy="21" r="2.75" fill="none" stroke="#3D8DB2" stroke-width="0.5"/>
+<circle cx="112.2" cy="21" r="2.75" fill="none" stroke="#3D8DB2" stroke-width="0.5"/>
+</g>
+</svg>

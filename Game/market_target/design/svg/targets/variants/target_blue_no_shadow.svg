@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240px" height="240px" viewBox="0 0 240 240">
+<title>Target, blue, no shadow</title>
+<g id="Tile">
+<rect x="40" y="40" width="160" height="160" rx="28.8" fill="#004C6A"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<path d="M126.579 70.031 A50.4 50.4 0 0 1 126.579 169.969 L123.446 146.174 A26.4 26.4 0 0 0 123.446 93.826 Z"/>
+<path d="M113.421 169.969 A50.4 50.4 0 0 1 70.444 110.815 L94.042 115.189 A26.4 26.4 0 0 0 116.554 146.174 Z"/>
+<path d="M74.51 98.302 A50.4 50.4 0 0 1 113.421 70.031 L116.554 93.826 A26.4 26.4 0 0 0 96.172 108.635 Z"/>
+</g>
+</svg>

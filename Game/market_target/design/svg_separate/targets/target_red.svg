@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128px" height="128px" viewBox="0 0 128 128">
+<title>Target, red (zigzag), with shadow; 100 units = the side of the box</title>
+<g id="Shadow">
+<rect x="8" y="13" width="112" height="112" rx="24" fill="#00243D" fill-opacity="0.039"/>
+<rect x="9.714" y="14.714" width="108.571" height="108.571" rx="22.286" fill="#00243D" fill-opacity="0.039"/>
+<rect x="11.429" y="16.429" width="105.143" height="105.143" rx="20.571" fill="#00243D" fill-opacity="0.039"/>
+<rect x="13.143" y="18.143" width="101.714" height="101.714" rx="18.857" fill="#00243D" fill-opacity="0.039"/>
+<rect x="14.857" y="19.857" width="98.286" height="98.286" rx="17.143" fill="#00243D" fill-opacity="0.039"/>
+<rect x="16.571" y="21.571" width="94.857" height="94.857" rx="15.429" fill="#00243D" fill-opacity="0.039"/>
+<rect x="18.286" y="23.286" width="91.429" height="91.429" rx="13.714" fill="#00243D" fill-opacity="0.039"/>
+<rect x="20" y="25" width="88" height="88" rx="12" fill="#00243D" fill-opacity="0.039"/>
+</g>
+<g id="Tile">
+<rect x="14" y="14" width="100" height="100" rx="18" fill="#F3716D"/>
+</g>
+<g id="Icon" fill="#FFFFFF">
+<polygon points="32.11,80.145 43.147,62.209 58.689,86.039 72.955,57.507 86.666,97.662 107.235,60.932 96.765,55.068 89.334,68.338 75.045,26.493 57.311,61.961 42.853,39.791 21.89,73.855"/>
+</g>
+</svg>

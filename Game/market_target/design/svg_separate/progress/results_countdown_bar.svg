@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 1.6" width="180" height="1.6">
+  <title>Results auto-return bar at 100 % (drains towards the right); units: wall cm</title>
+  <rect id="track" x="0" y="0" width="180" height="1.6" fill="#004667"/>
+  <rect id="fill" x="0" y="0" width="180" height="1.6" fill="#00A796"/>
+</svg>

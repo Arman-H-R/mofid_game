@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080px" height="2726px" viewBox="0 0 1080 2726">
+<title>Persian messages (config/settings.json, sample values in place of placeholders)</title>
+<rect id="Artboard_background" x="0" y="0" width="1080" height="2726" fill="#FFFFFF"/>
+<text x="1040" y="64.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="34" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">پیام‌های فارسی بازی</text>
+<g id="Message_title">
+<line x1="40" y1="110" x2="1040" y2="110" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="136" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">title</text>
+<text x="1040" y="137.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نبض بازار</text>
+</g>
+<g id="Message_subtitle">
+<line x1="40" y1="154" x2="1040" y2="154" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="180" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">subtitle</text>
+<text x="1040" y="181.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بازی تعاملی کارگزاری مفید</text>
+</g>
+<g id="Message_start">
+<line x1="40" y1="198" x2="1040" y2="198" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="224" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">start</text>
+<text x="1040" y="225.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">شروع</text>
+</g>
+<g id="Message_cta_throw">
+<line x1="40" y1="242" x2="1040" y2="242" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="268" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">cta_throw</text>
+<text x="1040" y="269.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">برای شروع، توپ را به این مربع بزنید</text>
+</g>
+<g id="Message_cta_operator">
+<line x1="40" y1="286" x2="1040" y2="286" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="312" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">cta_operator</text>
+<text x="1040" y="313.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">برای شروع آماده شوید</text>
+</g>
+<g id="Message_next_player">
+<line x1="40" y1="330" x2="1040" y2="330" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="356" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">next_player</text>
+<text x="1040" y="357.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نوبت</text>
+</g>
+<g id="Message_how_to_title">
+<line x1="40" y1="374" x2="1040" y2="374" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="400" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">how_to_title</text>
+<text x="1040" y="401.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">راهنمای بازی</text>
+</g>
+<g id="Message_rule_balls">
+<line x1="40" y1="418" x2="1040" y2="418" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="444" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_balls</text>
+<text x="1040" y="445.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">۱۰ توپ و ۶۰ ثانیه فرصت دارید</text>
+</g>
+<g id="Message_rule_time">
+<line x1="40" y1="462" x2="1040" y2="462" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="488" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_time</text>
+<text x="1040" y="489.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">۶۰ ثانیه فرصت دارید</text>
+</g>
+<g id="Message_rule_rush">
+<line x1="40" y1="506" x2="1040" y2="506" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="532" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_rush</text>
+<text x="1040" y="533.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">هر برخورد به باکس قرمز، «طوفان بازار» را شروع می‌کند: ۶۰ ثانیه با سرعت و باکس بیشتر و امتیاز ‎×۲</text>
+</g>
+<g id="Message_register_title">
+<line x1="40" y1="550" x2="1040" y2="550" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="576" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_title</text>
+<text x="1040" y="577.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">ثبت‌نام بازیکن</text>
+</g>
+<g id="Message_register_prompt">
+<line x1="40" y1="594" x2="1040" y2="594" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="620" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_prompt</text>
+<text x="1040" y="621.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نام خود را وارد کنید</text>
+</g>
+<g id="Message_register_placeholder">
+<line x1="40" y1="638" x2="1040" y2="638" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="664" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_placeholder</text>
+<text x="1040" y="665.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نام شما</text>
+</g>
+<g id="Message_register_empty">
+<line x1="40" y1="682" x2="1040" y2="682" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="708" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_empty</text>
+<text x="1040" y="709.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">لطفاً نام خود را وارد کنید</text>
+</g>
+<g id="Message_register_start">
+<line x1="40" y1="726" x2="1040" y2="726" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="752" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_start</text>
+<text x="1040" y="753.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">شروع بازی</text>
+</g>
+<g id="Message_register_hint">
+<line x1="40" y1="770" x2="1040" y2="770" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="796" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">register_hint</text>
+<text x="1040" y="797.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید</text>
+</g>
+<g id="Message_rule_positive">
+<line x1="40" y1="814" x2="1040" y2="814" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="840" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_positive</text>
+<text x="1040" y="841.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">هر سه رنگ امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد</text>
+</g>
+<g id="Message_rule_move">
+<line x1="40" y1="858" x2="1040" y2="858" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="884" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_move</text>
+<text x="1040" y="885.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند</text>
+</g>
+<g id="Message_rule_combo">
+<line x1="40" y1="902" x2="1040" y2="902" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="928" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rule_combo</text>
+<text x="1040" y="929.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">برخوردهای پشت‌سرهم، ضریب امتیاز را تا ‎×۴ بالا می‌برند</text>
+</g>
+<g id="Message_red_extra">
+<line x1="40" y1="946" x2="1040" y2="946" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="972" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">red_extra</text>
+<text x="1040" y="973.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">+ سه باکس تازه</text>
+</g>
+<g id="Message_points_unit">
+<line x1="40" y1="990" x2="1040" y2="990" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1016" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">points_unit</text>
+<text x="1040" y="1017.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">امتیاز</text>
+</g>
+<g id="Message_word_green">
+<line x1="40" y1="1034" x2="1040" y2="1034" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1060" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">word_green</text>
+<text x="1040" y="1061.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">رشد</text>
+</g>
+<g id="Message_word_blue">
+<line x1="40" y1="1078" x2="1040" y2="1078" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1104" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">word_blue</text>
+<text x="1040" y="1105.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">تنوع سبد</text>
+</g>
+<g id="Message_word_red">
+<line x1="40" y1="1122" x2="1040" y2="1122" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1148" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">word_red</text>
+<text x="1040" y="1149.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نوسان</text>
+</g>
+<g id="Message_meaning_green">
+<line x1="40" y1="1166" x2="1040" y2="1166" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1192" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">meaning_green</text>
+<text x="1040" y="1193.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">رشد پایدار؛ ریسک کم، بازده کم</text>
+</g>
+<g id="Message_meaning_blue">
+<line x1="40" y1="1210" x2="1040" y2="1210" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1236" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">meaning_blue</text>
+<text x="1040" y="1237.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">مدیریت ریسک؛ ریسک و بازده متوسط</text>
+</g>
+<g id="Message_meaning_red">
+<line x1="40" y1="1254" x2="1040" y2="1254" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1280" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">meaning_red</text>
+<text x="1040" y="1281.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نوسان و هیجان؛ ریسک و بازده احتمالی زیاد</text>
+</g>
+<g id="Message_rush_title">
+<line x1="40" y1="1298" x2="1040" y2="1298" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1324" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rush_title</text>
+<text x="1040" y="1325.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">طوفان بازار</text>
+</g>
+<g id="Message_rush_start">
+<line x1="40" y1="1342" x2="1040" y2="1342" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1368" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rush_start</text>
+<text x="1040" y="1369.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">طوفان بازار! امتیاز ‎×۲</text>
+</g>
+<g id="Message_rush_end">
+<line x1="40" y1="1386" x2="1040" y2="1386" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1412" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rush_end</text>
+<text x="1040" y="1413.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بازار آرام شد</text>
+</g>
+<g id="Message_rush_hud">
+<line x1="40" y1="1430" x2="1040" y2="1430" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1456" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rush_hud</text>
+<text x="1040" y="1457.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">طوفان بازار: ۶۰ ثانیه</text>
+</g>
+<g id="Message_rush_pill">
+<line x1="40" y1="1474" x2="1040" y2="1474" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1500" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">rush_pill</text>
+<text x="1040" y="1501.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">طوفان ‎×۲</text>
+</g>
+<g id="Message_get_ready">
+<line x1="40" y1="1518" x2="1040" y2="1518" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1544" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">get_ready</text>
+<text x="1040" y="1545.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">آماده باشید</text>
+</g>
+<g id="Message_go">
+<line x1="40" y1="1562" x2="1040" y2="1562" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1588" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">go</text>
+<text x="1040" y="1589.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">شروع!</text>
+</g>
+<g id="Message_score">
+<line x1="40" y1="1606" x2="1040" y2="1606" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1632" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">score</text>
+<text x="1040" y="1633.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">امتیاز</text>
+</g>
+<g id="Message_time">
+<line x1="40" y1="1650" x2="1040" y2="1650" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1676" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">time</text>
+<text x="1040" y="1677.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">ثانیه</text>
+</g>
+<g id="Message_balls">
+<line x1="40" y1="1694" x2="1040" y2="1694" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1720" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">balls</text>
+<text x="1040" y="1721.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">توپ</text>
+</g>
+<g id="Message_multiplier">
+<line x1="40" y1="1738" x2="1040" y2="1738" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1764" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">multiplier</text>
+<text x="1040" y="1765.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">ضریب</text>
+</g>
+<g id="Message_combo_up">
+<line x1="40" y1="1782" x2="1040" y2="1782" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1808" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">combo_up</text>
+<text x="1040" y="1809.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">ضریب ‎×۲!</text>
+</g>
+<g id="Message_market_busier">
+<line x1="40" y1="1826" x2="1040" y2="1826" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1852" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">market_busier</text>
+<text x="1040" y="1853.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بازار شلوغ‌تر شد!</text>
+</g>
+<g id="Message_end_title">
+<line x1="40" y1="1870" x2="1040" y2="1870" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1896" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">end_title</text>
+<text x="1040" y="1897.5" font-family="'IRANSansX-Black', 'IRANSansX', sans-serif" font-weight="900" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">پایان دور!</text>
+</g>
+<g id="Message_end_time">
+<line x1="40" y1="1914" x2="1040" y2="1914" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1940" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">end_time</text>
+<text x="1040" y="1941.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">زمان تمام شد</text>
+</g>
+<g id="Message_end_balls">
+<line x1="40" y1="1958" x2="1040" y2="1958" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="1984" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">end_balls</text>
+<text x="1040" y="1985.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">توپ‌ها تمام شد</text>
+</g>
+<g id="Message_results_title">
+<line x1="40" y1="2002" x2="1040" y2="2002" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2028" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_title</text>
+<text x="1040" y="2029.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">امتیاز شما</text>
+</g>
+<g id="Message_results_hits">
+<line x1="40" y1="2046" x2="1040" y2="2046" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2072" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_hits</text>
+<text x="1040" y="2073.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">۷ برخورد از ۱۰ پرتاب</text>
+</g>
+<g id="Message_results_best">
+<line x1="40" y1="2090" x2="1040" y2="2090" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2116" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_best</text>
+<text x="1040" y="2117.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">بیشترین ضریب</text>
+</g>
+<g id="Message_results_rush">
+<line x1="40" y1="2134" x2="1040" y2="2134" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2160" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_rush</text>
+<text x="1040" y="2161.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">در طوفان بازار: ۷ برخورد و ۲۴۰ امتیاز</text>
+</g>
+<g id="Message_profile_title">
+<line x1="40" y1="2178" x2="1040" y2="2178" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2204" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">profile_title</text>
+<text x="1040" y="2205.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">سبک بازی شما</text>
+</g>
+<g id="Message_profile_note">
+<line x1="40" y1="2222" x2="1040" y2="2222" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2248" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">profile_note</text>
+<text x="1040" y="2249.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">این نتیجه فقط سبک بازی شما را توصیف می‌کند و ارزیابی مالی یا توصیه‌ی سرمایه‌گذاری نیست.</text>
+</g>
+<g id="Message_results_rank">
+<line x1="40" y1="2266" x2="1040" y2="2266" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2292" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_rank</text>
+<text x="1040" y="2293.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">رتبه‌ی ۱ امروز</text>
+</g>
+<g id="Message_results_next">
+<line x1="40" y1="2310" x2="1040" y2="2310" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2336" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">results_next</text>
+<text x="1040" y="2337.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">نفر بعدی، آماده شوید</text>
+</g>
+<g id="Message_well_done">
+<line x1="40" y1="2354" x2="1040" y2="2354" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2380" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">well_done</text>
+<text x="1040" y="2381.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">آفرین سارا!</text>
+</g>
+<g id="Message_leaderboard">
+<line x1="40" y1="2398" x2="1040" y2="2398" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2424" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">leaderboard</text>
+<text x="1040" y="2425.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">برترین‌های امروز</text>
+</g>
+<g id="Message_leaderboard_empty">
+<line x1="40" y1="2442" x2="1040" y2="2442" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2468" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">leaderboard_empty</text>
+<text x="1040" y="2469.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">اولین امتیاز امروز را شما ثبت کنید</text>
+</g>
+<g id="Message_guest">
+<line x1="40" y1="2486" x2="1040" y2="2486" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2512" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">guest</text>
+<text x="1040" y="2513.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">مهمان</text>
+</g>
+<g id="Message_slogan">
+<line x1="40" y1="2530" x2="1040" y2="2530" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2556" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">slogan</text>
+<text x="1040" y="2557.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">پیشرفت مداوم</text>
+</g>
+<g id="Message_paused">
+<line x1="40" y1="2574" x2="1040" y2="2574" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2600" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">paused</text>
+<text x="1040" y="2601.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">توقف</text>
+</g>
+<g id="Message_simulation">
+<line x1="40" y1="2618" x2="1040" y2="2618" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2644" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">simulation</text>
+<text x="1040" y="2645.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">حالت شبیه‌سازی</text>
+</g>
+<g id="Message_sensor_offline">
+<line x1="40" y1="2662" x2="1040" y2="2662" stroke="#CED8DE" stroke-width="1"/>
+<text x="40" y="2688" font-family="'IRANSansX-Regular', 'IRANSansX', sans-serif" font-weight="400" font-size="16" fill="#546670" text-anchor="start">sensor_offline</text>
+<text x="1040" y="2689.5" font-family="'IRANSansX-ExtraBold', 'IRANSansX', sans-serif" font-weight="800" font-size="22" fill="#004C6A" text-anchor="start" direction="rtl" unicode-bidi="embed">حسگر متصل نیست</text>
+</g>
+</svg>
