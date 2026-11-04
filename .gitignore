@@ -1,2 +1,20 @@
+# archives of this folder (market_target.rar is 334 MB, over GitHub's 100 MB limit)
+*.rar
+*.zip
+
+# Python
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
+
+# camera_viewer.py snapshots (pictures of people)
+camera/snapshots/
+
+# design screenshots with a real person's photo, kept out of the public repo
+Game/market_target/design/reference_screenshots/results_card_photo_looks.png
+Game/market_target/design/reference_screenshots/results_card_duotone.png
+Game/market_target/design/reference_screenshots/results_card_entrance_key_moments.png
+Game/market_target/design/reference_screenshots/results_card_entrance_timeline.png
+# leaderboard screenshot with real players' full names
+Game/market_target/design/reference_screenshots/01_attract.png

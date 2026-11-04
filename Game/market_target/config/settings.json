@@ -1,0 +1,439 @@
+{
+  "display": {
+    "fullscreen": true,
+    "display_index": 0,
+    "resolution": "auto",
+    "fill_screen": true,
+    "windowed_height_fraction": 0.88,
+    "fps": 60,
+    "vsync": true,
+    "hide_cursor": true
+  },
+  "wall": {
+    "width_cm": 300,
+    "height_cm": 400
+  },
+  "layout": {
+    "hud_height_cm": 64,
+    "footer_height_cm": 30,
+    "side_margin_cm": 12,
+    "gap_cm": 12,
+    "min_move_cm": 35,
+    "transition_s": 0.35,
+    "spawn_s": 0.32,
+    "start_button": {
+      "x_cm": 150,
+      "y_cm": 282,
+      "size_cm": 84
+    }
+  },
+  "round": {
+    "balls": 10,
+    "duration_s": 60,
+    "initial": [
+      "green",
+      "red",
+      "blue"
+    ],
+    "max_targets": 12,
+    "end_delay_s": 1.8
+  },
+  "targets": {
+    "green": {
+      "size_cm": 60,
+      "points": 10,
+      "spawn_on_hit": []
+    },
+    "blue": {
+      "size_cm": 45,
+      "points": 15,
+      "spawn_on_hit": []
+    },
+    "red": {
+      "size_cm": 25,
+      "points": 30,
+      "spawn_on_hit": [
+        "green",
+        "blue",
+        "red"
+      ]
+    },
+    "min_size_cm": 20
+  },
+  "motion": {
+    "enabled": true,
+    "speed": 1.0,
+    "green": {
+      "pattern": "sway_x",
+      "amplitude_cm": 14,
+      "period_s": 5.0,
+      "pulse": 0.0,
+      "pulse_period_s": 2.0
+    },
+    "blue": {
+      "pattern": "figure8",
+      "amplitude_cm": 12,
+      "period_s": 5.2,
+      "pulse": 0.05,
+      "pulse_period_s": 2.6
+    },
+    "red": {
+      "pattern": "volatile",
+      "amplitude_cm": 13,
+      "period_s": 3.8,
+      "pulse": 0.12,
+      "pulse_period_s": 1.4
+    }
+  },
+  "combo": {
+    "enabled": true,
+    "levels": [
+      {
+        "after_hits": 2,
+        "multiplier": 2
+      },
+      {
+        "after_hits": 4,
+        "multiplier": 3
+      },
+      {
+        "after_hits": 6,
+        "multiplier": 4
+      }
+    ]
+  },
+  "rush": {
+    "enabled": true,
+    "duration_s": 4,
+    "trigger_red_hits": 1,
+    "restart_on_red_hit": true,
+    "max_per_round": 100,
+    "cooldown_s": 0,
+    "score_multiplier": 2,
+    "stack_with_combo": true,
+    "speed": 1.6,
+    "speed_ramp_s": 0.4,
+    "max_targets": 12,
+    "spawn_interval_s": 1.0,
+    "spawn_lifetime_s": 4.0,
+    "spawn_colors": [
+      "red",
+      "blue",
+      "green",
+      "red"
+    ],
+    "transition_s": 0.4
+  },
+  "profiles": {
+    "min_hits": 3,
+    "aggressive_red_share": 0.5,
+    "risk_red_share": 0.3,
+    "rush_min_hits": 4,
+    "rush_share": 0.6,
+    "growth_green_share": 0.5,
+    "cautious_red_share": 0.1,
+    "score_tiers": [
+      90,
+      180
+    ],
+    "styles": {
+      "watchful": {
+        "label": "ناظر صبور",
+        "statements": [
+          "شما بیشتر بازار را زیر نظر گرفتید و با صبر حرکت کردید؛ دفعه‌ی بعد فرصت‌های بیشتری را امتحان کنید."
+        ]
+      },
+      "cautious": {
+        "label": "سرمایه‌گذار محتاط",
+        "statements": [
+          "شما با احتیاط جلو رفتید و از نوسان‌های تند فاصله گرفتید؛ قدم‌های سنجیده شروع خوبی است.",
+          "شما سرمایه‌گذاری محتاط بودید و در تصمیم‌هایتان ثبات را به هیجان ترجیح دادید.",
+          "با تکیه بر انتخاب‌های کم‌ریسک بازی خوبی کردید و نشان دادید صبر هم می‌تواند راهگشا باشد."
+        ]
+      },
+      "growth": {
+        "label": "سرمایه‌گذار رشدگرا",
+        "statements": [
+          "شما بیشتر به دنبال رشد پایدار بودید و گاهی هم سراغ فرصت‌های پرنوسان رفتید.",
+          "شما به رشد سرمایه علاقه نشان دادید و بیشتر روی فرصت‌های پایدار تمرکز کردید.",
+          "تمرکز شما روی رشد پایدار بود و هر جا لازم بود، فرصت‌های پرنوسان را هم امتحان کردید."
+        ]
+      },
+      "balanced": {
+        "label": "سرمایه‌گذار متعادل",
+        "statements": [
+          "شما میان گزینه‌های مختلف تعادل برقرار کردید و انتخاب‌هایتان را متنوع نگه داشتید.",
+          "شما به دنبال تعادل میان ریسک و بازده بودید و فرصت‌ها را با دقت انتخاب کردید.",
+          "با تنوع‌بخشی و مدیریت ریسک بازی کردید و این تعادل را تا پایان بازی حفظ کردید."
+        ]
+      },
+      "risk_tolerant": {
+        "label": "معامله‌گر ریسک‌پذیر",
+        "statements": [
+          "شما از نوسان نترسیدید و با وجود سختی هدف‌ها، سراغ فرصت‌های پرریسک رفتید.",
+          "شما در مواجهه با نوسان‌های بازار جسورتر عمل کردید و به دنبال فرصت‌های بیشتر بودید.",
+          "شما در نوسان‌های بازار راحت تصمیم گرفتید و در لحظه‌های پرهیجان هم تمرکزتان را حفظ کردید."
+        ]
+      },
+      "aggressive": {
+        "label": "معامله‌گر تهاجمی",
+        "statements": [
+          "شما بیشتر از همه سراغ باکس‌های پرنوسان رفتید و ریسک را پذیرفتید، حتی وقتی هدف سخت بود.",
+          "شما فعالانه به دنبال فرصت‌های پرنوسان بودید و آماده‌ی پذیرش ریسک بیشتر بودید.",
+          "شما با جسارت بازار پرنوسان را دنبال کردید و در بازی، ریسک زیاد را با تمرکز مدیریت کردید."
+        ]
+      }
+    }
+  },
+  "flow": {
+    "start_by_throw": true,
+    "show_instructions": false,
+    "registration": true,
+    "registration_timeout_s": 120,
+    "name_max_chars": 20,
+    "instructions_s": 9.0,
+    "intro_s": 2.6,
+    "countdown_s": 3.0,
+    "results_s": 25.0,
+    "attract_panel_s": 8.0,
+    "time_warning_s": 10
+  },
+  "input": {
+    "sources": [
+      "udp_json",
+      "lidar"
+    ],
+    "simulation": false,
+    "latency_ms": 0,
+    "ball_radius_cm": 10,
+    "merge_window_ms": 250,
+    "merge_radius_cm": 35,
+    "rebound_window_ms": 600,
+    "rebound_dx_cm": 40,
+    "heartbeat_timeout_s": 0,
+    "calibration": {
+      "swap_xy": false,
+      "flip_x": false,
+      "flip_y": false,
+      "scale_x": 1.0,
+      "scale_y": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 0.0
+    },
+    "udp_json": {
+      "host": "0.0.0.0",
+      "port": 9100,
+      "units": "normalized"
+    },
+    "tuio": {
+      "host": "0.0.0.0",
+      "port": 3333
+    },
+    "lidar": {
+      "port": "COM14",
+      "baud": 921600,
+      "settings_file": "config/lidar.json",
+      "max_range_mm": 8000,
+      "wall_margin_cm": 15,
+      "round_only": true,
+      "calibration_points": [
+        {
+          "wall_cm": [
+            25.0,
+            25.0
+          ],
+          "lidar_mm": [
+            -678.9,
+            1886.5
+          ]
+        },
+        {
+          "wall_cm": [
+            686.1,
+            25.0
+          ],
+          "lidar_mm": [
+            1123.7,
+            1870.4
+          ]
+        },
+        {
+          "wall_cm": [
+            686.1,
+            375.0
+          ],
+          "lidar_mm": [
+            1149.4,
+            974.7
+          ]
+        },
+        {
+          "wall_cm": [
+            25.0,
+            375.0
+          ],
+          "lidar_mm": [
+            -693.9,
+            959.4
+          ]
+        }
+      ]
+    }
+  },
+  "operator": {
+    "start_keys": [
+      "space",
+      "return",
+      "enter",
+      "page down",
+      "right"
+    ],
+    "double_press_to_quit": true
+  },
+  "audio": {
+    "enabled": true,
+    "volume": 0.8
+  },
+  "results": {
+    "log_file": "data/results.jsonl",
+    "webhook_url": "",
+    "webhook_timeout_s": 4.0,
+    "leaderboard_size": 5,
+    "show_names": true
+  },
+  "web": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 8080,
+    "pin": "",
+    "title": "بازار هدف"
+  },
+  "camera": {
+    "enabled": true,
+    "url": "rtsp://192.168.70.66:554/media/live/1/1",
+    "model_dir": "models",
+    "clip_before_s": 10.0,
+    "clip_after_s": 2.0,
+    "clip_fps": 25,
+    "slow_motion": 0.3,
+    "delay_s": 0.5,
+    "samples_per_s": 2,
+    "play_zone": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+    ],
+    "min_person_height": 0.3,
+    "min_sharpness": 60,
+    "person_confidence": 0.4,
+    "effect_chance": 0.6,
+    "photo_effects": [
+      "duotone",
+      "mono",
+      "warm",
+      "pop"
+    ]
+  },
+  "ui": {
+    "digits": "fa",
+    "target_shadow": true,
+    "combo_banner": true
+  },
+  "fonts": {
+    "title": [
+      "Dana-Black.ttf",
+      "Dana-Bold.ttf",
+      "Dana-DemiBold.ttf",
+      "IRANSansX-Black.ttf"
+    ],
+    "heading": [
+      "IRANSansX-ExtraBold.ttf",
+      "IRANSansX-Bold.ttf"
+    ],
+    "bold": [
+      "IRANSansX-Bold.ttf"
+    ],
+    "body": [
+      "IRANSansX-Medium.ttf",
+      "IRANSansX-Regular.ttf"
+    ],
+    "numbers": [
+      "IRANSansX-Black.ttf",
+      "IRANSansX-ExtraBold.ttf"
+    ],
+    "latin": [
+      "Helvetica.ttf",
+      "HelveticaNeue.ttf",
+      "MyriadPro-Regular.otf",
+      "sys:helvetica",
+      "sys:arial",
+      "IRANSansX-Medium.ttf"
+    ]
+  },
+  "text": {
+    "title": "نبض بازار",
+    "subtitle": "بازی تعاملی کارگزاری مفید",
+    "start": "شروع",
+    "cta_throw": "برای شروع، توپ را به این مربع بزنید",
+    "cta_operator": "برای شروع آماده شوید",
+    "next_player": "نوبت",
+    "how_to_title": "راهنمای بازی",
+    "rule_balls": "{balls} توپ و {seconds} ثانیه فرصت دارید",
+    "rule_time": "{seconds} ثانیه فرصت دارید",
+    "rule_rush": "هر برخورد به باکس قرمز، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
+    "register_title": "ثبت‌نام بازیکن",
+    "register_prompt": "نام خود را وارد کنید",
+    "register_placeholder": "نام شما",
+    "register_empty": "لطفاً نام خود را وارد کنید",
+    "register_start": "شروع بازی",
+    "register_hint": "بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید",
+    "rule_positive": "هر سه رنگ امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
+    "rule_move": "بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند",
+    "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
+    "red_extra": "+ سه باکس تازه",
+    "points_unit": "امتیاز",
+    "word_green": "رشد",
+    "word_blue": "تنوع سبد",
+    "word_red": "نوسان",
+    "meaning_green": "رشد پایدار؛ ریسک کم، بازده کم",
+    "meaning_blue": "مدیریت ریسک؛ ریسک و بازده متوسط",
+    "meaning_red": "نوسان و هیجان؛ ریسک و بازده احتمالی زیاد",
+    "rush_title": "طوفان بازار",
+    "rush_start": "طوفان بازار! امتیاز {m}",
+    "rush_end": "بازار آرام شد",
+    "rush_hud": "طوفان بازار: {seconds} ثانیه",
+    "rush_pill": "طوفان {m}",
+    "get_ready": "آماده باشید",
+    "go": "شروع!",
+    "score": "امتیاز",
+    "time": "ثانیه",
+    "balls": "توپ",
+    "multiplier": "ضریب",
+    "combo_up": "ضریب {m}!",
+    "market_busier": "بازار شلوغ‌تر شد!",
+    "end_title": "پایان دور!",
+    "end_time": "زمان تمام شد",
+    "end_balls": "توپ‌ها تمام شد",
+    "results_title": "امتیاز شما",
+    "results_hits": "{hits} برخورد از {throws} پرتاب",
+    "results_best": "بیشترین ضریب",
+    "results_rush": "در طوفان بازار: {hits} برخورد و {points} امتیاز",
+    "profile_title": "سبک بازی شما",
+    "profile_note": "این نتیجه فقط سبک بازی شما را توصیف می‌کند و ارزیابی مالی یا توصیه‌ی سرمایه‌گذاری نیست.",
+    "results_rank": "رتبه‌ی {rank} امروز",
+    "results_next": "نفر بعدی، آماده شوید",
+    "well_done": "آفرین {name}!",
+    "leaderboard": "برترین‌های امروز",
+    "leaderboard_empty": "اولین امتیاز امروز را شما ثبت کنید",
+    "guest": "مهمان",
+    "slogan": "پیشرفت مداوم",
+    "paused": "توقف",
+    "simulation": "حالت شبیه‌سازی",
+    "sensor_offline": "حسگر متصل نیست"
+  },
+  "debug": {
+    "overlay": false,
+    "log_level": "INFO"
+  }
+}

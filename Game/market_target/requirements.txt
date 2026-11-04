@@ -1,0 +1,12 @@
+# Runtime dependencies (Python 3.10 or newer).
+# pygame-ce, not "pygame": it shapes Persian text with HarfBuzz. The two packages
+# both install the "pygame" module, so uninstall "pygame" first if it is present.
+pygame-ce>=2.5,<3
+numpy>=1.24
+# Only needed when "tuio" is listed in input.sources (LiDAR / IR touch-wall software).
+python-osc>=1.8
+# Only needed when "lidar" is listed in input.sources (the STL27L lidar on a USB serial port).
+pyserial>=3.5
+# Only for the player photo on the results screen (camera.enabled). Without it the
+# screen shows a placeholder. Model files are in models/.
+opencv-python-headless>=4.8,<5
