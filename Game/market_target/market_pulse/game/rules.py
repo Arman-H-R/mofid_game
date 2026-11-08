@@ -1,11 +1,11 @@
 """One round of Market Pulse: the scenario's rules, with no pygame.
 
-Rules implemented (from the scenario PDF and the add-on text):
-- 60 seconds, with an optional ball limit. Three boxes at the start, one of each colour.
-- A valid hit scores that colour's points, replaces the hit box with a new box of
-  the same colour, and moves every box to a new random position.
-- A red hit also opens one green, one blue and one red box (3 -> 6 -> 9 -> 12),
-  up to the cap. At the cap a red hit still scores the most, but no boxes are added.
+Rules implemented (from the scenario PDF, the add-on text and the MOFID_UI v4.1 redesign):
+- 60 seconds, with an optional ball limit. targets.active boxes are on the wall, each one
+  of the 13 Mofid products at one of three sizes (medium, small, tiny).
+- A valid hit scores that size's points (the smaller, the more), replaces the hit box at
+  once with another product at a new size (game.products.Picker), and moves every box to
+  a new random position, so the number of boxes outside Market Rush never changes.
 - A miss uses up one ball. Nothing is subtracted and the field does not change.
 - Each ball scores at most once (duplicate/rebound events are filtered upstream).
 - The round ends when time runs out or the last ball (if there is a limit) is
@@ -13,11 +13,11 @@ Rules implemented (from the scenario PDF and the add-on text):
 - Add-on combo: consecutive hits raise a multiplier; a miss resets it to x1.
 
 Market Rush, a state of the round:
-- Starts on the red hit that reaches rush.trigger_red_hits, if the round still has a
-  rush left and any cooldown has passed. Red boxes on the wall do nothing by
+- Starts on the tiny-box hit that reaches rush.trigger_tiny_hits, if the round still has
+  a rush left and any cooldown has passed. Tiny boxes on the wall do nothing by
   themselves. The touch that ends the round starts nothing.
-- Lasts rush.duration_s and always stops with the round. A red hit during a rush gives
-  a fresh rush.duration_s from that hit (rush.restart_on_red_hit), in the same phase,
+- Lasts rush.duration_s and always stops with the round. A tiny hit during a rush gives
+  a fresh rush.duration_s from that hit (rush.restart_on_tiny_hit), in the same phase,
   so the picture does not flash.
 - While it runs: faster movement (the round's TimeWarp), extra boxes on a timer, and
   rush.score_multiplier on every hit whose impact time falls inside it, so the hit
@@ -26,12 +26,14 @@ Market Rush, a state of the round:
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..config import COLORS, Section
+from ..config import TIERS, Section
 from .layout import Footprint, Rect, place, place_one
+from .products import Picker
 from .targets import Motion, Target, TimeWarp
 
 
@@ -41,7 +43,8 @@ class Outcome:
     x: float  # impact position, cm
     y: float
     t: float  # impact time (game clock)
-    color: str | None = None
+    tier: str | None = None  # the size of the box that was hit
+    product: str | None = None  # and its product (a key of cfg.products)
     base: int = 0
     multiplier: float = 1  # the total applied to base
     combo_multiplier: float = 1
@@ -49,6 +52,9 @@ class Outcome:
     points: int = 0
     target_id: int | None = None
     target_side: float = 0.0
+    target_x: float = 0.0  # the hit box's centre and shape (height = side * aspect), cm
+    target_y: float = 0.0
+    target_aspect: float = 1.0
     spawned: list[int] = field(default_factory=list)
     level_up: bool = False
     combo_broken: bool = False
@@ -77,17 +83,25 @@ class Round:
             wall_w - lay.side_margin_cm,
             wall_h - lay.footer_height_cm,
         )
-        self.balls: int = cfg.round.balls
-        self.duration: float = float(cfg.round.duration_s)
-        self.max_targets: int = cfg.round.max_targets
+        # round.ball_limit / round.time_limit: balls 0 = no ball limit; without the time limit
+        # the round lasts until the last ball (duration is then infinite). Never neither.
+        rd = cfg.round
+        self.balls: int = int(rd.balls) if rd.get("ball_limit", False) else 0
+        self.timed: bool = bool(rd.get("time_limit", True)) or self.balls <= 0
+        self.duration: float = float(rd.duration_s) if self.timed else math.inf
+        self.active: int = int(cfg.targets.active)  # boxes on the wall, read once per round
         self.levels = [(lv["after_hits"], lv["multiplier"]) for lv in cfg.combo.levels] if cfg.combo.enabled else []
+        self.picker = Picker(cfg, self.rng)
+        self.products = {p["key"]: p for p in cfg.raw()["products"]}
 
         self.targets: list[Target] = []
         self._next_id = 1
         self.score = 0
+        self.score_path: list[int] = []  # the score after each throw
         self.throws = 0
-        self.hits = {c: 0 for c in COLORS}
-        self.points_by_color = {c: 0 for c in COLORS}
+        self.hits = {c: 0 for c in TIERS}
+        self.points_by_tier = {c: 0 for c in TIERS}
+        self.product_hits: dict[str, int] = {}  # hits per product, in the order they were first hit
         self.streak = 0
         self.best_streak = 0
         self.best_multiplier: float = 1
@@ -105,7 +119,7 @@ class Round:
         self.rush_hits = 0
         self.rush_points = 0
         self.rush_throws = 0
-        self._red_hits_towards_rush = 0
+        self._tiny_hits_towards_rush = 0
         self._rush_ready_at = float("-inf")
         self._rush_next_spawn = 0.0
         self._rush_spawn_i = 0
@@ -177,21 +191,21 @@ class Round:
         fade_from = rush.started_at if rush.fade_from is None else rush.fade_from
         return min(1.0, (t - fade_from) / fade, (rush.ends_at - t) / fade)
 
-    def _note_red_hit(self, now: float) -> None:
-        """The only way a rush starts: a red hit."""
+    def _note_tiny_hit(self, now: float) -> None:
+        """The only way a rush starts: a hit on a tiny box."""
         if not self.rush_enabled or self.out_of_balls:
             return
         rc = self.cfg.rush
         if self.rush is not None:
-            if rc.restart_on_red_hit:
+            if rc.restart_on_tiny_hit:
                 self._restart_rush(now)
             return
         if now < self._rush_ready_at:
             return
         if len(self.rushes) >= rc.max_per_round:
             return
-        self._red_hits_towards_rush += 1
-        if self._red_hits_towards_rush >= rc.trigger_red_hits:
+        self._tiny_hits_towards_rush += 1
+        if self._tiny_hits_towards_rush >= rc.trigger_tiny_hits:
             self._start_rush(now)
 
     def _start_rush(self, now: float) -> None:
@@ -199,7 +213,7 @@ class Round:
         rush = Rush(now, min(now + float(rc.duration_s), self.ends_at))
         self.rushes.append(rush)
         self.rush = rush
-        self._red_hits_towards_rush = 0
+        self._tiny_hits_towards_rush = 0
         self._rush_next_spawn = now + float(rc.spawn_interval_s) * 0.5
         self._plan_speed(now, rush)
         self.events.append(("rush_start", {"multiplier": rc.score_multiplier, "ends_at": rush.ends_at}))
@@ -246,20 +260,25 @@ class Round:
             if rush.ends_at - now > 1.0:  # no box that would only flash up and leave
                 self._rush_spawn(now)
 
+    @property
+    def rush_cap(self) -> int:
+        """Boxes on the wall during Market Rush, with its extra ones."""
+        return max(self.active, int(self.cfg.rush.max_targets))
+
     def _rush_spawn(self, now: float) -> None:
         """One extra box, without moving the others: a ball may be in the air."""
-        if len(self.targets) >= self.cfg.rush.max_targets:
+        if len(self.targets) >= self.rush_cap:
             return
         others = []
         for tg in self.targets:
             ex, ey = tg.motion.extent()
             half = tg.max_side() / 2.0
             others.append((tg.x, tg.y, half + ex * tg.motion_scale, half + ey * tg.motion_scale))
-        colors = self.cfg.rush.spawn_colors
-        for _ in range(len(colors)):  # if this colour does not fit, try the next
-            color = colors[self._rush_spawn_i % len(colors)]
+        tiers = self.cfg.rush.spawn_tiers
+        for _ in range(len(tiers)):  # if this size does not fit, try the next
+            tier = tiers[self._rush_spawn_i % len(tiers)]
             self._rush_spawn_i += 1
-            tg = self._new_target(color, now)
+            tg = self._new_target(now, tier=tier)
             ex, ey = tg.motion.extent()
             spot = place_one(Footprint(tg.max_side() / 2.0, ex, ey), others, self.field, float(self.cfg.layout.gap_cm),
                              self.rng)
@@ -285,8 +304,8 @@ class Round:
             return  # one round has one timer
         self.started_at = now
         self.ends_at = now + self.duration
-        for color in self.cfg.round.initial:
-            self.targets.append(self._new_target(color, now))
+        for _ in range(self.active):
+            self.targets.append(self._new_target(now))
         self._relayout(now, moving=[])
 
     def update(self, now: float) -> None:
@@ -344,6 +363,7 @@ class Round:
         return out
 
     def _after_throw(self, now: float) -> None:
+        self.score_path.append(self.score)  # the results screen draws it as a line
         if self.out_of_balls:
             self._finish("balls", now)
 
@@ -365,52 +385,50 @@ class Round:
         return Outcome("miss", x, y, t, combo_broken=broken, throws_left=self.throws_left)
 
     def _hit(self, target: Target, x: float, y: float, t: float, now: float) -> Outcome:
-        color = target.color
+        tier = target.tier
         before = self.next_multiplier
         combo = self.multiplier_for(self.streak)
         rush_mult = self.rush_multiplier_at(t)
         mult = combo * rush_mult if self.cfg.rush.stack_with_combo else max(combo, rush_mult)
-        base = int(self.cfg.targets[color].points)
+        base = int(self.cfg.targets[tier].points)
         points = int(round(base * mult))  # the one place a hit's points are worked out
         self.score += points
         if self.rush_at(t) is not None:
             self.rush_hits += 1
             self.rush_points += points
-        self.hits[color] += 1
-        self.points_by_color[color] += points
+        self.hits[tier] += 1
+        self.points_by_tier[tier] += points
+        self.product_hits[target.product] = self.product_hits.get(target.product, 0) + 1
         self.streak += 1
         self.best_streak = max(self.best_streak, self.streak)
         self.best_multiplier = max(self.best_multiplier, mult)
         side = target.side_at(t)
+        tx, ty = target.center_at(t)  # where the box was: the hit feedback grows out of it
 
-        # Replace the hit box with a new one of the same colour (an extra box that was
-        # already leaving at the end of a rush is not replaced)...
+        # Replace the hit box at once with another product at a new size, so the wall keeps
+        # targets.active boxes (an extra box that was already leaving at the end of a rush is
+        # not replaced: the wall is going back to its size)...
         self.targets.remove(target)
         rush = self.rush
-        spawned = [self._new_target(color, now)] if rush is not None or not target.rush_extra else []
-        # ...and, for red, open extra boxes until the cap.
-        cap = self.cfg.rush.max_targets if rush is not None else self.max_targets
-        for extra in self.cfg.targets[color].spawn_on_hit:
-            if len(self.targets) + len(spawned) >= cap:
-                break
-            tg = self._new_target(extra, now)
-            if rush is not None:
-                self._mark_rush_extra(tg, now)
-            spawned.append(tg)
-        if rush is not None and target.rush_extra:
-            self._mark_rush_extra(spawned[0], now)
+        spawned = []
+        if rush is not None or not target.rush_extra:
+            spawned.append(self._new_target(now, avoid=(target.product,)))
+            if target.rush_extra:
+                self._mark_rush_extra(spawned[0], now)
+        # ...and every box moves.
         moving = list(self.targets)
         self.targets.extend(spawned)
         self._relayout(now, moving=moving)
-        if color == "red":
-            self._note_red_hit(now)
+        if tier == "tiny":
+            self._note_tiny_hit(now)
 
         return Outcome(
             "hit",
             x,
             y,
             t,
-            color=color,
+            tier=tier,
+            product=target.product,
             base=base,
             multiplier=mult,
             combo_multiplier=combo,
@@ -418,6 +436,9 @@ class Round:
             points=points,
             target_id=target.id,
             target_side=side,
+            target_x=tx,
+            target_y=ty,
+            target_aspect=target.aspect,
             spawned=[s.id for s in spawned],
             level_up=self.next_multiplier > before,
             streak=self.streak,
@@ -425,26 +446,34 @@ class Round:
         )
 
     # -- targets ----------------------------------------------------------------
-    def _new_target(self, color: str, now: float) -> Target:
-        mc = self.cfg.motion[color]
+    def _new_target(self, now: float, tier: str | None = None, avoid: tuple[str, ...] = ()) -> Target:
+        """A box with the next product (none already on the wall, nor ``avoid``) at the
+        given size, or the next size from the picker."""
+        if tier is None:
+            tier = self.picker.tier(tg.tier for tg in self.targets if not tg.rush_extra)
+        product = self.picker.product((tg.product for tg in self.targets), avoid)
+        mc = self.cfg.motion[tier]
         enabled = self.cfg.motion.enabled
+        vary = float(self.cfg.motion.variation)  # every box its own speed and reach
         motion = Motion(
             pattern=mc.pattern if enabled else "still",
-            amplitude=float(mc.amplitude_cm) if enabled else 0.0,
-            period=float(mc.period_s),
+            amplitude=float(mc.amplitude_cm) * float(self.rng.uniform(1 - vary, 1 + vary)) if enabled else 0.0,
+            period=float(mc.period_s) * float(self.rng.uniform(1 - vary, 1 + vary)),
             pulse=float(mc.pulse) if enabled else 0.0,
             pulse_period=float(mc.pulse_period_s),
             phase=float(self.rng.uniform(0, 6.283185307)),
             direction=int(self.rng.choice((-1, 1))),
         )
-        size = float(self.cfg.targets[color].size_cm)
+        size = float(self.cfg.targets[tier].size_cm)
         min_size = float(self.cfg.targets.min_size_cm)
         # Never let the pulse shrink a target below the smallest allowed size.
         if motion.pulse and size * (1 - motion.pulse) < min_size:
             motion.pulse = max(0.0, 1 - min_size / size)
         tg = Target(
             id=self._next_id,
-            color=color,
+            tier=tier,
+            product=product,
+            aspect=float(self.products.get(product, {}).get("aspect", 1.0)),
             size=size,
             x=0.0,
             y=0.0,
@@ -487,9 +516,11 @@ class Round:
     def summary(self) -> dict:
         return {
             "score": self.score,
+            "score_path": list(self.score_path),
             "throws": self.throws,
             "hits": dict(self.hits),
-            "points_by_color": dict(self.points_by_color),
+            "points_by_tier": dict(self.points_by_tier),
+            "products": dict(self.product_hits),
             "total_hits": self.total_hits,
             "rush": {
                 "count": len(self.rushes),

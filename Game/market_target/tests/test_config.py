@@ -17,7 +17,34 @@ def test_defaults_are_valid():
     cfg, warnings = config.load(None)
     assert warnings == []
     assert cfg.round.balls == 10 and cfg.round.duration_s == 60  # whichever comes first
-    assert cfg.targets.red.points > cfg.targets.blue.points > cfg.targets.green.points > 0
+    assert cfg.targets.tiny.points > cfg.targets.small.points > cfg.targets.medium.points > 0
+    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 13
+
+
+def test_the_13_product_tiles_ship_with_the_game():
+    cfg, _ = config.load(None)
+    keys = [p["key"] for p in cfg.raw()["products"]]
+    assert len(set(keys)) == 13
+    for p in cfg.raw()["products"]:
+        assert (ROOT / "assets" / "products" / p["file"]).is_file(), p["file"]
+        assert p["name"].strip()  # the label shown with the points after a hit
+    names = {p["name"] for p in cfg.raw()["products"]}
+    assert {"طلای گرمی", "آتیه", "همنگ", "توان", "حامی", "عیار", "آموزش مفید", "بیمه زندگی مفید", "بورس ویو",
+            "بورس ویو ۲.۰", "مفید کارت جت", "مفید اپ", "ایزی تریدر"} == names
+
+
+def test_bad_products_fall_back_to_the_13(tmp_path):
+    cfg, warnings = load_json(tmp_path, {"products": [{"key": "x"}, "y"]})
+    assert warnings and len(cfg.raw()["products"]) == 13
+
+
+def test_active_targets_are_kept_within_the_products(tmp_path):
+    cfg, warnings = load_json(tmp_path, {"targets": {"active": 40}})
+    assert warnings and cfg.targets.active == 13
+    cfg, warnings = load_json(tmp_path, {"targets": {"active": 0}})
+    assert warnings and cfg.targets.active == 1
+    cfg, warnings = load_json(tmp_path, {"targets": {"active": 7}})
+    assert warnings == [] and cfg.targets.active == 7
 
 
 def test_shipped_settings_file_loads_cleanly():
@@ -49,15 +76,15 @@ def test_partial_override_and_comments(tmp_path):
         ({"round": {"balls": "ten"}}, ("round", "balls"), config.DEFAULTS["round"]["balls"]),
         ({"round": {"balls": -1}}, ("round", "balls"), 0),
         ({"rush": {"duration_s": 0}}, ("rush", "duration_s"), 1),
-        ({"rush": {"spawn_colors": ["purple"]}}, ("rush", "spawn_colors"), ["red", "blue", "green", "red"]),
+        ({"rush": {"spawn_tiers": ["purple"]}}, ("rush", "spawn_tiers"), ["tiny", "small", "medium", "small"]),
         ({"profiles": {"score_tiers": [700, 250]}}, ("profiles", "score_tiers"), config.DEFAULTS["profiles"]["score_tiers"]),
         ({"display": {"fps": 1000}}, ("display", "fps"), 240),
         ({"display": {"fullscreen": 1}}, ("display", "fullscreen"), True),
         ({"display": {"resolution": [1920]}}, ("display", "resolution"), [0, 0]),
-        ({"targets": {"green": {"points": -5}}}, ("targets", "green", "points"), 0),
-        ({"motion": {"red": {"pattern": "zigzag"}}}, ("motion", "red", "pattern"), "still"),
+        ({"targets": {"medium": {"points": -5}}}, ("targets", "medium", "points"), 0),
+        ({"motion": {"tiny": {"pattern": "zigzag"}}}, ("motion", "tiny", "pattern"), "still"),
         ({"input": {"udp_json": {"units": "inch"}}}, ("input", "udp_json", "units"), "normalized"),
-        ({"round": {"initial": ["purple"]}}, ("round", "initial"), ["green", "red", "blue"]),
+        ({"targets": {"green": {"points": 5}}}, ("targets", "active"), 4),  # the old colours: reported, ignored
         ({"round": "x"}, ("round", "balls"), config.DEFAULTS["round"]["balls"]),
     ],
 )
@@ -96,3 +123,12 @@ def test_write_defaults_round_trip(tmp_path):
     config.write_defaults(p)
     cfg, warnings = config.load(p)
     assert warnings == [] and cfg.raw() == config.DEFAULTS
+
+
+def test_a_round_always_has_a_time_or_a_ball_limit(tmp_path):
+    cfg, warnings = load_json(tmp_path, {})
+    assert cfg.round.time_limit and not cfg.round.ball_limit and warnings == []  # as it ships: time only
+    cfg, warnings = load_json(tmp_path, {"round": {"time_limit": False}})
+    assert cfg.round.time_limit and any("never end" in w for w in warnings)
+    cfg, warnings = load_json(tmp_path, {"round": {"time_limit": False, "ball_limit": True, "balls": 8}})
+    assert not cfg.round.time_limit and warnings == []

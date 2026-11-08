@@ -16,7 +16,7 @@ TURQUOISE = hex_rgb("#00A796")  # Mofid colour; positive market, profit, growth;
 DARK_BLUE = hex_rgb("#004C6A")  # CTA, backgrounds, titles
 # Secondary colours
 PURPLE = hex_rgb("#832C73")  # highlight / index colour (not text, not CTA, <30% background)
-RED = hex_rgb("#F3716D")  # volatility / decline (not text, not background)
+RED = hex_rgb("#832C73")  # volatility / decline (not text, not background)
 WHITE = (255, 255, 255)
 
 # Tints and shades printed under the primary swatches (page 8), dark -> light
@@ -33,7 +33,14 @@ GREY_LIGHT = hex_rgb("#CED8DE")
 TEXT_GREY = hex_rgb("#546670")
 PATTERN_BLUE = hex_rgb("#005379")  # dot pattern colour (page 22)
 
-# The scenario's three colours mapped onto the brand palette.
+# MOFID_UI v4.1 (the redesign): every screen on the dark field, with these on it.
+FIELD = DARK_BLUE  # #004C6A, the background of every screen
+MIST = hex_rgb("#B5D5E5")  # secondary type, labels
+TURQ = hex_rgb("#77C2BE")  # action, positive, multiplier
+CORAL = hex_rgb("#832C73")  # time warning, Market Rush
+DEEP = hex_rgb("#00374E")  # ink on turquoise; the Market Rush field
+
+# The old three colours (the scenario's green, blue and red boxes), kept for the design-kit tools.
 TARGET_COLORS = {"green": TURQUOISE, "blue": DARK_BLUE, "red": RED}
 # The icon inside each box, by meaning; see icons.py.
 TARGET_SYMBOLS = {color: icon.kind for color, icon in TARGET_ICONS.items()}

@@ -22,7 +22,7 @@
   </g>
   <rect id="field" x="12.2" y="64.2" width="275.6" height="305.6" fill="none" stroke="#832C73" stroke-width="0.4"/>
   <rect id="start-box" x="108.1" y="240.1" width="83.8" height="83.8" fill="none" stroke="#00A796" stroke-width="0.2"/>
-  <g id="crosses" stroke="#F3716D" stroke-width="0.6">
+  <g id="crosses" stroke="#832C73" stroke-width="0.6">
     <line x1="17" y1="25" x2="33" y2="25"/>
     <line x1="25" y1="17" x2="25" y2="33"/>
     <line x1="267" y1="25" x2="283" y2="25"/>

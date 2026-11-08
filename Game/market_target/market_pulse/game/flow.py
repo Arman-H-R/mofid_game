@@ -178,8 +178,9 @@ class Flow:
         elif self.state in (COUNTDOWN, PLAYING, ENDING) and rnd is not None:
             out["name"] = (self.round_player or {}).get("name", "")
             out["score"] = rnd.score
-            out["seconds"] = math.ceil(round(rnd.time_left(now), 3))
+            out["seconds"] = math.ceil(round(rnd.time_left(now), 3)) if rnd.timed else None  # None: no time limit
             out["balls_left"] = rnd.throws_left
+            out["balls_limit"] = rnd.balls > 0
         elif self.state == RESULTS and self.summary is not None:
             out["result"] = {"name": self.summary["player_name"], "score": self.summary["score"], "rank": self.rank}
         return out
@@ -330,7 +331,7 @@ class Flow:
             if rnd.finished:
                 self._set(ENDING, now)
                 self._emit("end", reason=rnd.end_reason)
-            else:
+            elif rnd.timed:
                 sec = math.ceil(rnd.time_left(now))
                 if 0 < sec <= self.cfg.flow.time_warning_s and sec != self._last_warn:
                     self._last_warn = sec
@@ -356,7 +357,7 @@ class Flow:
             **summary,
             "profile": classify(summary, self.cfg.profiles),
             "balls": rnd.balls,
-            "round_duration_s": rnd.duration,
+            "round_duration_s": rnd.duration if rnd.timed else 0,  # 0: no time limit
         }
         self.summary = record
         self.rank = self.store.add(record) if self.store is not None else None

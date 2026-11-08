@@ -20,7 +20,8 @@ from market_pulse.game.results import ResultsStore, history_csv
 ROOT = Path(__file__).resolve().parent.parent
 RECORD = {
     "round_id": "r1", "timestamp": 1793379633.0, "player_id": "", "player_name": "سارا", "score": 400, "throws": 10,
-    "hits": {"green": 3, "blue": 2, "red": 1}, "points_by_color": {"green": 30, "blue": 30, "red": 60}, "total_hits": 6,
+    "hits": {"medium": 3, "small": 2, "tiny": 1}, "points_by_tier": {"medium": 30, "small": 30, "tiny": 60}, "total_hits": 6,
+    "products": {"gold": 2, "jet": 1, "hami": 3},
     "rush": {"count": 1, "throws": 4, "hits": 2, "points": 90}, "best_streak": 3, "best_multiplier": 4.0, "end_reason": "balls",
     "duration_s": 18.2, "targets_at_end": 9, "profile": {"key": "balanced", "label": "متعادل", "statement": "..."},
     "balls": 10, "round_duration_s": 60.0,
@@ -82,15 +83,16 @@ def test_status_for_the_phone():
     flow.update(now)
     s = flow.status(now)
     assert s["state"] == F.PLAYING and s["name"] == "سارا" and s["score"] == 0
-    assert s["seconds"] == cfg.round.duration_s and s["balls_left"] == cfg.round.balls
+    assert s["seconds"] == cfg.round.duration_s and s["balls_left"] == 0 and s["balls_limit"] is False  # no ball limit
 
 
 # -- the history ------------------------------------------------------------------
 def test_every_saved_value_has_a_csv_column():
     row = rows_of(history_csv([RECORD]))[0]
     assert row["player_name"] == "سارا" and row["score"] == "400" and row["round_id"] == "r1"
-    assert (row["hits_green"], row["hits_blue"], row["hits_red"]) == ("3", "2", "1")
-    assert (row["points_by_color_green"], row["points_by_color_red"]) == ("30", "60")
+    assert (row["hits_medium"], row["hits_small"], row["hits_tiny"]) == ("3", "2", "1")
+    assert (row["points_by_tier_medium"], row["points_by_tier_tiny"]) == ("30", "60")
+    assert (row["products_gold"], row["products_jet"]) == ("2", "1")  # hits per product: a column each
     assert (row["rush_count"], row["rush_throws"], row["rush_hits"], row["rush_points"]) == ("1", "4", "2", "90")
     assert (row["profile_key"], row["profile_label"]) == ("balanced", "متعادل")
     assert (row["best_streak"], row["best_multiplier"], row["end_reason"]) == ("3", "4.0", "balls")
@@ -309,7 +311,7 @@ def test_phone_starts_and_cancels_a_round_on_the_wall(tmp_path):
 
 
 def test_finished_round_is_in_the_csv_with_its_name(tmp_path):
-    cfg = game_cfg({"round": {"balls": 1}, "results": {"log_file": str(tmp_path / "results.jsonl")}})
+    cfg = game_cfg({"round": {"ball_limit": True, "balls": 1}, "results": {"log_file": str(tmp_path / "results.jsonl")}})
     clock = {"t": 100.0}
     app = App(cfg, Paths(ROOT), clock_source=lambda: clock["t"], start_inputs=False)
     app.panel = web.Panel(cfg, app.store, ROOT / "assets")

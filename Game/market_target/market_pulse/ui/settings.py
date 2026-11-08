@@ -35,11 +35,12 @@ from .theme import Viewport
 
 log = logging.getLogger(__name__)
 
-Key = tuple  # where a value is: ("targets", "red", "points"), ("combo", "levels", 0, "multiplier")
+Key = tuple  # where a value is: ("targets", "tiny", "points"), ("combo", "levels", 0, "multiplier")
 
 UNITS = {"cm": "سانتی‌متر", "s": "ثانیه", "pts": "امتیاز", "hits": "برخورد", "%": "درصد", "px": "پیکسل",
-         "mm": "میلی‌متر", "deg": "درجه", "pct": "درصد", "Hz": "هرتز", "scans": "اسکن", "": ""}
-COLOR_NAMES = (("green", "سبز"), ("blue", "آبی"), ("red", "قرمز"))
+         "mm": "میلی‌متر", "deg": "درجه", "pct": "درصد", "Hz": "هرتز", "scans": "اسکن", "boxes": "باکس", "": ""}
+TIER_NAMES = (("medium", "بزرگ"), ("small", "متوسط"), ("tiny", "کوچک"))  # as the design names the three sizes
+PREVIEW_PRODUCTS = ("easytrader", "boursview", "jet")  # the tiles the Boxes tab shows at the three sizes
 LIDAR_UNITS = {"mm": "mm", "°": "deg", "s": "s", "%": "pct", "Hz": "Hz", "scans": "scans", "": ""}
 LIDAR_CHOICES = {"circle": "دایره", "square": "مربع", "rectangle": "مستطیل", "touch": "لمس", "ball": "توپ"}
 # the game's picture size in pixels: landscape (افقی) and portrait (عمودی) screens; [0, 0] = the display's own
@@ -74,6 +75,7 @@ class Item:
     options: tuple = ()  # ((value, label), ...): one of these, chosen with buttons
     shape: str | None = None  # a LiDAR row shown only for this area shape
     entry: bool = False  # a box to type the number in, instead of a slider
+    needs: Key | None = None  # a switch that must be on for this value to count (shown faded when off)
 
     @property
     def height(self) -> float:
@@ -83,10 +85,11 @@ class Item:
 def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     """The tabs: title, rows, and what is drawn with the rows ("boxes": the boxes at their
     size, "best": the most one hit can score, "screen": the canvas now and when changes apply)."""
-    boxes = []
-    for color, name in COLOR_NAMES:
-        boxes += [Item(("targets", color, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm"),
-                  Item(("targets", color, "points"), f"امتیاز باکس {name}", 0, 200, 5, "pts")]
+    n_products = max(1, len(raw.get("products") or C.PRODUCTS))
+    boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, n_products, 1, "boxes")]
+    for tier, name in TIER_NAMES:
+        boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm"),
+                  Item(("targets", tier, "points"), f"امتیاز باکس {name}", 0, 200, 5, "pts")]
     boxes.append(Item(("input", "ball_radius_cm"), "حاشیه‌ی برخورد دور هر باکس", 0, 50, 1, "cm"))
 
     combo = [Item(("combo", "enabled"), "ضریب برخوردهای پشت‌سرهم", switch=True)]
@@ -99,16 +102,18 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     rush = [
         Item(("rush", "enabled"), "طوفان بازار", switch=True),
         Item(("rush", "duration_s"), "مدت طوفان", 1, 15, 0.5, "s"),
-        Item(("rush", "trigger_red_hits"), "چند برخورد قرمز طوفان را شروع کند", 1, 10, 1, "hits"),
+        Item(("rush", "trigger_tiny_hits"), "چند برخورد به باکس کوچک طوفان را شروع کند", 1, 10, 1, "hits"),
+        Item(("targets", "min_tiny"), "کمترین تعداد باکس کوچک روی دیوار", 0, 4, 1, "boxes"),
         Item(("rush", "speed"), "سرعت باکس‌ها در طوفان", 0.5, 3, 0.1, "x"),
-        Item(("rush", "max_targets"), "بیشترین تعداد باکس در طوفان", 3, 20, 1),
+        Item(("rush", "max_targets"), "بیشترین تعداد باکس در طوفان", 1, n_products, 1, "boxes"),
         Item(("rush", "spawn_interval_s"), "هر چند ثانیه یک باکس تازه", 0.3, 5, 0.1, "s"),
         Item(("rush", "cooldown_s"), "استراحت بین دو طوفان", 0, 30, 1, "s"),
     ]
     play = [
-        Item(("round", "duration_s"), "زمان هر دور", 15, 180, 5, "s"),
-        Item(("round", "balls"), "تعداد توپ", 0, 30, 1, zero="بدون محدودیت"),
-        Item(("round", "max_targets"), "بیشترین تعداد باکس روی دیوار", 3, 20, 1),
+        Item(("round", "time_limit"), "محدودیت زمان", switch=True),
+        Item(("round", "duration_s"), "زمان هر دور (بنویسید)", 5, 3600, 1, "s", entry=True, needs=("round", "time_limit")),
+        Item(("round", "ball_limit"), "محدودیت تعداد توپ", switch=True),
+        Item(("round", "balls"), "تعداد توپ (بنویسید)", 1, 100, 1, entry=True, needs=("round", "ball_limit")),
         Item(("motion", "enabled"), "حرکت باکس‌ها", switch=True),
         Item(("motion", "speed"), "سرعت حرکت باکس‌ها", 0.2, 3, 0.1, "x"),
         Item(("flow", "registration"), "صفحه‌ی نوشتن نام", switch=True),
@@ -175,6 +180,8 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 # Under each slider: what the low end does (left, by −) and what the high end does (right, by +).
 # A key with "*" stands for every colour or multiplier level.
 HINTS: dict[Key, tuple[str, str]] = {
+    ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا همه‌ی محصول‌ها): آسان‌تر"),
+    ("targets", "min_tiny"): ("0: باکس کوچک فقط به شانس می‌آید", "باکس کوچک بیشتر: طوفان زودتر"),
     ("targets", "*", "size_cm"): ("باکس کوچک‌تر: زدنش سخت‌تر", "باکس بزرگ‌تر: زدنش آسان‌تر"),
     ("targets", "*", "points"): ("امتیاز کمتر؛ 0: بی‌امتیاز", "امتیاز بیشتر برای هر برخورد"),
     ("input", "ball_radius_cm"): ("0: فقط خود باکس امتیاز دارد", "برخورد دورتر از باکس هم امتیاز دارد"),
@@ -182,14 +189,13 @@ HINTS: dict[Key, tuple[str, str]] = {
     ("combo", "levels", "*", "multiplier"): ("×1: بی‌اثر", "امتیازها چند برابر می‌شوند"),
     ("rush", "score_multiplier"): ("×1: طوفان امتیاز اضافه ندارد", "امتیاز در طوفان چند برابر می‌شود"),
     ("rush", "duration_s"): ("طوفان کوتاه‌تر", "طوفان طولانی‌تر"),
-    ("rush", "trigger_red_hits"): ("طوفان زودتر شروع می‌شود", "برای طوفان باید قرمز بیشتری زد"),
+    ("rush", "trigger_tiny_hits"): ("طوفان زودتر شروع می‌شود", "برای طوفان باید باکس کوچک بیشتری زد"),
     ("rush", "speed"): ("باکس‌ها در طوفان آهسته‌تر", "تندتر: زدنشان سخت‌تر"),
     ("rush", "max_targets"): ("باکس کمتر در طوفان", "دیوار در طوفان شلوغ‌تر"),
     ("rush", "spawn_interval_s"): ("باکس تازه زودبه‌زود می‌آید", "باکس تازه دیرتر می‌آید"),
     ("rush", "cooldown_s"): ("0: طوفان بعدی بی‌درنگ ممکن است", "فاصله‌ی بیشتر بین دو طوفان"),
-    ("round", "duration_s"): ("دور کوتاه‌تر", "دور طولانی‌تر"),
-    ("round", "balls"): ("0: توپ بی‌شمار، فقط زمان دور را تمام می‌کند", "توپ بیشتر برای هر بازیکن"),
-    ("round", "max_targets"): ("باکس کمتر: بازی سخت‌تر", "باکس بیشتر: بازی آسان‌تر"),
+    ("round", "duration_s"): ("ثانیه؛ دور با تمام شدن زمان تمام می‌شود", "عدد بیشتر: دور طولانی‌تر"),
+    ("round", "balls"): ("دور با آخرین توپ تمام می‌شود", "عدد بیشتر: توپ بیشتر برای هر بازیکن"),
     ("motion", "speed"): ("باکس‌ها آهسته حرکت می‌کنند", "تندتر: زدنشان سخت‌تر"),
     ("layout", "start_button", "size_cm"): ("مربع شروع کوچک‌تر", "بزرگ‌تر: زدنش آسان‌تر"),
     ("flow", "countdown_s"): ("بازی زودتر شروع می‌شود", "شمارش معکوس طولانی‌تر"),
@@ -236,7 +242,7 @@ def hint(key: Key) -> tuple[str, str] | None:
     """What the low end and the high end of a slider do."""
     if key in HINTS:
         return HINTS[key]
-    return HINTS.get(tuple("*" if isinstance(p, int) or p in C.COLORS else p for p in key))
+    return HINTS.get(tuple("*" if isinstance(p, int) or p in C.TIERS else p for p in key))
 
 
 class LidarValues:
@@ -429,7 +435,17 @@ class SettingsPage:
             put(self.root, item.key, copy.deepcopy(value))  # never a preset's own list
             self.message = ("", "")
             self._leaving = False
+            self._one_limit(item.key)
             self.on_change()
+
+    LIMITS = (("round", "time_limit"), ("round", "ball_limit"))
+
+    def _one_limit(self, key: Key) -> None:
+        """A round needs a time limit or a ball limit: turning off the last one turns the other on."""
+        if key in self.LIMITS and not any(get(self.root, k) for k in self.LIMITS):
+            other = next(k for k in self.LIMITS if k != key)
+            put(self.root, other, True)
+            self.message = ("دور بازی باید محدودیت زمان یا توپ داشته باشد؛ دیگری روشن شد", "ok")
 
     def _nudge(self, i: int, steps: int) -> None:
         self.row = i
@@ -702,32 +718,48 @@ class SettingsPage:
             self.text.blit(surf, note, "body", vp.s(3.4), theme.TEXT_GREY, vp.px(self.W - 14, y + i * 7), "topright")
 
     def _boxes(self, surf: pygame.Surface, vp: Viewport, y: float) -> float:
-        """The three boxes side by side, standing on one line: at their real size on the wall
+        """The three sizes side by side, standing on one line: at their real size on the wall
         when they fit, otherwise all scaled down the same. A line around each shows where a hit
-        still counts (input.ball_radius_cm)."""
+        still counts (input.ball_radius_cm). Under them, all the products, one lit for every
+        box that is on the wall at once (targets.active)."""
         raw = self.raw["targets"]
         pad = max(0.0, float(self.raw["input"]["ball_radius_cm"]))
-        sizes = [float(raw[c]["size_cm"]) for c, _ in COLOR_NAMES]
-        room_h, gap = 50.0, 16.0 + 2 * pad
-        k = min(1.0, (self.W - 60 - 2 * gap) / sum(sizes), room_h / (max(sizes) + 2 * pad))
-        base = y + 6 + room_h
+        aspect = 0.92
+        sizes = [float(raw[c]["size_cm"]) for c, _ in TIER_NAMES]
+        room_h, gap = 26.0, 16.0 + 2 * pad
+        k = min(1.0, (self.W - 60 - 2 * gap) / sum(sizes), room_h / (max(sizes) * aspect + 2 * pad))
+        base = y + 4 + room_h
         x = (self.W + sum(sizes) * k + 2 * gap) / 2  # from the right
-        for (color, _), size in zip(COLOR_NAMES, sizes):
-            side = size * k
-            cx = x - side / 2
-            tile = self.sprites.target(color, vp.s(side), shadow=False)
-            surf.blit(tile, tile.get_rect(center=vp.px(cx, base - side / 2)))
+        for (tier, _), size, key in zip(TIER_NAMES, sizes, PREVIEW_PRODUCTS):
+            w = size * k
+            h = w * self.sprites.product_aspect.get(key, aspect)
+            cx, cy = x - w / 2, base - h / 2
+            tile = self.sprites.product(key, vp.s(w))
+            surf.blit(tile, tile.get_rect(center=vp.px(cx, cy)))
             if pad > 0:
-                reach = (side / 2 + pad * k)
-                pygame.draw.rect(surf, theme.TURQUOISE, vp.cm_rect(cx - reach, base - side / 2 - reach,
-                                                                   cx + reach, base - side / 2 + reach),
+                rx, ry = w / 2 + pad * k, h / 2 + pad * k
+                pygame.draw.rect(surf, theme.TURQUOISE, vp.cm_rect(cx - rx, cy - ry, cx + rx, cy + ry),
                                  max(1, vp.s(0.5)), border_radius=vp.s(1.5))
-            self.text.blit(surf, f"{raw[color]['points']} {UNITS['pts']}", "bold", vp.s(3.8), theme.DARK_BLUE,
-                           vp.px(cx, base + 6 + pad * k))
-            x -= side + gap
+            self.text.blit(surf, f"+{raw[tier]['points']}", "numbers", vp.s(4.2), theme.DARK_BLUE,
+                           vp.px(cx, base + 4.5 + pad * k))
+            x -= w + gap
         note = "اندازه‌ی واقعی روی دیوار" if k >= 1.0 else f"کوچک‌شده تا {round(k * 100)} درصد"
         self.text.blit(surf, note, "body", vp.s(3.2), theme.TEXT_GREY, vp.px(12, y + 4), "topleft")
-        return base + 14 + pad * k
+        # the active boxes: every product, lit for each box on the wall at once
+        products = self.raw.get("products") or C.PRODUCTS
+        n, active = len(products), int(raw["active"])
+        tw = min(11.0, (self.W - 70) / n - 1.5)
+        row_y = base + 12 + pad * k
+        x = self.W - 14 - tw / 2
+        for i, p in enumerate(products):
+            tile = self.sprites.product(p["key"], vp.s(tw))
+            tile.set_alpha(255 if i < active else 55)
+            surf.blit(tile, tile.get_rect(center=vp.px(x, row_y)))
+            tile.set_alpha(255)
+            x -= tw + 1.5
+        self.text.blit(surf, f"{active} از {n} محصول هم‌زمان", "bold", vp.s(3.6), theme.TURQUOISE_RAMP[0],
+                       vp.px(12, row_y), "midleft")
+        return row_y + tw * aspect / 2 + 3
 
     def _row(self, surf: pygame.Surface, vp: Viewport, i: int, item: Item, y: float, unsaved: bool) -> None:
         W, t = self.W, self.text
@@ -737,7 +769,8 @@ class SettingsPage:
         self._hits.append((row, "row", i))
         v = get(self.root, item.key)
         mid = y + (item.height / 2 if item.switch or item.options or item.entry else 7.5)
-        t.blit(surf, item.label, "body", vp.s(4.4), theme.DARK_BLUE, vp.px(W - 14, mid), "midright")
+        off = item.needs is not None and not get(self.root, item.needs)  # its switch is off: not used now
+        t.blit(surf, item.label, "body", vp.s(4.4), theme.TEXT_GREY if off else theme.DARK_BLUE, vp.px(W - 14, mid), "midright")
         if unsaved:
             dot = self.sprites.dot(vp.sf(1.1), theme.PURPLE)
             surf.blit(dot, dot.get_rect(center=vp.px(W - 10.5, mid)))
@@ -753,8 +786,8 @@ class SettingsPage:
                        localize=False, cache=False)
                 t.blit(surf, "Enter: ثبت     Esc: لغو", "body", vp.s(3.4), theme.TURQUOISE_RAMP[0], vp.px(62, mid), "midleft")
             else:
-                t.blit(surf, shown(item, v), "heading", vp.s(4.4), theme.TURQUOISE_RAMP[0], box.center)
-                tips = hint(item.key)
+                t.blit(surf, shown(item, v), "heading", vp.s(4.4), theme.GREY if off else theme.TURQUOISE_RAMP[0], box.center)
+                tips = ("خاموش: به کار نمی‌رود", "") if off else hint(item.key)
                 if tips is not None:
                     t.blit(surf, tips[0], "body", vp.s(3.4), theme.TEXT_GREY, vp.px(62, mid), "midleft")
             self._hits.append((box, "entry", i))
@@ -810,7 +843,7 @@ class SettingsPage:
     def _best_hit(self, surf: pygame.Surface, vp: Viewport, y: float) -> None:
         """What one hit can score at most, worked out the way the game does."""
         raw = self.raw
-        pts = max(raw["targets"][c]["points"] for c in C.COLORS)
+        pts = max(raw["targets"][c]["points"] for c in C.TIERS)
         combo = max([1] + [lv["multiplier"] for lv in raw["combo"]["levels"]]) if raw["combo"]["enabled"] else 1
         rush = raw["rush"]["score_multiplier"] if raw["rush"]["enabled"] else 1
         if raw["rush"]["stack_with_combo"]:

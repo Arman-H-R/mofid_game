@@ -11,6 +11,64 @@ python main.py                           # installation mode: fullscreen, sensor
 
 ---
 
+## 0. Redesign: MOFID_UI v4.1 (2026-11-06)
+
+The game now follows *MOFID_UI_v4.1_1.pdf*. **Where this file below still talks about green,
+blue and red boxes, read the three sizes instead** (green → medium, blue → small,
+red → tiny). Those sections describe the game before the redesign.
+
+**Targets: the 13 Mofid products.** The boxes are the 13 official product tiles from the
+PDF (طلای گرمی، آتیه، همنگ، توان، حامی، عیار، آموزش مفید، بیمه زندگی مفید، بورس ویو،
+بورس ویو ۲.۰، مفید کارت جت، مفید اپ، ایزی تریدر). They are cut out unchanged by
+`tools/extract_product_tiles.py` into `assets/products/`, listed in `config.PRODUCTS`, and
+never recoloured. A tile is slightly wider than tall (aspect 0.92), and the hit area is the
+tile itself.
+
+| Size (`targets.*`) | Width | Points | Named on screen |
+|---|---|---|---|
+| `medium` | 54 cm | 10 | باکس بزرگ |
+| `small` | 42 cm | 15 | باکس متوسط |
+| `tiny` | 29 cm | 30, and starts Market Rush | باکس کوچک |
+
+- **`targets.active` is how many boxes are on the wall at once** (default 4, from 1 to 13).
+  It is the only place that number is set. A hit box is replaced at once, so the count never
+  changes outside Market Rush, and all boxes then move. The old growth to 12 boxes on a red
+  hit is gone.
+- **Which product and which size** comes from `game/products.py`. Products are drawn from a
+  shuffled bag of all 13: none already on the wall, and not the one just hit. Sizes are drawn
+  from a bag weighted by `targets.<size>.weight` (3 : 3 : 2). `targets.min_tiny` (1) keeps a
+  tiny box up whenever there are 3 or more boxes, so Market Rush can always be reached.
+- **Movement:** each size has a gentle pattern (`motion.*`), and every box gets its own speed
+  and reach (`motion.variation`, ±18 %).
+- **After a hit** the PDF's "rings + popup" opens where the ball hit: the **product's name**,
+  `+points` and the multiplier (`Effects.badge`). Each tile shows its points under it, and
+  tiny tiles keep corner ticks.
+- **Market Rush** is started by a tiny-box hit (`rush.trigger_tiny_hits`,
+  `rush.restart_on_tiny_hit`). It uses the same mechanics as before: 4 s, ×2, faster
+  movement, extra boxes up to `rush.max_targets`. It now shows on a deep field with coral
+  accents. Medium and small hits never start it.
+- **Every screen is on the dark field** (#004C6A), with the PDF's palette (`theme.FIELD`,
+  `MIST`, `TURQ`, `CORAL`, `DEEP`), HUD, countdown, GO, ending (the products fall into a pile)
+  and results (the portfolio of products hit). Fonts stay IRANSansX: the PDF's Pinar is not in
+  the project.
+- **The attract screen (`ui/attract.py`) is a loop driven only by the clock.** It never
+  touches the game. It plays three scenes:
+  - **01:** the 13 tiles circle the title.
+  - **02:** a demonstration round: a hit with its name and points, a new product, the three
+    sizes and their points, and a tiny hit that starts Market Rush.
+  - **03:** today's best three.
+
+  `flow.attract_panel_s`, `flow.attract_demo` and `flow.attract_demo_s` control it.
+- **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–13),
+  with a live row of all 13 products lit for the active ones. Below it are each size's width
+  and points. Save writes `targets.active` into `config/settings.json`, as with every other
+  row.
+- **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits
+  per product). The CSV gets the matching columns.
+- **Not updated:** the design-kit and guide generators in `tools/` (`export_design_kit.py`,
+  `export_quick_guide.py`, `export_player_guide.py`, `build_svg_assets.py`) still draw the old
+  coloured boxes, and so does `design/`.
+
 ## 1. The game as implemented
 
 | Rule (scenario) | Implementation |
@@ -124,6 +182,18 @@ python -m venv .venv
 
 Use **pygame-ce**, not `pygame`: only pygame-ce shapes Persian text. If `pygame` is already
 installed in the environment, `pip uninstall pygame` first.
+
+Easiest on Windows: `run.bat` does all of this. It uses this folder's `.venv`, and if `.venv` is
+missing or does not work on this PC it makes it again and installs the requirements first:
+
+```bash
+.\run.bat --windowed --simulate
+```
+
+A `.venv` copied from another PC does not work here: it fails with
+`No Python at 'C:\Users\<other user>\...\python.exe'` (it points at that PC's Python). Never copy
+or commit `.venv`; delete it (or let `run.bat` replace it). If the prompt still shows the old
+venv's name, run `deactivate` or open a new terminal.
 
 | Command | What it does |
 |---|---|

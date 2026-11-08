@@ -86,6 +86,20 @@ class AssetLibrary:
                 sources[name] = data
         return cls(sources), problems
 
+    def source(self, name: str) -> bytes | None:
+        """The SVG text of an asset (None if there is none)."""
+        return self._src.get(name)
+
+    def add(self, name: str, data: bytes) -> None:
+        """Add an asset made in code (a variant of another one)."""
+        m = _VIEWBOX.search(data)
+        if not m:
+            self._failed.add(name)
+            return
+        self._src[name] = data
+        self._size[name] = (float(m.group(3)), float(m.group(4)))
+        self._failed.discard(name)
+
     def has(self, name: str) -> bool:
         return self.enabled and name in self._src and name not in self._failed
 

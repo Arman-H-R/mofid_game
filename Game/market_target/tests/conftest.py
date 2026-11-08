@@ -20,7 +20,7 @@ from market_pulse import config  # noqa: E402
 
 # The original scenario, which stays available through settings: 10 balls, the how-to
 # page, no name screen, no logo intro, no Market Rush. The tests of those rules run in this mode.
-CLASSIC = {"round": {"balls": 10}, "flow": {"registration": False, "show_instructions": True, "intro_s": 0},
+CLASSIC = {"round": {"ball_limit": True, "balls": 10}, "flow": {"registration": False, "show_instructions": True, "intro_s": 0},
            "rush": {"enabled": False}}
 
 

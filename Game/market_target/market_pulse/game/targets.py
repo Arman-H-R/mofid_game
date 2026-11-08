@@ -116,8 +116,8 @@ class Motion:
 @dataclass(eq=False)  # identity comparison: two targets are never "equal"
 class Target:
     id: int
-    color: str
-    size: float  # base side length, cm
+    tier: str  # medium | small | tiny: sets the size and the points
+    size: float  # base width of the tile, cm
     x: float  # layout centre, cm
     y: float
     motion: Motion = field(default_factory=Motion)
@@ -135,6 +135,8 @@ class Target:
     die_at: float | None = None  # game time this box starts to leave (Market Rush extras)
     die_dur: float = 0.3
     rush_extra: bool = False
+    product: str = ""  # which of the 13 product tiles it shows
+    aspect: float = 1.0  # the tile's height / width: the hit area is the tile, not a square around it
 
     def __post_init__(self) -> None:
         self.from_x, self.from_y, self.from_scale = self.x, self.y, self.motion_scale
@@ -196,8 +198,8 @@ class Target:
         if self.gone(t):
             return False
         cx, cy = self.center_at(t)
-        half = self.side_at(t) / 2.0 + tolerance
-        return abs(px - cx) <= half and abs(py - cy) <= half
+        side = self.side_at(t)
+        return abs(px - cx) <= side / 2.0 + tolerance and abs(py - cy) <= side * self.aspect / 2.0 + tolerance
 
     def distance_to(self, px: float, py: float, t: float) -> float:
         cx, cy = self.center_at(t)

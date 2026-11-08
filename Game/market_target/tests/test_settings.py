@@ -75,14 +75,14 @@ def test_sliders_never_go_outside_what_the_settings_file_allows():
 
 def test_values_snap_to_steps_and_stay_whole_where_the_game_needs_whole_numbers():
     raw = game_cfg().raw()
-    points = S.Item(("targets", "red", "points"), "", 0, 200, 5, "pts")
+    points = S.Item(("targets", "tiny", "points"), "", 0, 200, 5, "pts")
     assert S.snap(points, raw, 33.0) == 35 and isinstance(S.snap(points, raw, 33.0), int)
     assert S.snap(points, raw, 999) == 200
     mult = S.Item(("combo", "levels", 0, "multiplier"), "", 1, 10, 0.5, "x")
     assert S.snap(mult, raw, 2.6) == 2.5 and S.snap(mult, raw, 3.1) == 3 and isinstance(S.snap(mult, raw, 3.1), int)
     speed = S.Item(("motion", "speed"), "", 0.2, 3, 0.1, "x")
     assert S.snap(speed, raw, 1.0) == 1.0 and isinstance(S.snap(speed, raw, 1.0), float)
-    raw["targets"]["red"]["points"] = 12  # from the file, between two steps
+    raw["targets"]["tiny"]["points"] = 12  # from the file, between two steps
     assert S.nudge(points, raw, 1) == 15 and S.nudge(points, raw, -1) == 10
 
 
@@ -105,20 +105,20 @@ def test_values_read_well():
 # -- saving --------------------------------------------------------------------------------------
 def test_saving_writes_only_the_changed_values_and_keeps_the_rest_of_the_file(tmp_path):
     file = tmp_path / "settings.json"
-    file.write_text(json.dumps({"_comment": "mine", "targets": {"red": {"points": 30, "spawn_on_hit": ["green"]}},
+    file.write_text(json.dumps({"_comment": "mine", "targets": {"tiny": {"points": 30, "weight": 5}},
                                 "web": {"pin": "1234"}}, ensure_ascii=False), encoding="utf-8")
     raw = game_cfg().raw()
-    raw["targets"]["red"]["points"] = 50
+    raw["targets"]["tiny"]["points"] = 50
     raw["combo"]["levels"][1]["multiplier"] = 2.5
     raw["display"]["fullscreen"] = False  # as --windowed does: not on the page, never written
-    S.write_changes(file, None, raw, [("targets", "red", "points"), ("combo", "levels", 1, "multiplier")])
+    S.write_changes(file, None, raw, [("targets", "tiny", "points"), ("combo", "levels", 1, "multiplier")])
     doc = json.loads(file.read_text(encoding="utf-8"))
     assert doc["_comment"] == "mine" and doc["web"] == {"pin": "1234"}
-    assert doc["targets"]["red"] == {"points": 50, "spawn_on_hit": ["green"]}
+    assert doc["targets"]["tiny"] == {"points": 50, "weight": 5}
     assert doc["combo"]["levels"][1] == {"after_hits": 4, "multiplier": 2.5}
     assert "display" not in doc
     cfg, warnings = config.load(file)
-    assert not warnings and cfg.targets.red.points == 50 and cfg.combo.levels[1]["multiplier"] == 2.5
+    assert not warnings and cfg.targets.tiny.points == 50 and cfg.combo.levels[1]["multiplier"] == 2.5
     assert not (tmp_path / "settings.json.tmp").exists()
 
 
@@ -183,18 +183,18 @@ def test_keys_change_values_live_and_save_writes_them(tmp_path):
     page = app.settings
     try:
         key(app, pygame.K_F5)
-        tab, row = find(page, ("targets", "red", "points"))
+        tab, row = find(page, ("targets", "tiny", "points"))
         page.select_tab(tab)
         for _ in range(row):
             key(app, pygame.K_DOWN)
         key(app, pygame.K_RIGHT)
         key(app, pygame.K_RIGHT, pygame.KMOD_SHIFT)  # five steps
-        assert app.cfg.targets.red.points == 60  # 30 + 5 + 25, in the game at once
-        assert page.changed() == [("targets", "red", "points")]
+        assert app.cfg.targets.tiny.points == 60  # 30 + 5 + 25, in the game at once
+        assert page.changed() == [("targets", "tiny", "points")]
         step(app, clock, 0.1)  # the page draws
         key(app, pygame.K_s, pygame.KMOD_CTRL)
         assert not page.open and page.changed() == []
-        assert json.loads((tmp_path / "settings.json").read_text(encoding="utf-8")) == {"targets": {"red": {"points": 60}}}
+        assert json.loads((tmp_path / "settings.json").read_text(encoding="utf-8")) == {"targets": {"tiny": {"points": 60}}}
     finally:
         app.shutdown()
 
@@ -206,8 +206,8 @@ def test_revert_puts_back_the_saved_values(tmp_path):
         app.open_settings()
         page.select_tab(find(page, ("round", "duration_s"))[0])
         page.row = find(page, ("round", "duration_s"))[1]
-        key(app, pygame.K_RIGHT)
-        assert app.cfg.round.duration_s == 65
+        key(app, pygame.K_RIGHT)  # a typed box: the arrows move it a second at a time
+        assert app.cfg.round.duration_s == 61
         assert page.press("revert") == "close"
         assert app.cfg.round.duration_s == 60 and page.changed() == []
     finally:
@@ -215,12 +215,12 @@ def test_revert_puts_back_the_saved_values(tmp_path):
 
 
 def test_defaults_resets_only_this_page(tmp_path):
-    app, clock = make_app(tmp_path, {"round": {"duration_s": 90}, "targets": {"red": {"size_cm": 40}}})
+    app, clock = make_app(tmp_path, {"round": {"duration_s": 90}, "targets": {"tiny": {"size_cm": 40}}})
     page = app.settings
     try:
         page.select_tab(0)
         page.press("defaults")
-        assert app.cfg.targets.red.size_cm == 25 and app.cfg.round.duration_s == 90
+        assert app.cfg.targets.tiny.size_cm == 29 and app.cfg.round.duration_s == 90
     finally:
         app.shutdown()
 
@@ -230,19 +230,19 @@ def test_the_mouse_drags_sliders_presses_buttons_and_flips_switches(tmp_path):
     page = app.settings
     try:
         app.open_settings()
-        tab, row = find(page, ("targets", "green", "size_cm"))
+        tab, row = find(page, ("targets", "medium", "size_cm"))
         page.select_tab(tab)
         step(app, clock, 0.05)
         track = page._tracks[row]
         mouse(app, pygame.MOUSEBUTTONDOWN, track.midright, button=1)
-        assert app.cfg.targets.green.size_cm == 100
+        assert app.cfg.targets.medium.size_cm == 100
         mouse(app, pygame.MOUSEMOTION, track.midleft, rel=(0, 0), buttons=(1, 0, 0))
-        assert app.cfg.targets.green.size_cm == 15
+        assert app.cfg.targets.medium.size_cm == 15
         mouse(app, pygame.MOUSEBUTTONUP, track.midleft, button=1)
         mouse(app, pygame.MOUSEMOTION, track.midright, rel=(0, 0), buttons=(0, 0, 0))
-        assert app.cfg.targets.green.size_cm == 15  # no longer dragging
+        assert app.cfg.targets.medium.size_cm == 15  # no longer dragging
         mouse(app, pygame.MOUSEBUTTONDOWN, hit_rect(page, "plus", row).center, button=1)
-        assert app.cfg.targets.green.size_cm == 16
+        assert app.cfg.targets.medium.size_cm == 16
 
         tab, row = find(page, ("motion", "enabled"))
         page.select_tab(tab)
@@ -264,20 +264,54 @@ def test_the_next_round_uses_the_new_values(tmp_path):
     page = app.settings
     try:
         app.open_settings()
-        S.put(page.raw, ("targets", "green", "size_cm"), 80)
-        S.put(page.raw, ("targets", "green", "points"), 50)
+        S.put(page.raw, ("targets", "medium", "size_cm"), 80)
+        S.put(page.raw, ("targets", "medium", "points"), 50)
+        S.put(page.raw, ("targets", "active"), 7)
         S.put(page.raw, ("round", "balls"), 3)
+        S.put(page.raw, ("round", "ball_limit"), True)
+        for tier in ("small", "tiny"):  # every box medium, so the hit below is one
+            S.put(page.raw, ("targets", tier, "weight"), 0)
+        S.put(page.raw, ("targets", "min_tiny"), 0)
         page.on_change()
         app.close_settings()
         key(app, pygame.K_SPACE)
         step(app, clock, 1.2)
         rnd = app.flow.round
-        green = next(t for t in rnd.targets if t.color == "green")
-        assert green.size == 80 and rnd.balls == 3
-        x, y = green.center_at(app.clock.now())
+        assert len(rnd.targets) == 7 and len({t.product for t in rnd.targets}) == 7
+        medium = next(t for t in rnd.targets if t.tier == "medium")
+        assert medium.size == 80 and rnd.balls == 3
+        x, y = medium.center_at(app.clock.now())
         sensor_hit(app, clock, x, y)
         step(app, clock, 0.2)
-        assert rnd.score == 50
+        assert rnd.score == 50 and len(rnd.targets) == 7
+    finally:
+        app.shutdown()
+
+
+def test_the_number_of_active_boxes_is_on_the_boxes_tab_and_saved(tmp_path):
+    app, clock = make_app(tmp_path)
+    page = app.settings
+    try:
+        app.open_settings()
+        tab, row = find(page, ("targets", "active"))
+        assert tab == 0 and row == 0  # the first row of the first tab
+        item = page.pages[tab][1][row]
+        assert (item.lo, item.hi, item.step) == (1, 13, 1)
+        assert S.shown(item, 4) == "4 باکس"
+        page.select_tab(tab)
+        page.row = row
+        for _ in range(20):  # it stops at the 13 products
+            page.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT, mod=0))
+        assert app.cfg.targets.active == 13
+        for _ in range(11):
+            page.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT, mod=0))
+        assert app.cfg.targets.active == 2
+        step(app, clock, 0.05)  # draws the boxes tab with its row of products
+        assert page.press("save") == "saved"
+        saved = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
+        assert saved == {"targets": {"active": 2}}
+        cfg, warnings = config.load(tmp_path / "settings.json")  # what the game reads when it starts again
+        assert warnings == [] and cfg.targets.active == 2
     finally:
         app.shutdown()
 
@@ -338,8 +372,8 @@ def test_the_page_alone_saves_and_stays_open_then_quits(tmp_path):
     app.exit_after = 5.0 + pygame.time.get_ticks() / 1000  # a safety net, should Esc not end it
     code = app.run_settings()
     assert code == 0 and not page.open
-    # saved at 65; the second change was left: one Esc only warns, so the safety net ended it
-    assert json.loads((tmp_path / "settings.json").read_text(encoding="utf-8")) == {"round": {"duration_s": 65}}
+    # saved at 61; the second change was left: one Esc only warns, so the safety net ended it
+    assert json.loads((tmp_path / "settings.json").read_text(encoding="utf-8")) == {"round": {"duration_s": 61}}
     assert page.message[1] == "error" and [k for k, _ in page.buttons] == ["save", "revert", "defaults"]
 
 
@@ -486,3 +520,38 @@ def test_the_picture_scale_shrinks_the_wall_in_the_middle_of_the_same_window(tmp
         assert app.renderer.vp_menu.ppc == pytest.approx(app.vp.ppc)
     finally:
         app.shutdown()
+
+
+def test_time_and_ball_limits_have_switches_and_one_always_stays_on(tmp_path):
+    app, clock = make_app(tmp_path)
+    page = app.settings
+    try:
+        app.open_settings()
+        tab, row = find(page, ("round", "time_limit"))
+        page.select_tab(tab)
+        keys = [it.key for it in page.items]
+        assert keys[keys.index(("round", "time_limit")) + 1] == ("round", "duration_s")
+        assert keys[keys.index(("round", "ball_limit")) + 1] == ("round", "balls")
+        assert page.items[keys.index(("round", "duration_s"))].entry and page.items[keys.index(("round", "balls"))].entry
+        assert app.cfg.round.time_limit and not app.cfg.round.ball_limit  # as it ships: time only
+        page._nudge(row, 1)  # time off, with no ball limit: the ball limit comes on
+        assert not app.cfg.round.time_limit and app.cfg.round.ball_limit and page.message[1] == "ok"
+        page._nudge(keys.index(("round", "ball_limit")), 1)  # ball off: the time comes back
+        assert app.cfg.round.time_limit and not app.cfg.round.ball_limit
+        b = keys.index(("round", "balls"))  # type the number of balls
+        page.row = b
+        key(app, pygame.K_RETURN)
+        for k in (pygame.K_1, pygame.K_5, pygame.K_RETURN):
+            key(app, k)
+        assert app.cfg.round.balls == 15
+        page.draw(app.screen, app.vp)
+    finally:
+        app.shutdown()
+
+
+def test_every_page_fits_above_the_buttons():
+    raw = game_cfg().raw()
+    for title, items, extra in S.pages(raw):
+        if extra:  # pages with a drawing above or below their rows are checked by eye in the gallery
+            continue
+        assert S.TOP + sum(it.height for it in items) <= 400 - 40, title

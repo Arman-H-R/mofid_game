@@ -68,7 +68,9 @@ def play_session(app, clock):
         if i % 3 == 2:
             sensor_hit(app, clock, 150.0, 390.0)  # a miss
         else:
-            tg = next(t for t in rnd.targets if t.color == ("red" if i % 3 == 0 else "green"))
+            want = "tiny" if i % 3 == 0 else "medium"
+            tg = next((t for t in rnd.targets if t.tier == want and t.die_at is None),
+                      next(t for t in rnd.targets if t.die_at is None))
             x, y = tg.center_at(app.clock.now())
             sensor_hit(app, clock, x, y)
         tick(0.8)  # past the merge / rebound windows
@@ -196,17 +198,18 @@ def test_frame_errors_recover_to_attract_then_exit_when_repeated(tmp_path):
 
 
 def test_frame_time_budget(tmp_path):
-    """Busiest screen (12 moving boxes, effects) at the reference wall resolution."""
-    app, clock = make_app(tmp_path, [1536, 2048], {"flow": {"show_instructions": False}})
+    """Busiest screen (all 13 products moving, Market Rush, the hit badges) at the reference wall resolution."""
+    app, clock = make_app(tmp_path, [1536, 2048], {"flow": {"show_instructions": False}, "targets": {"active": 13},
+                                                   "rush": {"enabled": True}})
     try:
         app.flow.request_start(app.clock.now())
         step(app, clock, 1.3)
         rnd = app.flow.round
         for _ in range(3):
-            tg = next(t for t in rnd.targets if t.color == "red")
+            tg = next(t for t in rnd.targets if t.tier == "tiny")
             sensor_hit(app, clock, *tg.center_at(app.clock.now()))
             step(app, clock, 0.7)
-        assert len(rnd.targets) == 12
+        assert len(rnd.targets) == 13 and rnd.rush is not None
         step(app, clock, 1.0)  # caches warm
         times = []
         for _ in range(120):

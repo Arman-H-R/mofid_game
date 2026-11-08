@@ -84,8 +84,8 @@ class ResultsStore:
 
 CSV_FIRST = (
     "round_id", "date", "time", "player_id", "player_name", "score", "rank_of_day",
-    "throws", "total_hits", "misses", "hits_green", "hits_blue", "hits_red",
-    "points_by_color_green", "points_by_color_blue", "points_by_color_red",
+    "throws", "total_hits", "misses", "hits_medium", "hits_small", "hits_tiny",
+    "points_by_tier_medium", "points_by_tier_small", "points_by_tier_tiny",
     "rush_count", "rush_throws", "rush_hits", "rush_points",
     "best_streak", "best_multiplier", "end_reason", "duration_s", "targets_at_end",
     "profile_key", "profile_label", "profile_statement", "balls", "round_duration_s", "timestamp",

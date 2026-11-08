@@ -9,7 +9,7 @@
 @font-face{font-family:IRANSansX;font-weight:400;src:url(/files/IRANSansX-Regular.ttf) format("truetype");font-display:swap}
 @font-face{font-family:IRANSansX;font-weight:700;src:url(/files/IRANSansX-Bold.ttf) format("truetype");font-display:swap}
 @font-face{font-family:IRANSansX;font-weight:900;src:url(/files/IRANSansX-Black.ttf) format("truetype");font-display:swap}
-:root{--blue:#004C6A;--teal:#00A796;--line:#CED8DE;--grey:#546670;--red:#F3716D;--purple:#832C73;--bg:#F4F7F8;--card:#fff}
+:root{--blue:#004C6A;--teal:#00A796;--line:#CED8DE;--grey:#546670;--red:#832C73;--purple:#832C73;--bg:#F4F7F8;--card:#fff}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--blue);font-family:IRANSansX,Tahoma,sans-serif;font-size:16px;line-height:1.6}
@@ -46,7 +46,7 @@ button,.link{display:block;width:100%;font:inherit;font-weight:700;border:0;bord
 </style>
 </head>
 <body>
-<header><h1 id="title"></h1><img src="/files/logo_fa_horizontal.png" alt="کارگزاری مفید"></header>
+<header><h1 id="title"></h1><img src="/files/logo_fa_horizontal.png" alt="گروه مالی مفید"></header>
 <main>
   <section id="lock">
     <label for="pin">رمز ورود</label>
@@ -126,8 +126,8 @@ function show(s) {
   $("detail").textContent = detail;
   if (s.state === "playing") {
     $("score").textContent = fa(s.score);
-    $("seconds").textContent = fa(s.seconds);
-    $("balls").textContent = fa(s.balls_left);
+    $("seconds").textContent = s.seconds == null ? "∞" : fa(s.seconds);  // null: no time limit
+    $("balls").textContent = s.balls_limit ? fa(s.balls_left) : "∞";  // no ball limit
   }
   if (Date.now() > hintUntil) hint(free ? "" : "بعد از پایان این دور می‌توانید بازیکن بعدی را شروع کنید.");
   refreshPlay();

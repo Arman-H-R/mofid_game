@@ -12,7 +12,29 @@ import json
 from pathlib import Path
 from typing import Any
 
-COLORS = ("green", "blue", "red")
+# The three box sizes. Every one of the 13 products can appear at any size; the size alone
+# sets the points (MOFID_UI v4.1: L +10, M +15, S +30). A hit on a tiny box starts Market Rush.
+TIERS = ("medium", "small", "tiny")
+COLORS = TIERS  # the old name (green, blue, red boxes), still imported by the design-kit tools
+
+# The 13 official product tiles (assets/products, cut from MOFID_UI_v4.1 page 1 by
+# tools/extract_product_tiles.py). "name" is the label shown with the points after a hit.
+# "aspect" is the tile's height / width: the hit area is the tile itself.
+PRODUCTS: list[dict[str, Any]] = [
+    {"key": "gold", "name": "طلای گرمی", "file": "gold.png", "aspect": 0.92},
+    {"key": "atiyeh", "name": "آتیه", "file": "atiyeh.png", "aspect": 0.92},
+    {"key": "hamnag", "name": "همنگ", "file": "hamnag.png", "aspect": 0.92},
+    {"key": "tavan", "name": "توان", "file": "tavan.png", "aspect": 0.92},
+    {"key": "hami", "name": "حامی", "file": "hami.png", "aspect": 0.92},
+    {"key": "ayar", "name": "عیار", "file": "ayar.png", "aspect": 0.92},
+    {"key": "amoozesh", "name": "آموزش مفید", "file": "amoozesh.png", "aspect": 0.92},
+    {"key": "bimeh", "name": "بیمه زندگی مفید", "file": "bimeh.png", "aspect": 0.92},
+    {"key": "boursview", "name": "بورس ویو", "file": "boursview.png", "aspect": 0.92},
+    {"key": "boursview2", "name": "بورس ویو ۲.۰", "file": "boursview2.png", "aspect": 0.92},
+    {"key": "jet", "name": "مفید کارت جت", "file": "jet.png", "aspect": 0.92},
+    {"key": "mofidapp", "name": "مفید اپ", "file": "mofidapp.png", "aspect": 0.92},
+    {"key": "easytrader", "name": "ایزی تریدر", "file": "easytrader.png", "aspect": 0.92},
+]
 
 DEFAULTS: dict[str, Any] = {
     "display": {
@@ -44,36 +66,46 @@ DEFAULTS: dict[str, Any] = {
         "min_move_cm": 35,
         "transition_s": 0.35,
         "spawn_s": 0.32,
-        "start_button": {"x_cm": 150, "y_cm": 282, "size_cm": 84},
+        # below the circle of tiles on the attract screen (MOFID_UI v4.1 page 1)
+        "start_button": {"x_cm": 150, "y_cm": 318, "size_cm": 70},
     },
     "round": {
-        # 0 = no ball limit, so the round always lasts duration_s. A number ends the
-        # round early on that ball (the original scenario used 10).
-        "balls": 10,
+        # Two limits, each with its own switch (F5, tab «دور بازی»). By default only the time:
+        # the round lasts duration_s and players throw as many balls as they can.
+        # ball_limit on: the round also ends on ball number "balls" (0 = no limit after all).
+        # At least one is always on (with both off, the time limit is used).
+        "time_limit": True,
         "duration_s": 60,
-        "initial": ["green", "red", "blue"],
-        "max_targets": 12,
+        "ball_limit": False,
+        "balls": 10,
         "end_delay_s": 1.8,
     },
-    # Sizes are the midpoints of the scenario's suggested ranges
-    # (green 55-65, blue 40-50, red 20-30 cm). Point values are not fixed by the
-    # scenario; red must be the highest. Tune both after the on-site test.
+    # The product boxes. "active" is how many are on the wall at once, outside Market Rush:
+    # every hit box is replaced at once, so the number stays the same (the one place it is set).
+    # Sizes are the tile widths on the wall (MOFID_UI v4.1: 196 / 150 / 104 px of 1080 on 3 m);
+    # the smaller the box, the more points. "weight" is how often each size is drawn for a new
+    # box; min_tiny keeps at least that many tiny boxes up (with 3 or more boxes), so Market
+    # Rush can always be reached.
     "targets": {
-        "green": {"size_cm": 60, "points": 10, "spawn_on_hit": []},
-        "blue": {"size_cm": 45, "points": 15, "spawn_on_hit": []},
-        "red": {"size_cm": 25, "points": 30, "spawn_on_hit": ["green", "blue", "red"]},
+        "active": 4,
+        "medium": {"size_cm": 54, "points": 10, "weight": 3},
+        "small": {"size_cm": 42, "points": 15, "weight": 3},
+        "tiny": {"size_cm": 29, "points": 30, "weight": 2},
+        "min_tiny": 1,
         "min_size_cm": 20,
     },
-    # Each colour's movement carries its meaning: green sways steadily, blue keeps
-    # its balance on a figure of eight, red moves irregularly. Patterns: still,
-    # sway_x, sway_y, orbit, figure8, volatile. "pulse" is the size change as a
-    # fraction of the side.
+    "products": PRODUCTS,
+    # Gentle movement so the boxes feel alive but stay easy to read. Patterns: still,
+    # sway_x, sway_y, orbit, figure8, volatile. "pulse" is the size change as a fraction of
+    # the side. "variation": every box gets its own speed and reach, up to this much
+    # faster or slower, wider or narrower.
     "motion": {
         "enabled": True,
         "speed": 1.0,
-        "green": {"pattern": "sway_x", "amplitude_cm": 14, "period_s": 5.0, "pulse": 0.0, "pulse_period_s": 2.0},
-        "blue": {"pattern": "figure8", "amplitude_cm": 12, "period_s": 5.2, "pulse": 0.05, "pulse_period_s": 2.6},
-        "red": {"pattern": "volatile", "amplitude_cm": 13, "period_s": 3.8, "pulse": 0.12, "pulse_period_s": 1.4},
+        "variation": 0.18,
+        "medium": {"pattern": "sway_x", "amplitude_cm": 10, "period_s": 5.4, "pulse": 0.0, "pulse_period_s": 2.0},
+        "small": {"pattern": "figure8", "amplitude_cm": 9, "period_s": 5.0, "pulse": 0.0, "pulse_period_s": 2.6},
+        "tiny": {"pattern": "volatile", "amplitude_cm": 8, "period_s": 4.2, "pulse": 0.04, "pulse_period_s": 1.6},
     },
     # Add-on 1.2: after N consecutive hits, the following hits use this multiplier.
     # A miss resets it to x1. Nothing is ever subtracted.
@@ -85,36 +117,36 @@ DEFAULTS: dict[str, Any] = {
             {"after_hits": 6, "multiplier": 4},
         ],
     },
-    # Market Rush: one high-intensity phase, started by hitting red boxes.
-    # Red boxes that are merely on the wall never start or extend it.
+    # Market Rush: one high-intensity phase, started by hitting tiny boxes.
+    # Tiny boxes that are merely on the wall never start or extend it.
     "rush": {
         "enabled": True,
         "duration_s": 4,
-        "trigger_red_hits": 1,  # red hits needed to start it
-        "restart_on_red_hit": True,  # a red hit during it gives a fresh duration_s from that hit
+        "trigger_tiny_hits": 1,  # tiny-box hits needed to start it
+        "restart_on_tiny_hit": True,  # a tiny hit during it gives a fresh duration_s from that hit
         "max_per_round": 100,
         "cooldown_s": 0,  # after a rush, before red hits count again
         "score_multiplier": 2,
         "stack_with_combo": True,  # True: combo x rush. False: the larger of the two.
         "speed": 1.6,  # movement speed during the phase
         "speed_ramp_s": 0.4,
-        "max_targets": 12,
+        "max_targets": 8,  # boxes on the wall during it, with the extra ones (never fewer than targets.active)
         "spawn_interval_s": 1.0,
         "spawn_lifetime_s": 4.0,  # extra boxes leave after this long, and always when the phase ends
-        "spawn_colors": ["red", "blue", "green", "red"],
+        "spawn_tiers": ["tiny", "small", "medium", "small"],
         "transition_s": 0.4,  # background fade in and out
     },
     # The end-screen statement describes how the round was played, from the share of
-    # hits per colour and the hits during Market Rush. The score only picks the
+    # hits per box size and the hits during Market Rush. The score only picks the
     # wording within a style, so a high score alone never means a high risk appetite.
     "profiles": {
         "min_hits": 3,  # below this there is too little to go on: "watchful"
-        "aggressive_red_share": 0.5,
-        "risk_red_share": 0.3,
+        "aggressive_tiny_share": 0.5,
+        "risk_tiny_share": 0.3,
         "rush_min_hits": 4,  # also risk-tolerant: at least this many hits during Market Rush...
         "rush_share": 0.6,  # ...and at least this share of all hits
-        "growth_green_share": 0.5,
-        "cautious_red_share": 0.1,  # green-led with red at or below this is "cautious", above it "growth"
+        "growth_medium_share": 0.5,
+        "cautious_tiny_share": 0.1,  # medium-led with tiny at or below this is "cautious", above it "growth"
         # statements[0] below the first, [1] up to the second, [2] above. Set from simulated
         # players (about a third of scores in each); check against real rounds.
         "score_tiers": [90, 180],
@@ -179,7 +211,11 @@ DEFAULTS: dict[str, Any] = {
         "intro_s": 2.6,  # the Mofid logo zooms in and fades before the countdown (0 = no intro)
         "countdown_s": 3.0,
         "results_s": 25.0,  # long enough for players to take a picture of the results
-        "attract_panel_s": 8.0,
+        # The idle screen loops: the 13 tiles around the title, a short demonstration of a
+        # round (a hit, a new box, the sizes and points, Market Rush), then today's best.
+        "attract_panel_s": 8.0,  # the title and the leaderboard, each
+        "attract_demo": True,
+        "attract_demo_s": 14.0,
         "time_warning_s": 10,
     },
     "input": {
@@ -229,6 +265,9 @@ DEFAULTS: dict[str, Any] = {
         "webhook_timeout_s": 4.0,
         "leaderboard_size": 5,
         "show_names": True,
+        # False (MOFID_UI v4.1, 08 RESULTS): the results are type only, no photo or replay.
+        # True: with camera.enabled, the profile card with the player's replay.
+        "show_photo": False,
     },
     # The operator's phone page: name, Play, saved rounds and the CSV file.
     "web": {
@@ -288,7 +327,7 @@ DEFAULTS: dict[str, Any] = {
     },
     "text": {
         "title": "نبض بازار",
-        "subtitle": "بازی تعاملی کارگزاری مفید",
+        "subtitle": "بازی تعاملی گروه مالی مفید",
         "start": "شروع",
         "cta_throw": "برای شروع، توپ را به این مربع بزنید",
         "cta_operator": "برای شروع آماده شوید",
@@ -296,24 +335,31 @@ DEFAULTS: dict[str, Any] = {
         "how_to_title": "راهنمای بازی",
         "rule_balls": "{balls} توپ و {seconds} ثانیه فرصت دارید",
         "rule_time": "{seconds} ثانیه فرصت دارید",
-        "rule_rush": "هر برخورد به باکس قرمز، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
+        "rule_rush": "هر برخورد به باکس کوچک، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
         "register_title": "ثبت‌نام بازیکن",
         "register_prompt": "نام خود را وارد کنید",
         "register_placeholder": "نام شما",
         "register_empty": "لطفاً نام خود را وارد کنید",
         "register_start": "شروع بازی",
         "register_hint": "بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید",
-        "rule_positive": "هر سه رنگ امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
-        "rule_move": "بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند",
+        "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
+        "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
         "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-        "red_extra": "+ سه باکس تازه",
+        "rule_size": "امتیاز هر محصول را اندازه‌ی باکس تعیین می‌کند",
         "points_unit": "امتیاز",
-        "word_green": "رشد",
-        "word_blue": "تنوع سبد",
-        "word_red": "نوسان",
-        "meaning_green": "رشد پایدار؛ ریسک کم، بازده کم",
-        "meaning_blue": "مدیریت ریسک؛ ریسک و بازده متوسط",
-        "meaning_red": "نوسان و هیجان؛ ریسک و بازده احتمالی زیاد",
+        # the three sizes as the design names them (MOFID_UI v4.1): big, medium, small box
+        "tier_medium": "باکس بزرگ",
+        "tier_small": "باکس متوسط",
+        "tier_tiny": "باکس کوچک",
+        "tiny_rush": "+ طوفان بازار",
+        "attract_tag": "13 PRODUCTS · ONE MARKET",
+        "demo_title": "چطور بازی کنیم؟",
+        "demo_hit": "توپ را به محصول‌ها بزنید",
+        "demo_new": "محصول تازه جای آن را می‌گیرد",
+        "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
+        "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
+        "loading_market": "LOADING THE MARKET · 13 PRODUCTS",
+        "portfolio": "سبد محصولات شما",
         "rush_title": "طوفان بازار",
         "rush_start": "طوفان بازار! امتیاز {m}",
         "rush_end": "بازار آرام شد",
@@ -361,17 +407,22 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("wall", "height_cm"): (50, 5000),
     ("round", "balls"): (0, 100),
     ("round", "duration_s"): (5, 3600),
-    ("round", "max_targets"): (3, 40),
+    ("targets", "active"): (1, 13),
+    ("targets", "min_tiny"): (0, 13),
     ("targets", "min_size_cm"): (1, 500),
+    ("motion", "variation"): (0, 0.5),
+    ("profiles", "min_hits"): (1, 100),
+    ("flow", "attract_panel_s"): (2, 120),
+    ("flow", "attract_demo_s"): (8, 120),
     ("motion", "speed"): (0, 5),
     ("rush", "duration_s"): (1, 600),
-    ("rush", "trigger_red_hits"): (1, 100),
+    ("rush", "trigger_tiny_hits"): (1, 100),
     ("rush", "max_per_round"): (0, 100),
     ("rush", "cooldown_s"): (0, 600),
     ("rush", "score_multiplier"): (1, 20),
     ("rush", "speed"): (0.1, 5),
     ("rush", "speed_ramp_s"): (0, 5),
-    ("rush", "max_targets"): (3, 40),
+    ("rush", "max_targets"): (1, 13),
     ("rush", "spawn_interval_s"): (0.2, 60),
     ("rush", "spawn_lifetime_s"): (0.5, 600),
     ("rush", "transition_s"): (0, 5),
@@ -482,6 +533,11 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
             warnings.append(f"'{section}.{key}'={value} is outside {lo}..{hi}; using {clamped}")
             cfg[section][key] = clamped
 
+    rd = cfg["round"]
+    if not rd["time_limit"] and not (rd["ball_limit"] and rd["balls"] > 0):
+        warnings.append("'round': no time limit and no ball limit, so a round would never end; using the time limit")
+        rd["time_limit"] = True
+
     res = cfg["display"]["resolution"]
     if res == "auto":
         cfg["display"]["resolution"] = [0, 0]
@@ -490,42 +546,57 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
         warnings.append(f"'display.resolution' must be \"auto\" or [width, height]; got {res!r}, using auto")
         cfg["display"]["resolution"] = [0, 0]
 
-    for color in COLORS:
-        t = cfg["targets"][color]
+    for tier in TIERS:
+        t = cfg["targets"][tier]
         if t["size_cm"] <= 0:
-            warnings.append(f"'targets.{color}.size_cm' must be positive; using default")
-            t["size_cm"] = DEFAULTS["targets"][color]["size_cm"]
+            warnings.append(f"'targets.{tier}.size_cm' must be positive; using default")
+            t["size_cm"] = DEFAULTS["targets"][tier]["size_cm"]
         if t["points"] < 0:
-            warnings.append(f"'targets.{color}.points' cannot be negative (the scenario has no penalties); using 0")
+            warnings.append(f"'targets.{tier}.points' cannot be negative (the scenario has no penalties); using 0")
             t["points"] = 0
-        bad = [c for c in t["spawn_on_hit"] if c not in COLORS]
-        if bad:
-            warnings.append(f"'targets.{color}.spawn_on_hit' has unknown colours {bad}; they are ignored")
-            t["spawn_on_hit"] = [c for c in t["spawn_on_hit"] if c in COLORS]
-        m = cfg["motion"][color]
+        if t["weight"] < 0:
+            warnings.append(f"'targets.{tier}.weight' cannot be negative; using 0")
+            t["weight"] = 0
+        m = cfg["motion"][tier]
         if m["pattern"] not in ("still", "sway_x", "sway_y", "orbit", "figure8", "volatile"):
-            warnings.append(f"'motion.{color}.pattern' {m['pattern']!r} is unknown; using 'still'")
+            warnings.append(f"'motion.{tier}.pattern' {m['pattern']!r} is unknown; using 'still'")
             m["pattern"] = "still"
         if m["period_s"] <= 0 or m["pulse_period_s"] <= 0:
-            warnings.append(f"'motion.{color}' periods must be positive; using defaults")
-            m["period_s"] = DEFAULTS["motion"][color]["period_s"]
-            m["pulse_period_s"] = DEFAULTS["motion"][color]["pulse_period_s"]
+            warnings.append(f"'motion.{tier}' periods must be positive; using defaults")
+            m["period_s"] = DEFAULTS["motion"][tier]["period_s"]
+            m["pulse_period_s"] = DEFAULTS["motion"][tier]["pulse_period_s"]
         m["pulse"] = min(max(m["pulse"], 0.0), 0.5)
+    if not any(cfg["targets"][tier]["weight"] > 0 for tier in TIERS):
+        warnings.append("'targets.*.weight' are all 0; using the defaults")
+        for tier in TIERS:
+            cfg["targets"][tier]["weight"] = DEFAULTS["targets"][tier]["weight"]
 
-    initial = [c for c in cfg["round"]["initial"] if c in COLORS]
-    if not initial:
-        warnings.append("'round.initial' has no valid colours; using green, red, blue")
-        initial = list(DEFAULTS["round"]["initial"])
-    cfg["round"]["initial"] = initial
-    if cfg["round"]["max_targets"] < len(initial):
-        cfg["round"]["max_targets"] = len(initial)
+    products, seen = [], set()
+    for p in cfg["products"] if isinstance(cfg["products"], list) else []:
+        if (isinstance(p, dict) and isinstance(p.get("key"), str) and p["key"] and p["key"] not in seen
+                and isinstance(p.get("name"), str) and isinstance(p.get("file"), str)):
+            aspect = p.get("aspect", 1.0)
+            aspect = float(aspect) if _number(aspect) and 0.3 <= aspect <= 3.0 else 1.0
+            products.append({"key": p["key"], "name": p["name"], "file": p["file"], "aspect": aspect})
+            seen.add(p["key"])
+        else:
+            warnings.append(f"ignored invalid product {p!r} (needs key, name and file)")
+    if not products:
+        warnings.append("'products' has no valid product; using the 13 Mofid products")
+        products = copy.deepcopy(PRODUCTS)
+    cfg["products"] = products
+    if cfg["targets"]["active"] > len(products):
+        warnings.append(f"'targets.active'={cfg['targets']['active']} but there are {len(products)} products; "
+                        f"using {len(products)}")
+        cfg["targets"]["active"] = len(products)
+    cfg["targets"]["active"] = int(cfg["targets"]["active"])
 
     rush = cfg["rush"]
-    colors = [c for c in rush["spawn_colors"] if c in COLORS]
-    if not colors:
-        warnings.append("'rush.spawn_colors' has no valid colours; using the default")
-        colors = list(DEFAULTS["rush"]["spawn_colors"])
-    rush["spawn_colors"] = colors
+    tiers = [c for c in rush["spawn_tiers"] if c in TIERS]
+    if not tiers:
+        warnings.append("'rush.spawn_tiers' has no valid sizes (medium, small, tiny); using the default")
+        tiers = list(DEFAULTS["rush"]["spawn_tiers"])
+    rush["spawn_tiers"] = tiers
 
     prof = cfg["profiles"]
     tiers = prof["score_tiers"]

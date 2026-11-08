@@ -17,9 +17,9 @@ C5, D5, E5, G5, A4, C6, E6, G4 = 523.25, 587.33, 659.25, 783.99, 440.0, 1046.5, 
 
 # name -> list of (frequency start, frequency end, start offset s, duration s, gain)
 RECIPES: dict[str, list[tuple[float, float, float, float, float]]] = {
-    "hit_green": [(C5, C5, 0.0, 0.16, 0.5), (G5, G5, 0.07, 0.22, 0.5)],
-    "hit_blue": [(A4, A4, 0.0, 0.16, 0.5), (E5, E5, 0.07, 0.22, 0.5)],
-    "hit_red": [(E5, E5, 0.0, 0.12, 0.45), (A4 * 2, A4 * 2, 0.05, 0.14, 0.45), (E6, E6, 0.10, 0.28, 0.4)],
+    "hit_medium": [(C5, C5, 0.0, 0.16, 0.5), (G5, G5, 0.07, 0.22, 0.5)],
+    "hit_small": [(A4, A4, 0.0, 0.16, 0.5), (E5, E5, 0.07, 0.22, 0.5)],
+    "hit_tiny": [(E5, E5, 0.0, 0.12, 0.45), (A4 * 2, A4 * 2, 0.05, 0.14, 0.45), (E6, E6, 0.10, 0.28, 0.4)],
     "spawn": [(420.0, 980.0, 0.0, 0.2, 0.25)],
     "miss": [(170.0, 85.0, 0.0, 0.2, 0.55)],
     "combo": [(C5, C5, 0.0, 0.1, 0.4), (E5, E5, 0.06, 0.1, 0.4), (G5, G5, 0.12, 0.1, 0.4), (C6, C6, 0.18, 0.25, 0.4)],
@@ -97,9 +97,7 @@ class Audio:
     def on_event(self, name: str, data: dict) -> None:
         if name == "hit":
             o = data["outcome"]
-            self.play(f"hit_{o.color}")
-            if len(o.spawned) > 1:
-                self.play("spawn")
+            self.play(f"hit_{o.tier}")
             if o.level_up:
                 self.play("combo")
         elif name in ("miss", "register_error"):

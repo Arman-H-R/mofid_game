@@ -97,6 +97,11 @@ def draw_icon(surf: pygame.Surface, kind: str, side: float, color) -> None:
         pygame.draw.polygon(surf, color, [(x * k, y * k) for x, y in poly])
 
 
+PRODUCT_RADIUS = 0.1665  # the tiles' corner radius, as a share of their width (MOFID_UI v4.1)
+RING_GAP = 0.05  # the thin white ring around a tile on the field: this far out, as a share of the width
+RING_ALPHA = 72  # 28 % white
+
+
 class Sprites:
     def __init__(self, assets: AssetLibrary | None = None):
         self.assets = assets or AssetLibrary()
@@ -105,9 +110,14 @@ class Sprites:
         self._rounded = LRU(160)
         self._dots = LRU(16)
         self._images = LRU(160)
+        self._products = LRU(400)
+        self._product_src: dict[str, pygame.Surface | None] = {}
+        self.product_dir = None  # assets/products, set by set_products
+        self.product_files: dict[str, str] = {}
+        self.product_aspect: dict[str, float] = {}
 
     def clear(self) -> None:
-        for c in (self._targets, self._symbols, self._rounded, self._dots, self._images):
+        for c in (self._targets, self._symbols, self._rounded, self._dots, self._images, self._products):
             c.clear()
 
     def set_budget(self, canvas_bytes: int) -> None:
@@ -117,6 +127,75 @@ class Sprites:
         self._rounded.max_bytes = 6 * canvas_bytes
         self._dots.max_bytes = canvas_bytes
         self._images.max_bytes = 6 * canvas_bytes
+        self._products.max_bytes = 8 * canvas_bytes
+
+    # -- the 13 product tiles ------------------------------------------------------------
+    def set_products(self, folder, products: list[dict]) -> None:
+        """The product tiles: assets/products and cfg.products ({key, file, aspect})."""
+        self.product_dir = folder
+        self.product_files = {p["key"]: p["file"] for p in products}
+        self.product_aspect = {p["key"]: float(p.get("aspect", 1.0)) for p in products}
+        self._product_src.clear()
+        self._products.clear()
+
+    def _product_source(self, key: str) -> pygame.Surface | None:
+        if key not in self._product_src:
+            src = None
+            name = self.product_files.get(key)
+            if self.product_dir is not None and name:
+                try:
+                    src = pygame.image.load(str(self.product_dir / name))
+                    src = _convert(src)
+                except (pygame.error, FileNotFoundError, OSError):
+                    src = None
+            self._product_src[key] = src
+        return self._product_src[key]
+
+    @staticmethod
+    def ring_margin(w: int) -> int:
+        """Room around a tile for its ring, in pixels, on each side."""
+        return max(2, int(math.ceil(w * (RING_GAP + 0.02))))
+
+    def product(self, key: str, w: int, ring: bool = False) -> pygame.Surface:
+        """The product's tile, w pixels wide, never recoloured or redrawn. With ``ring``, the
+        thin 28 % white ring around it (and ring_margin(w) of room on each side)."""
+        w = max(4, int(w))
+        cache_key = (key, w, ring)
+        surf = self._products.hit(cache_key)
+        if surf is not None:
+            return surf
+        aspect = self.product_aspect.get(key, 0.92)
+        h = max(3, int(round(w * aspect)))
+        src = self._product_source(key)
+        if src is not None:
+            tile = pygame.transform.smoothscale(src, (w, h))
+        else:  # no artwork: a plain tile in the field's turquoise, the same shape
+            tile = pygame.Surface((w, h), pygame.SRCALPHA)
+            pygame.draw.rect(tile, theme.TURQUOISE, tile.get_rect(), border_radius=int(w * PRODUCT_RADIUS))
+        if not ring:
+            return self._products.put(cache_key, _convert(tile))
+        m = self.ring_margin(w)
+        surf = pygame.Surface((w + 2 * m, h + 2 * m), pygame.SRCALPHA)
+        gap = w * RING_GAP
+        big = pygame.Surface(((w + 2 * m) * 2, (h + 2 * m) * 2), pygame.SRCALPHA)
+        r = pygame.Rect(0, 0, int((w + 2 * gap) * 2), int((h + 2 * gap) * 2))
+        r.center = big.get_rect().center
+        pygame.draw.rect(big, (255, 255, 255, RING_ALPHA), r, width=max(2, int(w * 0.016 * 2)),
+                         border_radius=int((w * PRODUCT_RADIUS + gap) * 2))
+        surf.blit(pygame.transform.smoothscale(big, surf.get_size()), (0, 0))
+        surf.blit(tile, (m, m))
+        return self._products.put(cache_key, _convert(surf))
+
+    def product_scaled(self, key: str, w_px: float, base_px: int, ring: bool = True) -> pygame.Surface:
+        """A tile drawn at w_px: near its base size the width is quantised (the gentle pulse),
+        transient sizes (pop-in, leaving) are scaled from the base sprite."""
+        f = w_px / max(1, base_px)
+        q = round(f / 0.02) * 0.02
+        if 0.9 <= q <= 1.1:
+            return self.product(key, int(round(base_px * q)), ring)
+        base = self.product(key, base_px, ring)
+        return pygame.transform.smoothscale(base, (max(2, int(round(base.get_width() * f))),
+                                                   max(2, int(round(base.get_height() * f)))))
 
     # -- SVG artwork ------------------------------------------------------------------
     def image(self, name: str, w: int, h: int | None = None) -> pygame.Surface | None:

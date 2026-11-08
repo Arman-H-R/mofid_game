@@ -9,7 +9,6 @@ import pytest
 from market_pulse import config
 from market_pulse.app import App, Paths
 from market_pulse.game import flow as F
-from market_pulse.ui import theme
 from conftest import ROOT, game_cfg
 
 
@@ -109,11 +108,10 @@ def test_intro_plays_on_the_wall_and_the_countdown_follows(tmp_path):
 
 
 def logo_pixels(surf, rect) -> int:
-    """Pixels of the logo's colours inside rect (the background is white with grey dots)."""
+    """Pixels of the logo inside rect: the white logo on the dark field (MOFID_UI v4.1), whose
+    faint dots and symbols are never near white."""
     px = pygame.surfarray.pixels3d(surf.subsurface(rect))
-    blue = np.abs(px.astype(int) - np.array(theme.DARK_BLUE)).sum(axis=2) < 60
-    green = np.abs(px.astype(int) - np.array(theme.TURQUOISE)).sum(axis=2) < 60
-    return int(blue.sum() + green.sum())
+    return int((px.astype(int).min(axis=2) > 235).sum())
 
 
 def test_the_logo_settles_holds_zooms_in_and_is_gone(tmp_path):
@@ -129,7 +127,7 @@ def test_the_logo_settles_holds_zooms_in_and_is_gone(tmp_path):
     def height(img):  # how tall the logo is, in a narrow band down the middle (no symbols there)
         band = app.vp.cm_rect(r.W / 2 - 8, 0, r.W / 2 + 8, r.H)
         px = pygame.surfarray.pixels3d(img.subsurface(band)).astype(int)
-        rows = (px.sum(axis=2) < 450).any(axis=0)  # darker than the background and its grey dots
+        rows = (px.sum(axis=2) > 450).any(axis=0)  # the white logo (fading too), brighter than the field and its dots
         return int(np.ptp(rows.nonzero()[0])) if rows.any() else 0
 
     start, rest, zoom, end = frame(0.0), frame(appear + 0.1), frame(leave + (d - leave) * 0.35), frame(d)

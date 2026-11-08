@@ -28,18 +28,20 @@ from __future__ import annotations
 import logging
 import math
 import random
+import re
 import time
 from contextlib import contextmanager
 from pathlib import Path
 
 import pygame
 
-from ..config import COLORS, Section, layout_left, layout_top
+from ..config import TIERS, Section, layout_left, layout_top
 from ..game import flow as F
 from ..game.rules import Outcome
 from . import theme
-from .draw import Sprites, dot_grid, gradient_bar
-from .effects import Effects
+from .attract import Attract
+from .draw import Sprites, dot_grid, draw_symbol, gradient_bar
+from .effects import BADGE_R, Effects
 from .text import Text, split_runs
 from .theme import Viewport
 
@@ -52,6 +54,50 @@ LOGOS = {  # key: (SVG asset in assets/manifest.json, raster fallback in assets/
     "fa_s_white": ("logo.fa_stacked_white", "logo_fa_stacked_white.png"),
     "fa_s": ("logo.fa_stacked", "logo_fa_stacked.png"),
 }
+
+BRAND_NAME = "گروه مالی مفید"  # the name shown with the logo (the artwork itself says «کارگزاری مفید»)
+BRAND_WORD = "گروه مالی"  # drawn in place of the artwork's «کارگزاری»; its «مفید» stays
+
+_WORDMARK = re.compile(rb'<g id="wordmark">(.*?)</g>', re.S)
+_PATH = re.compile(rb'<path\b[^>]*?fill="(#[0-9A-Fa-f]{6})"[^>]*?\sd="([^"]*)"[^>]*/>')
+
+
+def _split_wordmark(svg: bytes):
+    """Split the logo's wordmark at its widest gap into «مفید» (left) and the word before it
+    (right, «کارگزاری»). Returns the SVG without that word, its box (x0, y0, x1, y1) in the
+    viewBox, the box of «مفید», its colour and the viewBox width; None when the artwork is not laid out that way."""
+    m = _WORDMARK.search(svg)
+    vb = re.search(rb'viewBox="\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)', svg)
+    if not m or not vb:
+        return None
+    parts = []
+    for p in _PATH.finditer(m.group(1)):
+        if re.search(rb"[^MLCZmlcz\s\d.,eE-]", p.group(2)) or re.search(rb"[mlc]", p.group(2)):
+            return None  # only absolute M/L/C paths can be measured this simply
+        n = [float(v) for v in re.findall(rb"-?\d*\.?\d+(?:[eE]-?\d+)?", p.group(2))]
+        if len(n) < 2:
+            continue
+        parts.append((min(n[0::2]), max(n[0::2]), min(n[1::2]), max(n[1::2]), p))
+    if len(parts) < 2:
+        return None
+    parts.sort(key=lambda q: q[0])
+    best_gap, cut, reach = 0.0, None, parts[0][1]
+    for i in range(1, len(parts)):
+        gap = parts[i][0] - reach
+        if gap > best_gap:
+            best_gap, cut = gap, i
+        reach = max(reach, parts[i][1])
+    if cut is None or best_gap < 1.0:
+        return None
+    word, rest = parts[cut:], parts[:cut]
+    box = (min(q[0] for q in word), min(q[2] for q in word), max(q[1] for q in word), max(q[3] for q in word))
+    other = (min(q[0] for q in rest), min(q[2] for q in rest), max(q[1] for q in rest), max(q[3] for q in rest))
+    color = theme.hex_rgb(word[-1][4].group(1).decode())
+    body = m.group(1)
+    for q in word:
+        body = body.replace(q[4].group(0), b"")
+    bare = svg[:m.start(1)] + body + svg[m.end(1):]
+    return bare, box, other, color, float(vb.group(1))
 
 
 def _ease_out(p: float) -> float:
@@ -101,6 +147,10 @@ class Renderer:
         self.vp_menu: Viewport | None = None
         self._wall_vp: Viewport | None = None  # the wall's own, while menu() has swapped self.vp
         self.score_pop_t = -10.0
+        self._score_shown = 0.0  # the HUD's rolling score
+        self._flying = 0  # points of hit badges still on their way to it
+        self._score_t: float | None = None
+        self.end_t0 = -10.0  # when the round ended (the pile of tiles falls from then)
         self.badge_pop_t = -10.0
         self.badge_shake_t = -10.0
         self.results_t0 = 0.0
@@ -110,7 +160,7 @@ class Renderer:
         self._prewarm: list[tuple[str, int]] = []
         self.dim: pygame.Surface | None = None
         # The player's replay on the results screen (camera.enabled), or a placeholder.
-        self.photo_slot = bool(cfg.camera.enabled)
+        self.photo_slot = bool(cfg.camera.enabled) and bool(cfg.results.get("show_photo", False))
         self.replay_round: str | None = None
         self.replay = None
         self.photo_img: tuple | None = None
@@ -118,6 +168,7 @@ class Renderer:
         self.fx_rng = random.Random()
         self.card_done_at = 0.0
         self.boot_t0: float | None = None  # the logo intro as the game opens (start_boot)
+        self.attract = Attract(self)  # the idle loop
 
     def set_wall(self) -> None:
         """The wall's size (again, after App.fit_wall). The menus (attract, instructions, name,
@@ -146,7 +197,7 @@ class Renderer:
             "fa_h_white_small": self._logo("fa_h_white_small", width_cm=58),
             "fa_s_white": self._logo("fa_s_white", width_cm=84),
         }
-        self.bg_field = self._build_light(band_title=None)
+        self.bg_field = self._build_field()
         # The instructions page is dense text: plain dot grid, no symbol accents behind it. On a
         # taller wall its title band and footer are those of the menus' frame, in the middle.
         if self.menu_h < self.H:
@@ -170,9 +221,8 @@ class Renderer:
         self.text.render(self.T.rush_title, "title", vp.s(30), theme.WHITE)
         self.text.render(self.T.rush_start.format(m=f"×{float(self.cfg.rush.score_multiplier):g}"), "heading", vp.s(7), theme.PURPLE)
         self.dim = pygame.Surface(vp.rect.size).convert()
-        self.dim.fill(theme.WHITE)
+        self.dim.fill(theme.FIELD)  # the field's own colour: things fade into it (MOFID_UI v4.1)
         self.time_grad = gradient_bar(vp.rect.w, vp.s(2.2), theme.DARK_BLUE, theme.TURQUOISE)
-        self.panel = pygame.Surface(vp.cm_rect(22, 142, 278, 222).size, pygame.SRCALPHA).convert_alpha()
         self._plan_prewarm()
 
     @contextmanager
@@ -197,23 +247,29 @@ class Renderer:
             self._plan_prewarm()
 
     def _plan_prewarm(self) -> None:
-        base = {c: self.vp.s(self.cfg.targets[c].size_cm) for c in COLORS}
+        """Every product at every size (and the steps of the tiny boxes' gentle pulse)."""
         self._prewarm = []
-        for c in COLORS:
-            for i in range(-8, 9):
-                self._prewarm.append((c, int(round(base[c] * (1 + i * 0.02)))))
+        for tier in TIERS:
+            base = self.vp.s(self.cfg.targets[tier].size_cm)
+            pulse = float(self.cfg.motion[tier].pulse)
+            steps = range(-int(pulse / 0.02 + 0.999), int(pulse / 0.02 + 0.999) + 1)
+            for p in self.cfg.raw()["products"]:
+                for i in steps:
+                    self._prewarm.append((p["key"], int(round(base * (1 + i * 0.02)))))
 
     def prewarm(self, budget_s: float = 0.003) -> None:
-        """Build pulse-size target sprites a few at a time, so no frame stalls."""
+        """Build the tile sprites a few at a time, so no frame stalls."""
         t0 = time.perf_counter()
         while self._prewarm and time.perf_counter() - t0 < budget_s:
-            c, side = self._prewarm.pop()
-            self.sprites.target(c, side, self.shadow)
-            self._box_edge_sprite(side)
+            key, w = self._prewarm.pop()
+            self.sprites.product(key, w, ring=True)
+
+    def product_name(self, key: str | None) -> str:
+        return next((p["name"] for p in self.cfg.raw()["products"] if p["key"] == key), "")
 
     def _logo(self, key: str, width_cm: float) -> pygame.Surface | None:
         w = self.vp.s(width_cm)
-        img = self.sprites.assets.render(LOGOS[key][0], w)  # height from the artwork: uniform scale only
+        img = self._brand_logo(LOGOS[key][0], w)  # height from the artwork: uniform scale only
         if img is not None:
             return img
         if key not in self.logo_src:
@@ -229,6 +285,44 @@ class Renderer:
         h = int(round(src.get_height() * w / src.get_width()))
         return pygame.transform.smoothscale(src, (w, h))
 
+    def _brand_logo(self, name: str, w: int) -> pygame.Surface | None:
+        """The logo at w pixels wide, its name reading «گروه مالی مفید»: the artwork's own «مفید»
+        and the mark and tagline stay; the first word of the wordmark («کارگزاری») is taken
+        out and BRAND_WORD drawn in its place, in its colour, filling the same box."""
+        lib = self.sprites.assets
+        src = lib.source(name)
+        split = _split_wordmark(src) if src is not None else None
+        if split is None:
+            return lib.render(name, w)
+        bare, (x0, y0, x1, y1), (m0, n0, m1, n1), color, view_w = split
+        bare_name = name + "#group"
+        if not lib.has(bare_name):
+            lib.add(bare_name, bare)
+        img = lib.render(bare_name, w)
+        if img is None:
+            return lib.render(name, w)
+        s = img.get_width() / view_w
+        bw, bh = (x1 - x0) * s, (y1 - y0) * s
+        word = self.text.render(BRAND_WORD, "title", max(6, int(bh * 1.4)), color)
+        ink = word.get_bounding_rect()
+        if ink.w <= 0 or ink.h <= 0:
+            return img
+        word = word.subsurface(ink).copy()
+        f = min(bw / ink.w, bh / ink.h)
+        word = pygame.transform.smoothscale(word, (max(1, int(ink.w * f)), max(1, int(ink.h * f))))
+        # the two words as close as in the artwork, the pair centred where the wordmark was
+        gap = (x0 - m1) * s
+        total = word.get_width() + gap + (m1 - m0) * s
+        mid = (m0 + x1) / 2 * s
+        left = mid - total / 2
+        mofid = pygame.Rect(int(m0 * s) - 1, int(n0 * s) - 1, int((m1 - m0) * s) + 3, int((n1 - n0) * s) + 3)
+        mofid = mofid.clip(img.get_rect())
+        piece = img.subsurface(mofid).copy()
+        img.fill((0, 0, 0, 0), mofid)
+        img.blit(piece, (int(round(left)) - 1, mofid.y))
+        img.blit(word, word.get_rect(midright=(int(round(left + total)), int((y0 + y1) / 2 * s))))  # Persian: from the right
+        return img
+
     def _art(self, name: str, w: int, h: int, fallback) -> pygame.Surface:
         """The SVG asset `name` at w x h pixels; fallback() draws the same shape in code."""
         img = self.sprites.image(name, w, h)
@@ -239,7 +333,7 @@ class Renderer:
         if img is not None:
             surf.blit(img, img.get_rect(center=center))
         else:
-            self.text.blit(surf, "کارگزاری مفید", "heading", self.vp.s(8), fallback_color, center)
+            self.text.blit(surf, BRAND_NAME, "heading", self.vp.s(8), fallback_color, center)
 
     def _wall(self, color) -> pygame.Surface:
         vp = self._wall_vp or self.vp  # the whole wall, also inside menu()
@@ -274,27 +368,57 @@ class Renderer:
         self._footer(bg)
         return bg
 
+    def _micro(self, surf, text: str, pos, anchor: str = "midleft", color=None, size: float = 3.0) -> None:
+        """The design's small letter-spaced Latin captions (MARKET PULSE, 01 — ATTRACT)."""
+        self.text.blit(surf, _letterspaced(text).replace("   ", "  "), "latin", self.vp.s(size), color or theme.TURQ,
+                       pos, anchor, localize=False)
+
+    def _frame_marks(self, bg: pygame.Surface, caption: str | None) -> None:
+        """Header captions with the logo, and the footer rule with its two captions: the frame
+        every MOFID_UI v4.1 screen shares. On the menus' frame (self.vp)."""
+        vp, W, H = self.vp, self.W, self.H
+        if caption is not None:
+            self._micro(bg, "MARKET PULSE", vp.px(16, 16))
+            self._micro(bg, caption, vp.px(16, 23))
+            logo = self.logos.get("fa_h_white_small")
+            if logo is not None:
+                bg.blit(logo, logo.get_rect(midright=vp.px(W - 16, 19)))
+        y = H - 20
+        pygame.draw.line(bg, theme.lerp_color(theme.FIELD, theme.MIST, 0.25), vp.px(16, y), vp.px(W - 16, y),
+                         max(1, vp.s(0.25)))
+        self._micro(bg, "MOFID SECURITIES · MARKET PULSE" if caption is None else "MOFID SECURITIES",
+                    vp.px(16, y + 8), color=theme.MIST, size=2.8)
+        self.text.blit(bg, self.T.slogan, "body", vp.s(5), theme.MIST, vp.px(W - 16, y + 8), "midright")
+
+    def _build_field(self) -> pygame.Surface:
+        """The play screen: the dark field, faint plus marks on a loose grid, the footer."""
+        vp = self.vp
+        bg = self._wall(theme.FIELD)
+        mark = theme.lerp_color(theme.FIELD, theme.MIST, 0.16)
+        x0, y0, x1, y1 = 40.0, self.hud_h + 30, self.W - 30, self.footer_y - 20
+        cols, rows = max(1, int((x1 - x0) / 52)), max(1, int((y1 - y0) / 52))
+        for r in range(rows + 1):
+            for c in range(cols + 1):
+                if (r + c) % 2:
+                    continue
+                x, y = x0 + (x1 - x0) * c / cols, y0 + (y1 - y0) * r / rows
+                draw_symbol(bg, "plus", vp.px(x, y), vp.s(2.4), mark)
+        self._frame_marks(bg, None)
+        return bg
+
     def _build_dark(self, keep_clear: list | None = None) -> pygame.Surface:
         vp = self.vp
-        bg = self._wall(theme.DARK_BLUE)
-        accents = [("plus", theme.TURQUOISE), ("times", theme.WHITE), ("slash", theme.TURQUOISE), ("minus", theme.WHITE),
-                   ("dot", theme.TURQUOISE), ("plus", theme.WHITE), ("dot", theme.WHITE), ("slash", theme.WHITE)]
-        dot_grid(bg, self.sprites, vp.rect.inflate(-vp.s(8), -vp.s(8)), vp.sf(12.5), vp.sf(0.6),
-                 theme.PATTERN_BLUE, accents, vp.s(2.6), seed=5, keep_clear=keep_clear)
+        bg = self._wall(theme.FIELD)  # MOFID_UI v4.1: the plain field, a faint dot grid at most
+        dot_grid(bg, self.sprites, vp.rect.inflate(-vp.s(8), -vp.s(8)), vp.sf(12.5), vp.sf(0.5),
+                 theme.lerp_color(theme.FIELD, theme.MIST, 0.07), None, 0, seed=5, keep_clear=keep_clear)
         return bg
 
     def _build_rush(self) -> pygame.Surface:
         vp = self.vp
-        bg = self._wall(theme.BLUE_DEEP)
+        bg = self._wall(theme.DEEP)  # Market Rush: the field goes deep, with coral accents
         field = vp.cm_rect(4, self.hud_h + 4, self.W - 4, self.footer_y - 3)
-        dot_grid(bg, self.sprites, field, vp.sf(12.5), vp.sf(0.55), theme.BLUE_RAMP[1])
-        band = vp.cm_rect(0, 0, self.W, self.hud_h)
-        bg.fill(theme.PURPLE, band)
-        dot_grid(bg, self.sprites, band.inflate(-vp.s(6), -vp.s(4)), vp.sf(6.0), vp.sf(0.45),
-                 theme.lerp_color(theme.PURPLE, theme.WHITE, 0.16))
-        y = self.footer_y
-        pygame.draw.line(bg, theme.BLUE_RAMP[2], vp.px(12, y), vp.px(self.W - 12, y), max(1, vp.s(0.25)))
-        self._blit_logo(bg, "fa_h_white_small", vp.px(self.W / 2, (y + self.H) / 2), theme.WHITE)
+        dot_grid(bg, self.sprites, field, vp.sf(12.5), vp.sf(0.55), theme.lerp_color(theme.DEEP, theme.CORAL, 0.18))
+        self._frame_marks(bg, None)
         return bg
 
     def _build_candles(self) -> pygame.Surface:
@@ -305,8 +429,8 @@ class Renderer:
         key = (1, 2, 3)
         strip.fill(key)
         strip.set_colorkey(key)
-        up = theme.lerp_color(theme.BLUE_DEEP, theme.TURQUOISE, 0.28)
-        down = theme.lerp_color(theme.BLUE_DEEP, theme.RED, 0.28)
+        up = theme.lerp_color(theme.DEEP, theme.TURQ, 0.24)
+        down = theme.lerp_color(theme.DEEP, theme.CORAL, 0.26)
         rng = random.Random(23)
         n = max(1, int(self.W / 11))
         step = w / n
@@ -333,8 +457,8 @@ class Renderer:
         surf.blit(self.candles, (rect.x + x, rect.y))
         surf.blit(self.candles, (rect.x + x + rect.w, rect.y))
         mid = rect.centery
-        for amp_cm, speed, width_cm, color in ((52.0, 1.0, 0.9, theme.lerp_color(theme.BLUE_DEEP, theme.TURQUOISE, 0.62)),
-                                               (34.0, 1.45, 0.5, theme.lerp_color(theme.BLUE_DEEP, theme.WHITE, 0.2))):
+        for amp_cm, speed, width_cm, color in ((52.0, 1.0, 0.9, theme.lerp_color(theme.DEEP, theme.CORAL, 0.55)),
+                                               (34.0, 1.45, 0.5, theme.lerp_color(theme.DEEP, theme.WHITE, 0.2))):
             amp = vp.sf(amp_cm)
             pts = []
             for i in range(97):
@@ -345,56 +469,93 @@ class Renderer:
             pygame.draw.lines(surf, color, False, pts, max(1, vp.s(width_cm)))
         surf.set_clip(clip)
 
+    def _badge_spot(self, o: Outcome, flow: F.Flow, now: float) -> tuple[float, float]:
+        """Where the hit badge goes: where the ball hit, or the nearest place close by where its
+        inner ring covers none of the other boxes (now and half a second on, as they move).
+        Always inside the field."""
+        r = BADGE_R + 3.0
+        lo_x, hi_x = r, self.W - r
+        lo_y, hi_y = self.hud_h + r + 4.0, self.footer_y - r
+        clamp = lambda x, y: (min(max(x, lo_x), hi_x), min(max(y, lo_y), hi_y))  # noqa: E731
+        others = []
+        rnd = flow.round
+        for tg in (rnd.targets if rnd is not None else []):
+            for t in (now, now + 0.5):
+                if tg.gone(t):
+                    continue
+                cx, cy = tg.center_at(t)
+                if abs(cx - o.target_x) < 0.5 and abs(cy - o.target_y) < 0.5:
+                    continue  # the box that was hit: it is going
+                side = tg.side_at(t)
+                others.append((cx, cy, side / 2.0, side * tg.aspect / 2.0))
+        reach = BADGE_R + 2.0
+
+        def covered(x: float, y: float) -> float:  # how far the ring reaches into the other boxes
+            total = 0.0
+            for cx, cy, hw, hh in others:
+                d = math.hypot(max(abs(x - cx) - hw, 0.0), max(abs(y - cy) - hh, 0.0))
+                if d < reach:
+                    total += reach - d
+            return total
+
+        best, best_cost = clamp(o.x, o.y), None
+        for dist in (0.0, 10.0, 20.0, 30.0, 40.0):
+            for i in range(1 if dist == 0 else 12):
+                a = math.radians(30.0 * i - 90.0)
+                x, y = clamp(o.x + math.cos(a) * dist, o.y + math.sin(a) * dist)
+                cost = covered(x, y) * 4.0 + math.hypot(x - o.x, y - o.y)
+                if best_cost is None or cost < best_cost:
+                    best, best_cost = (x, y), cost
+        return best
+
     # -- events from the game -----------------------------------------------------------
     def on_event(self, name: str, data: dict, flow: F.Flow, now: float) -> None:
         fx = self.fx
         if name == "hit":
             o: Outcome = data["outcome"]
             storm = flow.round is not None and flow.round.rush is not None
-            color = self._on_field(theme.TARGET_COLORS[o.color], storm)
+            color = theme.CORAL if storm else theme.TURQ
             half = o.target_side / 2
-            fx.ripple(o.x, o.y, half, half + 20, 2.2, color, 0.55)
-            fx.ripple(o.x, o.y, half * 0.6, half + 34, 0.9, color, 0.7, delay=0.08)
-            fx.burst(o.x, o.y, color, count=16 if o.color == "red" else 12, start_r=half)
-            fx.popup(o.x, o.y - 10, self.T[f"word_{o.color}"], "title", 15, color, dur=1.15, rise=16)
-            fx.popup(o.x, o.y + 12, f"+{o.points}", "numbers", 11 if o.rush_multiplier > 1 else 9,
-                     theme.WHITE if storm else theme.DARK_BLUE, dur=1.0, rise=12, delay=0.05)
-            if o.multiplier > 1:
-                fx.popup(o.x, o.y + 24, f"×{o.multiplier:g}", "numbers", 7, theme.WHITE if storm else theme.PURPLE, dur=0.95,
-                         rise=10, delay=0.1)
-            self.score_pop_t = now
+            if o.tier == "tiny":  # the brand's symbols fly out: this one starts Market Rush
+                fx.burst(o.x, o.y, color, count=10, speed=(50.0, 110.0), life=0.9, start_r=half)
+            # the product's name, the points and the multiplier in rings where the ball hit
+            # (MOFID_UI v4.1 page 6); the inner ring and its words stay inside the field, the
+            # quieter outer rings may run past its edge
+            bx, by = self._badge_spot(o, flow, now)
+            tile = (o.target_x, o.target_y, o.target_side, o.target_side * o.target_aspect) if o.target_side else None
+            fx.badge(bx, by, self.product_name(o.product), f"+{o.points}",
+                     f"×{o.multiplier:g}" if o.multiplier > 1 else "", color, big=storm or o.tier == "tiny", tile=tile,
+                     home=(self.W - 34.0, 37.0))  # at the end it flies into the HUD's score, which then counts it
             if flow.round is not None:
                 self._spawn_rings(flow, now, set(o.spawned))
-            if len(o.spawned) > 1:
-                fx.flash(theme.RED, alpha=18, dur=0.35)
-                if self.T.market_busier and not storm:
-                    fx.banner(self.T.market_busier, theme.DARK_BLUE, 1.5)
             if o.level_up:
                 self.badge_pop_t = now
                 if self.cfg.ui.combo_banner and flow.round is not None:
-                    fx.banner(self.T.combo_up.format(m=f"×{flow.round.next_multiplier:g}"), theme.PURPLE, 1.3)
+                    fx.banner(self.T.combo_up.format(m=f"×{flow.round.next_multiplier:g}"), theme.TURQ, 1.3)
         elif name == "miss":
             o = data["outcome"]
             if o.x >= 0:
-                fx.ripple(o.x, o.y, 2, 17, 1.0, theme.BLUE_SOFT, 0.45)
-                fx.ripple(o.x, o.y, 1, 7, 1.4, theme.GREY, 0.3)
+                fx.ripple(o.x, o.y, 2, 17, 1.0, theme.MIST, 0.45)
+                fx.ripple(o.x, o.y, 1, 7, 1.4, theme.BLUE_SOFT, 0.3)
             if o.combo_broken:
                 self.badge_shake_t = now
         elif name == "rush_start":
             self.rush_title_t = now
             self.badge_pop_t = now
-            fx.banner(self.T.rush_start.format(m=f"×{data['multiplier']:g}"), theme.PURPLE, 2.2)
+            fx.banner(self.T.rush_start.format(m=f"×{data['multiplier']:g}"), theme.CORAL, 2.2)
         elif name == "rush_again":
             self.badge_pop_t = now
-            fx.banner(self.T.rush_start.format(m=f"×{data['multiplier']:g}"), theme.PURPLE, 1.4)
+            fx.banner(self.T.rush_start.format(m=f"×{data['multiplier']:g}"), theme.CORAL, 1.4)
         elif name == "rush_end":
             if data["reason"] == "time":
-                fx.banner(self.T.rush_end, theme.DARK_BLUE, 1.6)
+                fx.banner(self.T.rush_end, theme.TURQ, 1.6)
         elif name == "rush_spawn" and flow.round is not None:
             self._spawn_rings(flow, now, set(data["ids"]))
         elif name == "start_hit":
             sb = self.cfg.layout.start_button
-            fx.ripple(sb.x_cm + layout_left(self.cfg), sb.y_cm + layout_top(self.cfg), sb.size_cm / 2, sb.size_cm / 2 + 40, 2.5, theme.TURQUOISE, 0.6)
+            fx.ripple(sb.x_cm + layout_left(self.cfg), sb.y_cm + layout_top(self.cfg), sb.size_cm / 2, sb.size_cm / 2 + 40, 2.5, theme.TURQ, 0.6)
+        elif name == "end":
+            self.end_t0 = now
         elif name == "go" and flow.round is not None:
             self._spawn_rings(flow, now, {tg.id for tg in flow.round.targets})
         elif name == "results":
@@ -406,19 +567,14 @@ class Renderer:
             if data["state"] not in (F.PLAYING, F.ENDING):
                 self._fade_pending = True
 
-    @staticmethod
-    def _on_field(color, storm: bool):
-        """An effect colour that stays visible on the dark Market Rush field."""
-        return theme.BLUE_SOFT if storm and color == theme.DARK_BLUE else color
-
     def _spawn_rings(self, flow: F.Flow, now: float, ids: set[int]) -> None:
-        """A thin ring that opens around each newly placed box."""
+        """A thin ring that opens around each newly placed box (its corner ticks close in as
+        it is drawn, draw_play)."""
         storm = flow.round.rush is not None
         for tg in flow.round.targets:
             if tg.id in ids:
                 cx, cy = tg.center_at(now + tg.spawn_dur)
-                self.fx.ripple(cx, cy, tg.size * 0.6, tg.size * 1.0, 0.9, self._on_field(theme.TARGET_COLORS[tg.color], storm),
-                               0.45, 0.1)
+                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, theme.CORAL if storm else theme.TURQ, 0.45, 0.1)
 
     # -- frame ----------------------------------------------------------------------------
     def draw(self, surf: pygame.Surface, flow: F.Flow, now: float, overlays: dict) -> None:
@@ -472,50 +628,118 @@ class Renderer:
             self._draw_rush_bg(self.rush_layer, t)
             self.rush_layer.set_alpha(int(255 * storm))
             surf.blit(self.rush_layer, (0, 0))
-        if rnd is not None and rnd.started_at is not None:
-            for tg in rnd.targets:
-                side = tg.side_at(t)
-                if side < 0.5:
-                    continue
-                cx, cy = tg.center_at(t)
-                spr = self.sprites.target_scaled(tg.color, vp.sf(side), vp.s(tg.size), self.shadow)
-                if storm > 0.0:  # the same size step as the box, so the edge stays even as it pulses
-                    m = self.sprites.target_margin
-                    side_px = spr.get_width() / (1.0 + 2 * m(100) / 100.0)
-                    edge = self._box_edge_sprite(int(round(side_px)))
-                    edge.set_alpha(int(255 * min(1.0, storm)))
-                    surf.blit(edge, edge.get_rect(center=vp.px(cx, cy)))
-                    edge.set_alpha(255)
-                surf.blit(spr, spr.get_rect(center=vp.px(cx, cy)))
-        field_rect = vp.cm_rect(0, self.hud_h, self.W, self.footer_y)
-        self.fx.draw(surf, vp, field_rect, theme.lerp_color(theme.WHITE, theme.BLUE_DEEP, storm))
-        self._hud(surf, flow, t)
-        self.fx.draw_banner(surf, vp, self.hud_h + 1)
+        bg = theme.lerp_color(theme.FIELD, theme.DEEP, storm)
         st = flow.state
+        if rnd is not None and rnd.started_at is not None:
+            fade = 1.0 - _ease_in_out((now - self.end_t0) / 0.4) if st == F.ENDING else 1.0
+            for tg in rnd.targets:
+                if fade > 0.0:
+                    self._draw_target(surf, tg, t, bg, storm, fade)
+        field_rect = vp.cm_rect(0, self.hud_h, self.W, self.footer_y)
+        self.fx.draw(surf, vp, field_rect, bg)
+        self._hud(surf, flow, t)
+        self.fx.draw_banner(surf, vp, self.hud_h + 9)
         if st == F.PLAYING and now - self.rush_title_t < 1.4:
             p = (now - self.rush_title_t) / 1.4
-            self.text.blit(surf, self.T.rush_title, "title", vp.s(30), theme.WHITE, vp.px(self.W / 2, 205),
+            self.text.blit(surf, self.T.rush_title, "title", vp.s(30), theme.CORAL, vp.px(self.W / 2, 205),
                            alpha=int(235 * (1.0 - p * p)))
         if st == F.COUNTDOWN:
             self._countdown(surf, flow, now)
         elif st == F.PLAYING and flow.elapsed(now) < 0.9:
             p = flow.elapsed(now) / 0.9
-            img = self.text.render(self.T.go, "title", vp.s(34), theme.TURQUOISE)
+            img = self.text.render(self.T.go, "title", vp.s(34), theme.TURQ)
             k = 0.75 + 0.35 * _ease_out(p * 2.5)
             img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
             img.set_alpha(int(255 * (1 - p**3)))
             surf.blit(img, img.get_rect(center=vp.px(self.W / 2, 205)))
+            w = 40 * _ease_out(p * 2)  # the turquoise line under it (MOFID_UI v4.1, 05 GO)
+            surf.fill(theme.TURQ, vp.cm_rect(self.W / 2 - w, 228, self.W / 2 + w, 228.6))
         elif st == F.ENDING:
-            p = min(1.0, flow.elapsed(now) / 0.35)
-            self._dim_field(surf, int(228 * p))
-            reason = self.T.end_time if rnd.end_reason == "time" else self.T.end_balls
-            self.text.blit(surf, self.T.end_title, "title", vp.s(30), theme.DARK_BLUE, vp.px(self.W / 2, 190))
-            self.text.blit(surf, reason, "body", vp.s(9), theme.TEXT_GREY, vp.px(self.W / 2, 228))
+            self._ending(surf, rnd, now - self.end_t0)
 
-    def _box_edge_sprite(self, side_px: int) -> pygame.Surface:
-        """The white edge behind a box on the dark Market Rush field."""
-        w = side_px + 2 * self.vp.s(1.3)
-        return self.sprites.rounded(w, w, int(w * 0.18), theme.WHITE)
+    def _draw_target(self, surf: pygame.Surface, tg, t: float, bg, storm: float, alpha: float = 1.0) -> None:
+        """One product tile with its thin ring, its points under it, and corner ticks while it
+        appears (and always around a tiny box: the one that starts Market Rush)."""
+        vp = self.vp
+        side = tg.side_at(t)
+        if side < 0.5:
+            return
+        cx, cy = tg.center_at(t)
+        c = vp.px(cx, cy)
+        spr = self.sprites.product_scaled(tg.product, vp.sf(side), vp.s(tg.size), ring=True)
+        if alpha < 1.0:
+            spr.set_alpha(int(255 * alpha))
+        surf.blit(spr, spr.get_rect(center=c))
+        spr.set_alpha(255)
+        h = side * tg.aspect
+        grow = tg.spawn_factor(t)
+        if grow > 0.6 and alpha >= 1.0:  # its points under it, in mist
+            pts = int(self.cfg.targets[tg.tier].points)
+            self.text.blit(surf, f"+{pts}", "numbers", vp.s(4.6), theme.MIST, vp.px(cx, cy + h / 2 + 6.5),
+                           alpha=int(255 * min(1.0, (grow - 0.6) / 0.4)))
+        age = t - tg.born
+        spawn = 1.0 - min(1.0, age / 0.45)
+        if spawn > 0.0 or tg.tier == "tiny":
+            # the ticks close in over the first moments (6 frames on the design), then stay faint on tiny boxes
+            close = _ease_out(min(1.0, age / 0.2))
+            inset = 3.0 + 9.0 * (1.0 - close)
+            strength = max(spawn, 0.55 if tg.tier == "tiny" else 0.0) * alpha
+            col = theme.lerp_color(bg, theme.CORAL if storm > 0.5 else theme.WHITE, strength)
+            self._ticks(surf, cx, cy, tg.size / 2 + inset, tg.size * tg.aspect / 2 + inset, min(7.0, tg.size * 0.2), col)
+
+    def _ticks(self, surf, cx: float, cy: float, hw: float, hh: float, arm: float, col, width_cm: float = 0.55) -> None:
+        """The design's corner ticks: an L at each corner of a box (cm)."""
+        vp = self.vp
+        w = max(1, vp.s(width_cm))
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = cx + sx * hw, cy + sy * hh
+                pygame.draw.lines(surf, col, False, [vp.px(x - sx * arm, y), vp.px(x, y), vp.px(x, y - sy * arm)], w)
+
+    PILE = 13  # tiles that fall into the pile when the round ends (07 ENDING)
+
+    def _ending(self, surf: pygame.Surface, rnd, t: float) -> None:
+        """The round is over: the big words, and every product falls and settles into a pile."""
+        vp, W = self.vp, self.W
+        p = min(1.0, t / 0.35)
+        self._dim_field(surf, int(150 * p))
+        reason = self.T.end_balls if rnd.end_reason == "balls" else self.T.end_time
+        k = 0.85 + 0.15 * _ease_back(min(1.0, t / 0.35))
+        img = self.text.render(self.T.end_title, "title", vp.s(34), theme.WHITE)
+        img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
+        surf.blit(img, img.get_rect(center=vp.px(W / 2, 160)))
+        self.text.blit(surf, reason, "heading", vp.s(9), theme.TURQ, vp.px(W / 2, 198), alpha=int(255 * p))
+        half = 64 * _ease_out(min(1.0, t / 0.5))
+        surf.fill(theme.lerp_color(theme.FIELD, theme.TURQ, 0.7), vp.cm_rect(W / 2 - half, 214, W / 2 + half, 214.5))
+        products = self.cfg.raw()["products"]
+        rng = random.Random(41)
+        for i, prod in enumerate(products[: self.PILE]):
+            row, col = divmod(i, 7)
+            x = W / 2 + (col - (min(7, len(products) - row * 7) - 1) / 2) * 36 + rng.uniform(-6, 6) + (12 if row else 0)
+            y_end = self.footer_y - 26 - (1 - row) * 24 + rng.uniform(-3, 3)
+            angle = rng.uniform(-16, 16)
+            delay = 0.05 * i
+            q = min(1.0, max(0.0, (t - delay) / 0.55))
+            if q <= 0.0:
+                continue
+            fall = q * q  # gravity, then a small bounce as it lands
+            y = -30 + (y_end + 30) * fall - (math.sin(min(1.0, (t - delay - 0.55) / 0.25) * math.pi) * 4
+                                             if t - delay > 0.55 else 0)
+            tile = self.sprites.product(prod["key"], vp.s(32))
+            img = pygame.transform.rotozoom(tile, angle * (0.3 + 0.7 * q), 1.0)
+            surf.blit(img, img.get_rect(center=vp.px(x, y)))
+
+    def _roll_score(self, score: int, now: float) -> int:
+        """The HUD's score, rolling up to ``score``: most of the way in about 0.3 s, always at
+        least one point a frame, and at once when the score goes down (a new round)."""
+        dt = 0.0 if self._score_t is None else min(0.1, max(0.0, now - self._score_t))
+        self._score_t = now
+        if score <= self._score_shown or dt == 0.0 and self._score_shown == 0.0 and score == 0:
+            self._score_shown = float(score)
+        else:
+            gap = score - self._score_shown
+            self._score_shown += max(min(gap, 1.0), gap * (1.0 - math.exp(-dt / 0.11)))
+        return int(round(self._score_shown))
 
     def _player_name(self, flow: F.Flow) -> str:
         name = _short((flow.round_player or {}).get("name") or "", self.cfg.flow.name_max_chars)
@@ -533,108 +757,121 @@ class Renderer:
         if rnd is None:
             return
         W = self.W
-        mid = self.hud_h / 2 + 6
-        # score (right: first thing a right-to-left reader sees)
-        self.text.blit(surf, self.T.score, "body", vp.s(6), theme.BLUE_PALE, vp.px(W - 14, 7), "topright")
+        mid = 37.0
+        # MOFID_UI v4.1 HUD: type only, no band or pills. Score on the right (read first),
+        # seconds on the left, balls and the multiplier in the middle, the timeline under them.
+        self.text.blit(surf, self.T.score, "body", vp.s(5.6), theme.MIST, vp.px(W - 16, 9), "topright")
         rush = rnd.rush_at(now)
-        k = 1.0 + (0.28 if rush else 0.16) * max(0.0, 1.0 - (now - self.score_pop_t) / 0.3)
-        img = self.text.render(str(rnd.score), "numbers", vp.s(31), theme.WHITE)
+        # the score rolls up to its new value (soft, never behind by more than a moment) and
+        # swells gently as the points arrive
+        # points still flying in from a hit are counted when they land
+        flying = sum(b.value for b in self.fx.badges if b.home is not None)
+        if flying < self._flying:
+            self.score_pop_t = now  # one has just landed
+        self._flying = flying
+        shown = self._roll_score(max(0, rnd.score - flying), now)
+        p = (now - self.score_pop_t) / 0.5
+        w = math.sin(math.pi * p) if 0.0 < p < 1.0 else 0.0  # 0 -> 1 -> 0, smooth both ways
+        k = 1.0 + (0.14 if rush else 0.09) * w
+        col = theme.lerp_color(theme.WHITE, theme.CORAL if rush else theme.TURQ, 0.75 * w)
+        img = self.text.render(str(shown), "numbers", vp.s(29), col, cache=shown == rnd.score and w == 0.0)
         if k > 1.001:
             img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
-        surf.blit(img, img.get_rect(midright=vp.px(W - 14, mid)))
-        # time (left)
-        left = rnd.time_left(now)
-        secs = math.ceil(left) if rnd.started_at is not None else int(rnd.duration)
-        warn = rnd.started_at is not None and 0 < secs <= self.cfg.flow.time_warning_s and not rnd.finished
-        self.text.blit(surf, self.T.time, "body", vp.s(6), theme.BLUE_PALE, vp.px(14, 7), "topleft")
-        self.text.blit(surf, str(secs), "numbers", vp.s(31), theme.WHITE, vp.px(14, mid), "midleft")
-        if warn and not rush:  # pulse to red: a red copy faded in on top (two cached surfaces, not one per shade)
-            red = 0.5 - 0.5 * math.cos(left * math.tau)
-            self.text.blit(surf, str(secs), "numbers", vp.s(31), theme.RED, vp.px(14, mid), "midleft",
-                           alpha=int(255 * red))
-        # the player's name: always there, but smaller than score and time
+        surf.blit(img, img.get_rect(midright=vp.px(W - 16, mid)))
+        # time (left); coral in the last seconds
+        if rnd.timed:
+            left = rnd.time_left(now)
+            secs = math.ceil(left) if rnd.started_at is not None else int(rnd.duration)
+            warn = rnd.started_at is not None and 0 < secs <= self.cfg.flow.time_warning_s and not rnd.finished
+            label, big, frac, ticks = self.T.time, secs, left / rnd.duration, max(1, int(round(rnd.duration / 10)))
+        else:  # no time limit (round.time_limit off): the balls left take the corner and the timeline
+            big = rnd.throws_left
+            warn = 0 < big <= 3 and not rnd.finished
+            label, frac, ticks = self.T.balls, big / max(1, rnd.balls), min(rnd.balls, 30)
+        self.text.blit(surf, label, "body", vp.s(5.6), theme.MIST, vp.px(16, 9), "topleft")
+        self.text.blit(surf, str(big), "numbers", vp.s(29), theme.CORAL if warn else theme.WHITE, vp.px(16, mid), "midleft")
+        # balls (only with a ball limit and a time limit): filled dots still to throw, rings for the used ones
+        n = rnd.balls if rnd.timed else 0
+        if n:
+            step = min(7.6, 120.0 / max(1, n))
+            d = min(4.4, step * 0.66)
+            x0 = W / 2 + (n - 1) * step / 2
+            used = rnd.throws
+            for i in range(n):
+                cx, cy = vp.px(x0 - i * step, 12)
+                if i < n - used:
+                    dot = self.sprites.dot(vp.sf(d / 2), theme.WHITE)
+                    surf.blit(dot, dot.get_rect(center=(cx, cy)))
+                else:
+                    pygame.draw.aacircle(surf, theme.MIST, (cx, cy), int(vp.sf(d / 2)), max(1, vp.s(0.35)))
+        # the multiplier: mist at ×1, turquoise above (coral while Market Rush runs)
+        pop = max(0.0, 1.0 - (now - self.badge_pop_t) / 0.35)
+        if rnd.levels or rush is not None:
+            m = rnd.next_multiplier
+            if rush is not None and self.cfg.rush.stack_with_combo:
+                m *= float(self.cfg.rush.score_multiplier)
+            elif rush is not None:
+                m = max(m, float(self.cfg.rush.score_multiplier))
+            shake = max(0.0, 1.0 - (now - self.badge_shake_t) / 0.4)
+            x = W / 2 + 3 * shake * math.sin((now - self.badge_shake_t) * 50)
+            self.text.blit(surf, self.T.multiplier, "body", vp.s(4.6), theme.MIST, vp.px(W / 2, 22))
+            col = theme.CORAL if rush is not None else (theme.TURQ if m > 1 else theme.MIST)
+            self.text.blit(surf, f"×{m:g}", "numbers", vp.s(13 * (1 + 0.18 * pop)), col, vp.px(x, 38))
+        # the player's name, small, between the multiplier and the score
         name = self._player_name(flow)
         if name:
-            self.text.blit(surf, name, "heading", vp.s(7), theme.WHITE, vp.px(W / 2, 11))
-        # balls (only with a ball limit): the brand dot motif, filled = still to throw
-        n = rnd.balls
-        step = min(8.4, 150.0 / max(1, n))
-        d = min(6.0, step * 0.72)
-        x0 = W / 2 + (n - 1) * step / 2
-        used = rnd.throws
-        dpx = max(2, int(round(vp.sf(d))))
-        for i in range(n):
-            cx, cy = vp.px(x0 - i * step, 21)
-            if i < n - used:
-                dot = self._art("indicator.ball_remaining", dpx, dpx, lambda: self.sprites.dot(vp.sf(d / 2), theme.WHITE))
-                surf.blit(dot, dot.get_rect(center=(cx, cy)))
-            else:
-                ring = self.sprites.image("indicator.ball_used", dpx, dpx)
-                if ring is not None:
-                    surf.blit(ring, ring.get_rect(center=(cx, cy)))
-                else:
-                    pygame.draw.aacircle(surf, theme.BLUE_PALE if rush else theme.BLUE_SOFT, (cx, cy), int(vp.sf(d / 2)), max(1, vp.s(0.5)))
-        # Market Rush: seconds left, and its multiplier in a pill of its own
-        pop = max(0.0, 1.0 - (now - self.badge_pop_t) / 0.35)
-        if rush is not None:
-            self.text.blit(surf, self.T.rush_hud.format(seconds=math.ceil(rush.ends_at - now)), "heading", vp.s(6.5),
-                           theme.WHITE, vp.px(W / 2, 30))
-            rw, rh = vp.s(46 * (1 + 0.15 * pop)), vp.s(13 * (1 + 0.15 * pop))
-            rc = vp.px(W / 2 - 25, 46)
-            pill = self.sprites.rounded(rw, rh, rh // 2, theme.WHITE)
-            surf.blit(pill, pill.get_rect(center=rc))
-            self.text.blit(surf, self.T.rush_pill.format(m=f"×{float(self.cfg.rush.score_multiplier):g}"), "heading",
-                           vp.s(7 * (1 + 0.15 * pop)), theme.DARK_BLUE, rc)
-        # multiplier badge
-        if rnd.levels:
-            m = rnd.next_multiplier
-            shake = max(0.0, 1.0 - (now - self.badge_shake_t) / 0.4)
-            bw, bh = vp.s(46 * (1 + 0.15 * pop)), vp.s(13 * (1 + 0.15 * pop))
-            cx, cy = vp.px(W / 2 + (25 if rush else 0) + 3 * shake * math.sin((now - self.badge_shake_t) * 50), 46 if rush else 44)
-            label = f"{self.T.multiplier} ×{m:g}"
-            if m > 1 and rush is not None:  # the band is purple now
-                pill = self.sprites.rounded(bw, bh, bh // 2, theme.BLUE_DEEP)
-                tcol = theme.WHITE
-            elif m > 1:
-                pill = self._art("indicator.multiplier_active", bw, bh,
-                                 lambda: self.sprites.rounded(bw, bh, bh // 2, theme.PURPLE))
-                tcol = theme.WHITE
-            else:
-                pill = self._art("indicator.multiplier_inactive", bw, bh,
-                                 lambda: self.sprites.rounded(bw, bh, bh // 2, theme.BLUE_SOFT, border=max(1, vp.s(0.5))))
-                tcol = theme.BLUE_PALE
-            surf.blit(pill, pill.get_rect(center=(cx, cy)))
-            self.text.blit(surf, label, "heading", vp.s(7 * (1 + 0.15 * pop)), tcol, (cx, cy))
-        elif rnd.balls:
-            self.text.blit(surf, f"{rnd.throws_left} {self.T.balls}", "heading", vp.s(7), theme.BLUE_PALE, vp.px(W / 2, 44))
-        # time bar under the band, draining towards the right (right-to-left reading)
-        frac = left / rnd.duration if rnd.duration else 0.0
-        bar = vp.cm_rect(0, self.hud_h, W, self.hud_h + 2.2)
-        surf.fill(theme.GREY_LIGHT, bar)
-        w = int(bar.w * frac)
-        if w > 0:
-            surf.blit(self.time_grad, (bar.right - w, bar.y), pygame.Rect(bar.w - w, 0, w, bar.h))
-        if rush is not None:  # what is left of Market Rush, under the time bar
-            track = vp.cm_rect(0, self.hud_h + 2.2, W, self.hud_h + 3.8)
-            surf.fill(theme.BLUE_RAMP[1], track)
-            w = int(track.w * max(0.0, (rush.ends_at - now) / max(0.1, float(self.cfg.rush.duration_s))))
-            if w > 0:
-                surf.fill(theme.RED, pygame.Rect(track.right - w, track.y, w, track.h))
+            self.text.blit(surf, _short(name, 14), "heading", vp.s(5.2), theme.MIST, vp.px(W / 2 + 64, 13))
+        # the timeline: shrinks from the left; a tick every ten seconds
+        y = self.hud_h - 6
+        x0, x1 = 16.0, W - 16
+        track = theme.lerp_color(theme.FIELD, theme.MIST, 0.3)
+        pygame.draw.line(surf, track, vp.px(x0, y), vp.px(x1, y), max(1, vp.s(0.45)))
+        if frac > 0:
+            pygame.draw.line(surf, theme.CORAL if warn else theme.TURQ, vp.px(x1 - (x1 - x0) * frac, y), vp.px(x1, y),
+                             max(1, vp.s(0.7)))
+        for i in range(ticks + 1):
+            tx = x0 + (x1 - x0) * i / ticks
+            pygame.draw.line(surf, track, vp.px(tx, y - 1.4), vp.px(tx, y + 1.4), max(1, vp.s(0.35)))
+        if rush is not None:  # Market Rush: what is left of it, and its seconds
+            w = max(0.0, (rush.ends_at - now) / max(0.1, float(self.cfg.rush.duration_s)))
+            pygame.draw.line(surf, theme.CORAL, vp.px(x1 - (x1 - x0) * min(1.0, w), y + 2.6), vp.px(x1, y + 2.6),
+                             max(1, vp.s(0.6)))
+            self.text.blit(surf, self.T.rush_hud.format(seconds=math.ceil(rush.ends_at - now)), "heading",
+                           vp.s(6 * (1 + 0.12 * pop)), theme.CORAL, vp.px(W / 2, self.hud_h + 19))
 
     def _countdown(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
-        vp = self.vp
-        self._dim_field(surf, 170)
+        """MOFID_UI v4.1, 04 COUNTDOWN: "get ready", the number in a ring whose arc runs down,
+        and the 13 products waiting along the bottom."""
+        vp, W = self.vp, self.W
         n = flow.countdown_value(now)
-        frac = 1.0 - ((self.cfg.flow.countdown_s - flow.elapsed(now)) % 1.0)
-        center = vp.px(self.W / 2, 215)
-        ring = vp.sf(42 + 10 * _ease_out(frac))
-        col = theme.lerp_color(theme.TURQUOISE, theme.WHITE, frac)
-        pygame.draw.aacircle(surf, col, center, int(ring), max(1, vp.s(1.6)))
-        self.text.blit(surf, self.T.get_ready, "heading", vp.s(12), theme.DARK_BLUE, vp.px(self.W / 2, 140))
-        img = self.text.render(str(n), "numbers", vp.s(80), theme.DARK_BLUE)
-        k = 1.25 - 0.25 * _ease_out(frac * 3)
+        total = max(0.1, float(self.cfg.flow.countdown_s))
+        frac = 1.0 - ((total - flow.elapsed(now)) % 1.0)
+        center = vp.px(W / 2, 212)
+        r = vp.sf(68)
+        pygame.draw.aacircle(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.18), center, int(r), max(1, vp.s(0.9)))
+        left = max(0.0, 1.0 - flow.elapsed(now) / total)
+        if left > 0:  # the arc of the time still to wait, from the top, clockwise
+            rect = pygame.Rect(0, 0, int(2 * r), int(2 * r))
+            rect.center = center
+            pygame.draw.arc(surf, theme.TURQ, rect, math.pi / 2, math.pi / 2 + math.tau * left, max(1, vp.s(1.1)))
+        self.text.blit(surf, self.T.get_ready, "title", vp.s(12), theme.TURQ, vp.px(W / 2, 112))
+        img = self.text.render(str(n), "numbers", vp.s(80), theme.WHITE)
+        k = 1.2 - 0.2 * _ease_out(frac * 3)
         img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
         surf.blit(img, img.get_rect(center=center))
+        self._tile_strip(surf, 338, 14.0, now)
+        self._micro(surf, self.T.loading_market, vp.px(W / 2, 354), "center", theme.MIST, 2.8)
+
+    def _tile_strip(self, surf, y: float, w_cm: float, now: float, gap: float = 3.0) -> None:
+        """All the products in a row across the screen at y (cm), each a little afloat."""
+        vp = self.vp
+        products = self.cfg.raw()["products"]
+        n = len(products)
+        w_cm = min(w_cm, (self.W - 24) / n - gap)
+        x = self.W / 2 + (n - 1) * (w_cm + gap) / 2
+        for i, p in enumerate(products):
+            tile = self.sprites.product(p["key"], vp.s(w_cm))
+            surf.blit(tile, tile.get_rect(center=vp.px(x - i * (w_cm + gap), y + 1.2 * math.sin(now * 2.0 + i * 0.7))))
 
     # -- Mofid logo intro -------------------------------------------------------------------
     # Before every countdown (flow state INTRO) and once as the game opens. The logo, in its
@@ -645,23 +882,23 @@ class Renderer:
     INTRO_LOGO_CM = 150  # the logo's width while it holds: half the wall
     INTRO_ZOOM = 3.2  # how much larger it is at the end, long after it has faded
     INTRO_MARKS = (  # (symbol, angle in degrees, distance in cm, colour); clear of the logo
-        ("plus", -150, 120, "TURQUOISE"), ("dot", -110, 91, "BLUE_SOFT"), ("times", -62, 96, "DARK_BLUE"),
-        ("slash", -24, 125, "TURQUOISE"), ("minus", 16, 122, "BLUE_SOFT"), ("plus", 58, 99, "DARK_BLUE"),
-        ("dot", 102, 88, "TURQUOISE"), ("times", 142, 109, "BLUE_SOFT"), ("minus", 178, 127, "DARK_BLUE"),
-        ("slash", -84, 135, "TURQUOISE"),
+        ("plus", -150, 120, "TURQ"), ("dot", -110, 91, "BLUE_SOFT"), ("times", -62, 96, "MIST"),
+        ("slash", -24, 125, "TURQ"), ("minus", 16, 122, "BLUE_SOFT"), ("plus", 58, 99, "MIST"),
+        ("dot", 102, 88, "TURQ"), ("times", 142, 109, "BLUE_SOFT"), ("minus", 178, 127, "MIST"),
+        ("slash", -84, 135, "TURQ"),
     )
 
     def _build_intro(self) -> None:
         vp = self.vp
-        self.bg_intro = self._wall(theme.WHITE)
-        dot_grid(self.bg_intro, self.sprites, vp.rect.inflate(-vp.s(8), -vp.s(8)), vp.sf(12.5), vp.sf(0.55),
-                 theme.GREY_LIGHT)
+        self.bg_intro = self._wall(theme.FIELD)  # the same field as every screen (MOFID_UI v4.1)
+        dot_grid(self.bg_intro, self.sprites, vp.rect.inflate(-vp.s(8), -vp.s(8)), vp.sf(12.5), vp.sf(0.5),
+                 theme.lerp_color(theme.FIELD, theme.MIST, 0.07))
         # The artwork at a few sizes, each drawn from the SVG: every frame scales the nearest one
         # by less than a quarter, so the logo stays sharp and the zoom costs little.
         self.intro_logos: list[tuple[float, pygame.Surface]] = []
         k = 1.06
         while True:
-            img = self._logo("fa_s", width_cm=self.INTRO_LOGO_CM * k)
+            img = self._logo("fa_s_white", width_cm=self.INTRO_LOGO_CM * k)
             if img is None:
                 break
             self.intro_logos.append((k, img))
@@ -718,7 +955,7 @@ class Renderer:
             return
         center = vp.px(W / 2, cy)
         if not self.intro_logos:  # no logo artwork: the brand name, the same way
-            self.text.blit(surf, "کارگزاری مفید", "heading", vp.s(18 * k), theme.DARK_BLUE, center,
+            self.text.blit(surf, BRAND_NAME, "heading", vp.s(18 * k), theme.WHITE, center,
                            alpha=int(255 * alpha))
             return
         base, src = next(((b, img) for b, img in self.intro_logos if b >= k), self.intro_logos[-1])
@@ -738,81 +975,8 @@ class Renderer:
 
     # -- attract ----------------------------------------------------------------------------
     def draw_attract(self, surf: pygame.Surface, flow: F.Flow, now: float, overlays: dict) -> None:
-        vp, W, T = self.vp, self.W, self.T
-        surf.blit(self.bg_dark, (0, 0))
-        self._blit_logo(surf, "fa_s_white", vp.px(W / 2, 44), theme.WHITE)
-        self.text.blit(surf, T.title, "title", vp.s(38), theme.WHITE, vp.px(W / 2, 94))
-        self.text.blit(surf, T.subtitle, "body", vp.s(8), theme.BLUE_PALE, vp.px(W / 2, 129))
-        sb = self.cfg.layout.start_button
-        if self.cfg.flow.start_by_throw:  # pulse ring first, so the card and the box sit on top of it
-            beat = (now % 1.6) / 1.6
-            ring_r = vp.sf(sb.size_cm * 0.56 + 16 * _ease_out(beat))
-            pygame.draw.aacircle(surf, theme.lerp_color(theme.TURQUOISE, theme.DARK_BLUE, beat),
-                                 vp.px(sb.x_cm, sb.y_cm), int(ring_r), max(1, vp.s(1.2)))
-
-        board = overlays.get("leaderboard") or []
-        period = self.cfg.flow.attract_panel_s
-        show_board = bool(board) and self.cfg.results.leaderboard_size > 0 and int(now / period) % 2 == 1
-        phase = (now % period) / period
-        fade = min(1.0, phase * period / 0.5, (1.0 - phase) * period / 0.5)
-        self.panel.fill((0, 0, 0, 0))
-        prect = self.panel.get_rect()
-        self.panel.blit(self._art("panel.attract_card", prect.w, prect.h,
-                                  lambda: self.sprites.rounded(prect.w, prect.h, vp.s(5), theme.WHITE)), (0, 0))
-        if show_board:
-            self._panel_board(self.panel, board)
-        else:
-            self._panel_how(self.panel, now)
-        if bool(board) and fade < 1.0:
-            self.panel.set_alpha(int(255 * (0.25 + 0.75 * fade)))
-        else:
-            self.panel.set_alpha(255)
-        surf.blit(self.panel, vp.px(22, 142))
-
-        if self.cfg.flow.start_by_throw:
-            side = sb.size_cm * (1 + 0.03 * math.sin(now * math.tau / 1.6))
-            px = vp.s(side)
-            box = self._art("button.start", px, px, lambda: self.sprites.rounded(px, px, vp.s(side * 0.18), theme.TURQUOISE))
-            surf.blit(box, box.get_rect(center=vp.px(sb.x_cm, sb.y_cm)))
-            self.text.blit(surf, T.start, "title", vp.s(21), theme.WHITE, vp.px(sb.x_cm, sb.y_cm))
-            self.text.blit(surf, T.cta_throw, "body", vp.s(7.5), theme.WHITE, vp.px(W / 2, sb.y_cm + sb.size_cm / 2 + 14))
-        else:
-            self.text.blit(surf, T.cta_operator, "heading", vp.s(11), theme.WHITE, vp.px(W / 2, sb.y_cm))
-        player = flow.player
-        if player and (player.get("name") or player.get("id")):
-            label = f"{T.next_player}: {_short(player.get('name') or player.get('id'), 24)}"
-            self.text.blit(surf, label, "heading", vp.s(7.5), theme.TURQUOISE_RAMP[5], vp.px(W / 2, 362))
-        self._steady_progress(surf, theme.TURQUOISE, theme.WHITE)
-        self.fx.draw(surf, vp, vp.rect, theme.DARK_BLUE)
-
-    def _panel_how(self, panel: pygame.Surface, now: float) -> None:
-        vp = self.vp
-        # three boxes at their real relative sizes, gently moving, with their words
-        slots = (("green", 205), ("blue", 128), ("red", 60))  # x in panel cm, right to left
-        for color, x in slots:
-            size = self.cfg.targets[color].size_cm * 0.82
-            bob = 2.2 * math.sin(now * 1.7 + x)
-            spr = self.sprites.target(color, vp.s(size), False)
-            panel.blit(spr, spr.get_rect(center=(vp.s(x), vp.s(32 + bob))))
-            self.text.blit(panel, self.T[f"word_{color}"], "heading", vp.s(8.5), theme.TARGET_COLORS[color],
-                           (vp.s(x), vp.s(68)))
-
-    def _panel_board(self, panel: pygame.Surface, board: list[dict]) -> None:
-        vp = self.vp
-        pw = panel.get_width()
-        self.text.blit(panel, self.T.leaderboard, "heading", vp.s(8), theme.DARK_BLUE, (pw // 2, vp.s(11)))
-        show_names = self.cfg.results.show_names
-        for i, rec in enumerate(board[:5]):
-            y = vp.s(26 + i * 12.5)
-            badge = self._art("indicator.rank_first" if i == 0 else "indicator.rank", vp.s(9), vp.s(9),
-                              lambda: self.sprites.rounded(vp.s(9), vp.s(9), vp.s(4.5),
-                                                           theme.TURQUOISE if i == 0 else theme.BLUE_PALE))
-            panel.blit(badge, badge.get_rect(center=(pw - vp.s(14), y)))
-            self.text.blit(panel, str(i + 1), "numbers", vp.s(5.5), theme.WHITE if i == 0 else theme.DARK_BLUE,
-                           (pw - vp.s(14), y))
-            name = _short(rec.get("player_name") or "", 18) if show_names else ""
-            self.text.blit(panel, name or self.T.guest, "body", vp.s(6.5), theme.DARK_BLUE, (pw - vp.s(24), y), "midright")
-            self.text.blit(panel, str(rec.get("score", 0)), "numbers", vp.s(7), theme.DARK_BLUE, (vp.s(12), y), "midleft")
+        """The idle loop (ui/attract.py): the circle of tiles, a round that plays itself, today's best."""
+        self.attract.draw(surf, flow, now, overlays)
 
     def _steady_progress(self, surf: pygame.Surface, c1, c2) -> None:
         """Letter-spaced brand line from the pattern graphic (page 22)."""
@@ -884,45 +1048,55 @@ class Renderer:
 
     # -- instructions --------------------------------------------------------------------------
     def draw_instructions(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
+        """MOFID_UI v4.1, 03 HOW TO PLAY: the balls and seconds big, the three sizes with their
+        points, and the rules."""
         vp, W, T, cfg = self.vp, self.W, self.T, self.cfg
-        surf.blit(self.bg_light, (0, 0))
-        p = min(1.0, flow.elapsed(now) / max(0.1, cfg.flow.instructions_s))
-        bar = vp.cm_rect(0, self.hud_h, W, self.hud_h + 2.2)
-        surf.fill(theme.GREY_LIGHT, bar)
-        w = int(bar.w * p)
-        if w:
-            surf.blit(self.time_grad, (bar.right - w, bar.y), pygame.Rect(bar.w - w, 0, w, bar.h))
-        rule = T.rule_balls if cfg.round.balls else T.rule_time
-        self.text.blit(surf, rule.format(balls=cfg.round.balls, seconds=int(cfg.round.duration_s)),
-                       "heading", vp.s(10), theme.DARK_BLUE, vp.px(W / 2, 86))
-        for i, color in enumerate(("green", "blue", "red")):
-            y = 128 + i * 57
-            appear = _ease_out((flow.elapsed(now) - 0.15 * i) / 0.4)
+        el = flow.elapsed(now)
+        surf.blit(self.bg_dark, (0, 0))
+        self._frame_marks(surf, "03 — HOW TO PLAY")
+        self.text.blit(surf, T.how_to_title, "title", vp.s(22), theme.WHITE, vp.px(W - 16, 52), "midright")
+        p = min(1.0, el / max(0.1, cfg.flow.instructions_s))  # the page's time, as a line that shrinks from the left
+        pygame.draw.line(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.3), vp.px(16, 70), vp.px(W - 16, 70), max(1, vp.s(0.4)))
+        pygame.draw.line(surf, theme.TURQ, vp.px(16 + (W - 32) * p, 70), vp.px(W - 16, 70), max(1, vp.s(0.6)))
+        rd = cfg.round
+        balls = int(rd.balls) if rd.get("ball_limit", False) else 0
+        cols = [(str(int(rd.duration_s)), T.time)] if rd.get("time_limit", True) or not balls else []
+        if balls:
+            cols.insert(0, (str(balls), T.balls))
+        for i, (num, label) in enumerate(cols):
+            x = W * (0.72 - 0.44 * i) if len(cols) == 2 else W / 2
+            self.text.blit(surf, num, "numbers", vp.s(40), theme.WHITE, vp.px(x, 108))
+            self.text.blit(surf, label, "title", vp.s(9), theme.TURQ, vp.px(x, 142))
+        if len(cols) == 2:
+            pygame.draw.line(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.25), vp.px(W / 2, 86), vp.px(W / 2, 148),
+                             max(1, vp.s(0.25)))
+        self.text.blit(surf, T.rule_size, "body", vp.s(5.6), theme.MIST, vp.px(W - 16, 166), "midright")
+        keys = [pr["key"] for pr in cfg.raw()["products"]]
+        for i, (tier, x, key) in enumerate((("medium", 236, keys[12 % len(keys)]), ("small", 150, keys[8 % len(keys)]),
+                                           ("tiny", 64, keys[10 % len(keys)]))):
+            appear = _ease_back((el - 0.15 * i) / 0.4)
             if appear <= 0:
                 continue
-            size = cfg.targets[color].size_cm  # true size on the wall
-            spr = self.sprites.target(color, vp.s(size * appear), self.shadow)
-            surf.blit(spr, spr.get_rect(center=vp.px(242, y)))
-            self.text.blit(surf, T[f"word_{color}"], "title", vp.s(12), theme.TARGET_COLORS[color], vp.px(200, y - 8), "midright")
-            self.text.blit(surf, T[f"meaning_{color}"], "body", vp.s(5.8), theme.TEXT_GREY, vp.px(200, y + 9), "midright")
-            pill = self._art("indicator.points", vp.s(50), vp.s(15),
-                             lambda: self.sprites.rounded(vp.s(50), vp.s(15), vp.s(7.5), theme.TURQUOISE_PALE))
-            surf.blit(pill, pill.get_rect(center=vp.px(42, y - (5 if color == "red" else 0))))
-            self.text.blit(surf, f"{cfg.targets[color].points} {T.points_unit}", "heading", vp.s(6.5), theme.DARK_BLUE,
-                           vp.px(42, y - (5 if color == "red" else 0)))
-            if color == "red" and cfg.targets.red.spawn_on_hit:
-                self.text.blit(surf, T.red_extra, "body", vp.s(5.2), theme.DARK_BLUE, vp.px(42, y + 10))
-        lines = [T.rule_move]
-        if cfg.rush.enabled and cfg.rush.max_per_round > 0:
-            lines.append(T.rule_rush.format(seconds=int(cfg.rush.duration_s), m=f"×{float(cfg.rush.score_multiplier):g}"))
+            size = cfg.targets[tier].size_cm  # true size on the wall
+            spr = self.sprites.product(key, max(4, vp.s(size * appear)), ring=True)
+            surf.blit(spr, spr.get_rect(center=vp.px(x, 205)))
+            self.text.blit(surf, f"+{cfg.targets[tier].points}", "numbers", vp.s(12), theme.WHITE, vp.px(x, 244))
+            self.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 260))
+            if tier == "tiny" and cfg.rush.enabled:
+                self.text.blit(surf, T.tiny_rush, "heading", vp.s(5), theme.CORAL, vp.px(x, 270))
+        lines = [("slash", T.rule_move)]
         if cfg.combo.enabled and cfg.combo.levels:
             top = max(lv["multiplier"] for lv in cfg.combo.levels)
-            lines.append(T.rule_combo.format(max=f"×{top:g}"))
-        lines.append(T.rule_positive)
-        y = 291
-        for line in lines:
-            y = self.text.blit_lines(surf, line, "body", vp.s(6.3), theme.DARK_BLUE, vp.px(W / 2, y), vp.s(272), 1.3)
-            y = int((y - vp.rect.y) / vp.ppc + 4)
+            lines.append(("times", T.rule_combo.format(max=f"×{top:g}")))
+        lines.append(("plus", T.rule_positive))
+        if cfg.rush.enabled and cfg.rush.max_per_round > 0:
+            lines.append(("dot", T.rule_rush.format(seconds=int(cfg.rush.duration_s), m=f"×{float(cfg.rush.score_multiplier):g}")))
+        y = 286
+        for mark, line in lines:
+            draw_symbol(surf, mark, vp.px(W - 18, y + 3.2), vp.s(2.6), theme.CORAL if mark == "dot" else theme.TURQ)
+            y = self.text.blit_lines(surf, line, "body", vp.s(5.4), theme.WHITE, vp.px(W - 24, y), vp.s(250), 1.3,
+                                     anchor_x="right")
+            y = int((y - vp.rect.y) / vp.ppc + 2.5)
 
     # -- player replay ---------------------------------------------------------------------------
     # With camera.enabled the results screen is a profile card made to be photographed and
@@ -1226,28 +1400,11 @@ class Renderer:
                 self._wipe(surf, img, rect.center, _ease_out(_phase(t, 1.9 + 0.2 * i, 0.45)))
                 y += int(px * 1.35)
 
-        y = 166 + len(lines) * 6.6 * 1.35 + 30  # the hit cards follow the sentence, however long it is
-        hits = rec.get("hits", {})
-        for i, (color, dx) in enumerate((("green", 43), ("blue", 0), ("red", -43))):
-            start = t_cards + 0.12 * i
-            s = _ease_back(_phase(t, start, 0.45))
-            if s <= 0:
-                continue
-            cx = X + dx
-            side = vp.s(38 * s)
-            card = pygame.Rect(0, 0, side, side)
-            card.center = vp.px(cx, y)
-            pygame.draw.rect(surf, theme.WHITE, card, border_radius=max(1, int(vp.s(4) * s)))
-            a = int(255 * _phase(t, start + 0.2, 0.25))
-            if a <= 0:
-                continue
-            spr = self.sprites.target(color, vp.s(11), False)
-            spr.set_alpha(a)
-            surf.blit(spr, spr.get_rect(center=vp.px(cx, y - 8)))
-            spr.set_alpha(255)
-            n = int(round(hits.get(color, 0) * _ease_out(_phase(t, start + 0.2, 0.5))))
-            self.text.blit(surf, str(n), "numbers", vp.s(8.5), theme.DARK_BLUE, vp.px(cx, y + 4), alpha=a)
-            self.text.blit(surf, T[f"word_{color}"], "body", vp.s(3.8), theme.TEXT_GREY, vp.px(cx, y + 13), alpha=a)
+        y = 166 + len(lines) * 6.6 * 1.35 + 30  # the portfolio follows the sentence, however long it is
+        a = int(255 * _phase(t, t_cards - 0.1, 0.3))
+        if a:
+            self.text.blit(surf, T.portfolio, "heading", vp.s(5.2), theme.BLUE_PALE, vp.px(X, y - 17), alpha=a)
+        self._portfolio(surf, rec, X, y, CW, 15.0, t, t_cards)
 
         t_more = t_cards + 0.6
         img = self.text.render(T.results_hits.format(hits=rec.get("total_hits", 0), throws=rec.get("throws", 0)),
@@ -1273,6 +1430,29 @@ class Renderer:
                 self.text.blit(surf, text, "body", self._fit(text, "body", 5.4, CW), theme.BLUE_PALE, vp.px(X, y), alpha=a)
         self.card_done_at = t_more + 1.0  # the note below waits for this
 
+    def _portfolio(self, surf, rec: dict, cx: float, y: float, width: float, tile_cm: float, t: float, start: float) -> None:
+        """The products the player hit, most-hit first, in a row centred at cx (MOFID_UI v4.1:
+        "your portfolio"), each popping in, with ×n when it was hit more than once."""
+        vp = self.vp
+        hits = rec.get("products") or {}
+        known = {p["key"] for p in self.cfg.raw()["products"]}
+        items = sorted(((k, n) for k, n in hits.items() if k in known and n > 0), key=lambda kv: -kv[1])
+        if not items:
+            return
+        gap = 2.5
+        n = min(len(items), max(1, int((width + gap) // (tile_cm + gap))))
+        items = items[:n]
+        x = cx + (n - 1) * (tile_cm + gap) / 2
+        for i, (key, count) in enumerate(items):  # right to left, as Persian is read
+            s = _ease_back(_phase(t, start + 0.08 * i, 0.4))
+            if s > 0:
+                base = vp.s(tile_cm)
+                img = self.sprites.product_scaled(key, base * s, base, ring=False)
+                surf.blit(img, img.get_rect(center=vp.px(x, y)))
+                if count > 1 and s >= 1.0:
+                    self.text.blit(surf, f"×{count}", "numbers", vp.s(3.8), theme.TURQ, vp.px(x, y + tile_cm * 0.46 + 4))
+            x -= tile_cm + gap
+
     # -- results -------------------------------------------------------------------------------
     def draw_results(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
         vp, W, T, cfg = self.vp, self.W, self.T, self.cfg
@@ -1287,71 +1467,136 @@ class Renderer:
                 self.text.blit(surf, T.profile_note, "body", vp.s(4.6), theme.BLUE_PALE, vp.px(W / 2, 336), alpha=a)
             self._results_footer(surf, flow, now)
             return
+        # MOFID_UI v4.1, 08 RESULTS: well done, the score huge, three numbers, the play style,
+        # the products hit (the portfolio). Type only, no cards.
         surf.blit(self.bg_dark, (0, 0))
-        self._blit_logo(surf, "fa_h_white", vp.px(W / 2, 26), theme.WHITE)
+        self._frame_marks(surf, "08 — RESULTS")
+        line = theme.lerp_color(theme.FIELD, theme.MIST, 0.22)
+        lw = max(1, vp.s(0.25))
+        # 0.0 well done, name      0.25 the score counts up while its line draws under it
         name = _short(rec.get("player_name") or "", cfg.flow.name_max_chars)
-        if name and cfg.results.show_names:
-            self.text.blit(surf, name, "title", vp.s(18), theme.WHITE, vp.px(W / 2, 57))
-        self.text.blit(surf, T.results_title, "body", vp.s(7.5), theme.BLUE_PALE, vp.px(W / 2, 77))
+        head = T.well_done.format(name=name) if name and cfg.results.show_names else T.results_title
+        img = self.text.render(head, "title", self._fit(head, "title", 14, W - 40), theme.TURQ)
+        self._wipe(surf, img, vp.px(W / 2, 42), _ease_out(_phase(t, 0.0, 0.45)))
+        a = int(255 * _phase(t, 0.2, 0.3))
+        if head != T.results_title and a:
+            self.text.blit(surf, T.results_title, "body", vp.s(6), theme.MIST, vp.px(W / 2, 57), alpha=a)
         final = rec.get("score", 0)
-        score = int(round(final * _ease_out(t / 1.2)))
-        self.text.blit(surf, str(score), "numbers", vp.s(56), theme.WHITE, vp.px(W / 2, 109), cache=score == final)
+        COUNT = (0.25, 1.4)
+        p_count = _ease_out(_phase(t, *COUNT))
+        score = int(round(final * p_count))
+        img = self.text.render(str(score), "numbers", vp.s(50), theme.WHITE, cache=score == final)
+        beat = math.sin(math.pi * _phase(t, sum(COUNT), 0.3))  # one small beat as it lands
+        if beat > 0:
+            img = pygame.transform.smoothscale(img, (int(img.get_width() * (1 + 0.07 * beat)), int(img.get_height() * (1 + 0.07 * beat))))
+        surf.blit(img, img.get_rect(center=vp.px(W / 2, 90)))
+        self._score_line(surf, rec.get("score_path") or [], _phase(t, *COUNT), (16, 116, W - 16, 133))
+        pygame.draw.line(surf, line, vp.px(16, 139), vp.px(W - 16, 139), lw)
 
-        # the play style, the screen's message, once the score has counted up
-        appear = _ease_out((t - 0.7) / 0.5)
-        if profile and appear > 0:
-            shift = 7 * (1 - appear)
-            card = vp.cm_rect(16, 142 + shift, W - 16, 226 + shift)
-            surf.blit(self.sprites.rounded(card.w, card.h, vp.s(5), theme.WHITE), card.topleft)
-            self.text.blit(surf, T.profile_title, "body", vp.s(6), theme.TEXT_GREY, vp.px(W / 2, 153 + shift))
-            self.text.blit(surf, profile["label"], "title", vp.s(15), theme.TURQUOISE_RAMP[0], vp.px(W / 2, 170 + shift))
-            self.text.blit_lines(surf, profile["statement"], "body", vp.s(7.5), theme.DARK_BLUE, vp.px(W / 2, 184 + shift),
-                                 vp.s(246), 1.35)
-
-        hits = rec.get("hits", {})
-        for i, (color, x) in enumerate((("green", 245), ("blue", 150), ("red", 55))):
-            appear = _ease_out((t - 1.1 - 0.12 * i) / 0.4)
-            if appear <= 0:
+        # 1.4 three numbers, right to left: hits of throws, best multiplier, today's rank
+        hits_n, throws = rec.get("total_hits", 0), rec.get("throws", 0)
+        cols = []
+        balls = int(rec.get("balls") or 0) or max(throws, 1)  # no ball limit: one dot per throw
+        balls = min(balls, 30)  # dots never run out of their column
+        cols.append((245, None, T.results_hits.format(hits=hits_n, throws=throws)))
+        if cfg.combo.enabled and cfg.combo.levels:
+            cols.append((150, f"×{rec.get('best_multiplier', 1):g}", T.results_best))
+        if flow.rank is not None:
+            cols.append((55, str(flow.rank), T.results_rank.format(rank=flow.rank)))
+        for i, (x, big, label) in enumerate(cols):
+            q = _phase(t, 1.4 + 0.15 * i, 0.4)
+            if q <= 0:
                 continue
-            cy = 256 + 8 * (1 - appear)
-            card = self._art("panel.results_card", vp.s(80), vp.s(46),
-                             lambda: self.sprites.rounded(vp.s(80), vp.s(46), vp.s(4), theme.WHITE))
-            surf.blit(card, card.get_rect(center=vp.px(x, cy)))
-            spr = self.sprites.target(color, vp.s(13), False)
-            surf.blit(spr, spr.get_rect(center=vp.px(x, cy - 12)))
-            self.text.blit(surf, str(hits.get(color, 0)), "numbers", vp.s(11), theme.DARK_BLUE, vp.px(x, cy + 3))
-            self.text.blit(surf, T[f"word_{color}"], "body", vp.s(5), theme.TEXT_GREY, vp.px(x, cy + 15))
+            a, dy = int(255 * q), 5 * (1 - _ease_out(q))  # each rises into place
+            if big is None:  # the balls: filled for a hit, a ring for a miss or one not thrown
+                step = min(4.6, 70.0 / max(1, balls))
+                for j in range(balls):
+                    c = vp.px(x + (balls - 1) * step / 2 - j * step, 152 + dy)
+                    s = _ease_back(_phase(t, 1.45 + 0.04 * j, 0.3))
+                    if j < hits_n and s > 0:
+                        dot = self.sprites.dot(vp.sf(1.5 * s), theme.TURQ)
+                        surf.blit(dot, dot.get_rect(center=c))
+                    elif j >= hits_n:
+                        pygame.draw.aacircle(surf, theme.MIST, c, int(vp.sf(1.5)), max(1, vp.s(0.3)))
+            else:
+                self.text.blit(surf, big, "numbers", vp.s(15), theme.WHITE, vp.px(x, 152 + dy), alpha=a)
+            self.text.blit(surf, label, "heading", vp.s(5.2), theme.WHITE, vp.px(x, 167 + dy), alpha=a)
+        if t > 1.4:
+            for x in (102, 198):
+                pygame.draw.line(surf, line, vp.px(x, 144), vp.px(x, 172), lw)
+            pygame.draw.line(surf, line, vp.px(16, 178), vp.px(W - 16, 178), lw)
 
-        if t > 1.5:
-            self.text.blit(surf, T.results_hits.format(hits=rec.get("total_hits", 0), throws=rec.get("throws", 0)),
-                           "heading", vp.s(7), theme.WHITE, vp.px(W / 2, 288))
-            rush = rec.get("rush") or {}
-            if rush.get("count"):
-                self.text.blit(surf, T.results_rush.format(hits=rush.get("hits", 0), points=rush.get("points", 0)), "body", vp.s(6),
-                               theme.BLUE_PALE, vp.px(W / 2, 299))
-            pills = []
-            if cfg.combo.enabled and cfg.combo.levels:
-                pills.append((f"{T.results_best} ×{rec.get('best_multiplier', 1):g}", theme.PURPLE))
-            rank = flow.rank
-            if rank is not None and rank <= max(1, cfg.results.leaderboard_size):
-                pills.append((T.results_rank.format(rank=rank), theme.TURQUOISE))
-            for i, (label, color) in enumerate(pills):  # side by side when there are two
-                x = W / 2 + (58 - 116 * i if len(pills) == 2 else 0)
-                self._pill(surf, label, color, theme.WHITE, (x, 314), 6.5)
+        # 1.9 the play style: its name read in, then the sentence about this player, line by line
+        y = 190
         if profile:
-            self.text.blit(surf, T.profile_note, "body", vp.s(4.6), theme.BLUE_PALE, vp.px(W / 2, 334))
+            a = int(255 * _phase(t, 1.9, 0.3))
+            if a:
+                self.text.blit(surf, T.profile_title, "body", vp.s(5.2), theme.MIST, vp.px(W / 2, y), alpha=a)
+            img = self.text.render(profile["label"], "title", self._fit(profile["label"], "title", 12, W - 40), theme.TURQ)
+            self._wipe(surf, img, vp.px(W / 2, y + 14), _ease_out(_phase(t, 2.0, 0.5)), theme.WHITE)
+            px = vp.s(5.8)
+            lines = self.text.wrap(self.text.localize(profile["statement"]), "body", px, vp.s(W - 50))
+            yy = vp.px(0, y + 25)[1]
+            for i, ln in enumerate(lines):
+                img = self.text.render(ln, "body", px, theme.WHITE, localize=False)
+                self._wipe(surf, img, img.get_rect(midtop=(vp.px(W / 2, 0)[0], yy)).center,
+                           _ease_out(_phase(t, 2.4 + 0.18 * i, 0.4)))
+                yy += int(px * 1.35)
+            y += 25 + len(lines) * 5.8 * 1.35
+        y = max(y + 22, 252)
+
+        # 2.9 the portfolio: the products hit
+        t_cards = 2.9 if profile else 1.9
+        a = int(255 * _phase(t, t_cards - 0.1, 0.4))
+        if a and rec.get("products"):
+            self.text.blit(surf, T.portfolio, "title", vp.s(8), theme.WHITE, vp.px(W - 16, y), "midright", alpha=a)
+            self._micro(surf, f"YOUR PORTFOLIO · {hits_n} HITS", vp.px(16, y), "midleft", theme.MIST, 2.6)
+            self._portfolio(surf, rec, W / 2, y + 24, W - 32, 26.0, t, t_cards)
+        rush = rec.get("rush") or {}
+        a = int(255 * _phase(t, t_cards + 0.6, 0.4))
+        if rush.get("count") and a:
+            self.text.blit(surf, T.results_rush.format(hits=rush.get("hits", 0), points=rush.get("points", 0)), "body", vp.s(5),
+                           theme.CORAL, vp.px(W / 2, y + 48), alpha=a)
+        if profile:
+            self.text.blit(surf, T.profile_note, "body", self._fit(T.profile_note, "body", 4.2, W - 30), theme.MIST,
+                           vp.px(W / 2, 332), alpha=int(255 * _phase(t, t_cards + 0.8, 0.5)))
         self._results_footer(surf, flow, now)
+
+    def _score_line(self, surf, path: list, p: float, box: tuple) -> None:
+        """MOFID_UI v4.1, 08 RESULTS: the score after each throw as a thin rising line, drawn
+        left to right up to share p, with a dot at its tip."""
+        if p <= 0:
+            return
+        vp = self.vp
+        x0, y0, x1, y1 = box
+        vals = [0, *path] if path else [0, 0]
+        top = max(max(vals), 1)
+        pts = [vp.px(x0 + (x1 - x0) * i / (len(vals) - 1), y1 - (y1 - y0) * v / top) for i, v in enumerate(vals)]
+        # the part drawn so far, ending part-way along a segment
+        f = p * (len(pts) - 1)
+        k = int(f)
+        shown = pts[:k + 1]
+        if k < len(pts) - 1:
+            (ax, ay), (bx, by) = pts[k], pts[k + 1]
+            shown.append((ax + (bx - ax) * (f - k), ay + (by - ay) * (f - k)))
+        col = theme.lerp_color(theme.FIELD, theme.TURQ, 0.8)
+        if len(shown) > 1:
+            w = max(1, vp.s(0.35))
+            pygame.draw.lines(surf, col, False, shown, w) if w > 1 else pygame.draw.aalines(surf, col, False, shown)
+        dot = self.sprites.dot(vp.sf(1.1), theme.TURQ)
+        surf.blit(dot, dot.get_rect(center=(int(shown[-1][0]), int(shown[-1][1]))))
 
     def _results_footer(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
         vp, W, cfg = self.vp, self.W, self.cfg
         p = min(1.0, (now - flow.since) / max(0.1, cfg.flow.results_s))
-        self.text.blit(surf, self.T.results_next, "body", vp.s(6.5), theme.BLUE_PALE, vp.px(W / 2, 350))
-        bar = vp.cm_rect(60, 361, W - 60, 362.6)
-        surf.fill(theme.BLUE_RAMP[2], bar)
+        self.text.blit(surf, self.T.results_next, "heading", vp.s(6.5), theme.MIST, vp.px(W / 2, 348))
+        bar = vp.cm_rect(60, 359, W - 60, 359.9)
+        surf.fill(theme.lerp_color(theme.FIELD, theme.MIST, 0.25), bar)
         w = int(bar.w * (1 - p))
         if w:
-            surf.fill(theme.TURQUOISE, pygame.Rect(bar.right - w, bar.y, w, bar.h))
-        self._steady_progress(surf, theme.TURQUOISE, theme.WHITE)
+            surf.fill(theme.TURQ, pygame.Rect(bar.right - w, bar.y, w, bar.h))
+        if self.photo_slot:  # the card has no frame of its own
+            self._steady_progress(surf, theme.TURQUOISE, theme.WHITE)
 
     def _pill(self, surf, label: str, bg, fg, center_cm, size_cm: float) -> None:
         vp = self.vp
@@ -1368,20 +1613,15 @@ class Renderer:
         vp = self.vp
         self.dim.set_alpha(210)
         surf.blit(self.dim, vp.rect.topleft)
-        self.text.blit(surf, title, "title", vp.s(30), theme.DARK_BLUE, vp.px(self.W / 2, self.H / 2))
+        self.text.blit(surf, title, "title", vp.s(30), theme.WHITE, vp.px(self.W / 2, self.H / 2))
         if sub:
-            self.text.blit(surf, sub, "body", vp.s(8), theme.TEXT_GREY, vp.px(self.W / 2, self.H / 2 + 30))
+            self.text.blit(surf, sub, "body", vp.s(8), theme.MIST, vp.px(self.W / 2, self.H / 2 + 30))
 
     def _badges(self, surf, overlays: dict) -> None:
         """Operator-facing status pills along the bottom edge."""
         vp = self.vp
         y = self.H - 4.5
-        if overlays.get("simulation"):
-            img = self.text.render(f"{self.T.simulation} - SIMULATION", "bold", vp.s(3.4), theme.WHITE)
-            pill = self.sprites.rounded(img.get_width() + vp.s(6), int(img.get_height() * 1.2), vp.s(2.5), theme.PURPLE)
-            r = pill.get_rect(bottomleft=vp.px(3, self.H - 2))
-            surf.blit(pill, r)
-            surf.blit(img, img.get_rect(center=r.center))
+        # no pill for simulation mode (mouse clicks as throws): the wall shows only the game
         if overlays.get("sensor_offline"):
             img = self.text.render(self.T.sensor_offline, "bold", vp.s(3.4), theme.WHITE)
             pill = self.sprites.rounded(img.get_width() + vp.s(6), int(img.get_height() * 1.2), vp.s(2.5), theme.RED)

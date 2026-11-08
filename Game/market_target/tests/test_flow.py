@@ -68,7 +68,7 @@ def test_full_round_through_every_screen(tmp_path):
     assert flow.round.running
 
     rnd = flow.round
-    tg = next(x for x in rnd.targets if x.color == "red")
+    tg = next(x for x in rnd.targets if x.tier == "tiny")
     t += 1.0
     flow.update(t)
     out = flow.handle_impact(*tg.center_at(t), t, t)

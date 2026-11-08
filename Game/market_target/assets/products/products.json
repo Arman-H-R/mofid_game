@@ -1,0 +1,106 @@
+[
+  {
+    "key": "gold",
+    "name": "طلای گرمی",
+    "file": "gold.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#832C73"
+  },
+  {
+    "key": "atiyeh",
+    "name": "آتیه",
+    "file": "atiyeh.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#B1BAC0"
+  },
+  {
+    "key": "hamnag",
+    "name": "همنگ",
+    "file": "hamnag.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#832C73"
+  },
+  {
+    "key": "tavan",
+    "name": "توان",
+    "file": "tavan.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#77C2BE"
+  },
+  {
+    "key": "hami",
+    "name": "حامی",
+    "file": "hami.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#77C2BE"
+  },
+  {
+    "key": "ayar",
+    "name": "عیار",
+    "file": "ayar.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#005379"
+  },
+  {
+    "key": "amoozesh",
+    "name": "آموزش مفید",
+    "file": "amoozesh.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#B1BAC0"
+  },
+  {
+    "key": "bimeh",
+    "name": "بیمه زندگی مفید",
+    "file": "bimeh.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#77C2BE"
+  },
+  {
+    "key": "boursview",
+    "name": "بورس ویو",
+    "file": "boursview.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#005379"
+  },
+  {
+    "key": "boursview2",
+    "name": "بورس ویو ۲.۰",
+    "file": "boursview2.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#832C73"
+  },
+  {
+    "key": "jet",
+    "name": "مفید کارت جت",
+    "file": "jet.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#B1BAC0"
+  },
+  {
+    "key": "mofidapp",
+    "name": "مفید اپ",
+    "file": "mofidapp.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#005379"
+  },
+  {
+    "key": "easytrader",
+    "name": "ایزی تریدر",
+    "file": "easytrader.png",
+    "aspect": 0.92,
+    "radius": 0.1665,
+    "fill": "#832C73"
+  }
+]

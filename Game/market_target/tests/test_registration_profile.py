@@ -8,6 +8,7 @@ from market_pulse.app import App, Paths
 from market_pulse.game import flow as F
 from market_pulse.game.profile import classify, playstyle
 from market_pulse.input.events import Impact
+from market_pulse.ui import theme
 from conftest import ROOT, game_cfg
 
 
@@ -135,21 +136,21 @@ def test_registration_can_be_switched_off():
 
 
 # -- play styles -------------------------------------------------------------------------------
-def summary(green=0, blue=0, red=0, rush_hits=0, score=0):
-    return {"hits": {"green": green, "blue": blue, "red": red}, "rush": {"hits": rush_hits}, "score": score}
+def summary(medium=0, small=0, tiny=0, rush_hits=0, score=0):
+    return {"hits": {"medium": medium, "small": small, "tiny": tiny}, "rush": {"hits": rush_hits}, "score": score}
 
 
 @pytest.mark.parametrize("data, expected", [
     (summary(), "watchful"),
-    (summary(green=2), "watchful"),
-    (summary(red=5, green=3, blue=2), "aggressive"),
-    (summary(red=3, green=4, blue=3), "risk_tolerant"),
-    (summary(red=1, green=3, blue=2, rush_hits=4), "risk_tolerant"),
-    (summary(red=1, green=8, blue=1), "cautious"),
-    (summary(green=5, blue=5), "cautious"),
-    (summary(red=2, green=6, blue=2), "growth"),
-    (summary(red=2, green=4, blue=4), "balanced"),
-    (summary(blue=8, green=2), "balanced"),
+    (summary(medium=2), "watchful"),
+    (summary(tiny=5, medium=3, small=2), "aggressive"),
+    (summary(tiny=3, medium=4, small=3), "risk_tolerant"),
+    (summary(tiny=1, medium=3, small=2, rush_hits=4), "risk_tolerant"),
+    (summary(tiny=1, medium=8, small=1), "cautious"),
+    (summary(medium=5, small=5), "cautious"),
+    (summary(tiny=2, medium=6, small=2), "growth"),
+    (summary(tiny=2, medium=4, small=4), "balanced"),
+    (summary(small=8, medium=2), "balanced"),
 ])
 def test_play_style_rules(data, expected):
     assert playstyle(data, game_cfg().profiles) == expected
@@ -157,21 +158,21 @@ def test_play_style_rules(data, expected):
 
 def test_a_high_score_alone_never_means_high_risk():
     p = game_cfg().profiles
-    careful = summary(green=9, blue=1, score=100000)
+    careful = summary(medium=9, small=1, score=100000)
     assert playstyle(careful, p) == "cautious"
-    bold_but_low = summary(red=4, green=1, score=10)
+    bold_but_low = summary(tiny=4, medium=1, score=10)
     assert playstyle(bold_but_low, p) == "aggressive"
 
 
 def test_the_score_picks_the_wording_within_a_style():
     cfg = game_cfg()
-    said = {classify(summary(red=2, green=4, blue=4, score=s), cfg.profiles)["statement"] for s in (0, 120, 5000)}
+    said = {classify(summary(tiny=2, medium=4, small=4, score=s), cfg.profiles)["statement"] for s in (0, 120, 5000)}
     assert len(said) == 3
     tiers = cfg.profiles.score_tiers
     style = cfg.profiles.styles.balanced.statements
-    assert classify(summary(red=2, green=4, blue=4, score=tiers[0] - 1), cfg.profiles)["statement"] == style[0]
-    assert classify(summary(red=2, green=4, blue=4, score=tiers[0]), cfg.profiles)["statement"] == style[1]
-    assert classify(summary(red=2, green=4, blue=4, score=tiers[1]), cfg.profiles)["statement"] == style[2]
+    assert classify(summary(tiny=2, medium=4, small=4, score=tiers[0] - 1), cfg.profiles)["statement"] == style[0]
+    assert classify(summary(tiny=2, medium=4, small=4, score=tiers[0]), cfg.profiles)["statement"] == style[1]
+    assert classify(summary(tiny=2, medium=4, small=4, score=tiers[1]), cfg.profiles)["statement"] == style[2]
 
 
 def test_every_statement_is_distinct_and_makes_no_promise():
@@ -286,15 +287,21 @@ def test_a_complete_game_as_it_ships(game):
     assert rnd.started_at is not None
     game_start = rnd.started_at
 
-    def throw(color):
-        tg = next(t for t in rnd.targets if t.color == color)
-        ball(app, clock, *tg.center_at(app.clock.now()))
+    def throw(tier):
+        """At a box of that size; a medium or small one means any box that is not tiny."""
+        now = app.clock.now()
+        live = [t for t in rnd.targets if not t.gone(now) and t.die_at is None]
+        tg = next((t for t in live if t.tier == tier), None) or next(t for t in live if t.tier != "tiny")
+        ball(app, clock, *tg.center_at(now))
         tick(app, clock, 0.8, seen)  # past the merge and rebound windows
+        return tg
 
-    throw("green")
-    assert rnd.rush is None and app.renderer.fx is not None
+    assert len(rnd.targets) == app.cfg.targets.active == 4
+    throw("medium")
+    assert rnd.rush is None and app.renderer.fx is not None  # a box that is not tiny starts nothing
+    assert len(rnd.targets) == 4  # replaced at once
     before_rush = len(rnd.targets)
-    throw("red")
+    throw("tiny")
     rush = rnd.rush
     assert rush is not None and len(rnd.rushes) == 1
     assert rush.ends_at - rush.started_at == pytest.approx(4.0)
@@ -303,13 +310,14 @@ def test_a_complete_game_as_it_ships(game):
     # during the phase: the picture changes, more boxes, x2
     tick(app, clock, 0.4, seen)
     x, y = app.vp.px(4, 340)
-    assert sum(app.screen.get_at((x, y))[:3]) < 400  # the white field has gone dark
-    throw("green")
+    field = sum(theme.FIELD)
+    assert sum(app.screen.get_at((x, y))[:3]) < field - 30  # the field has gone deep
+    throw("medium")
     assert rnd.rush_hits == 1 and rnd.rush_points >= 20
-    assert len(rnd.targets) > before_rush + 3
+    assert len(rnd.targets) > before_rush
 
-    # a red hit during it: a fresh 4 seconds, the same phase
-    throw("red")
+    # a tiny hit during it: a fresh 4 seconds, the same phase
+    throw("tiny")
     assert len(rnd.rushes) == 1
     assert rush.ends_at - app.clock.now() == pytest.approx(4.0 - 0.8, abs=0.05)
 
@@ -317,25 +325,24 @@ def test_a_complete_game_as_it_ships(game):
     tick(app, clock, rush.ends_at - app.clock.now() + 0.6, seen)
     assert rnd.rush is None and rnd.warp.rate(app.clock.now()) == 1.0
     assert not any(t.rush_extra for t in rnd.targets)
-    assert sum(app.screen.get_at((x, y))[:3]) > 600  # white again
+    assert sum(app.screen.get_at((x, y))[:3]) == pytest.approx(field, abs=6)  # the field's own colour again
+    assert len(rnd.targets) == 4
 
-    # and the next red hit: another one, of 4 seconds
-    throw("red")
+    # and the next tiny hit: another one, of 4 seconds
+    throw("tiny")
     assert len(rnd.rushes) == 2 and rnd.rush is not None
     tick(app, clock, 4.5, seen)
     assert rnd.rush is None and rnd.rushes[1].ended_at - rnd.rushes[1].started_at == pytest.approx(4.0)
 
-    # the 10th touch ends the game, a miss or a hit
-    assert app.cfg.round.balls == 10 and rnd.throws == 5
-    while rnd.throws < 9:
+    # no ball limit as it ships: balls keep counting past 10, only the time ends the game
+    assert not app.cfg.round.ball_limit and rnd.balls == 0 and rnd.throws == 5
+    while rnd.throws < 12:
         ball(app, clock, 150.0, 390.0)
         tick(app, clock, 0.8, seen)
     assert rnd.running and app.flow.state == F.PLAYING
     score = rnd.score
-    ball(app, clock, 150.0, 390.0)
-    tick(app, clock, 0.05, seen)
-    assert rnd.finished and rnd.end_reason == "balls" and rnd.throws == 10
-    assert clock.t - game_start < 60.0
+    tick(app, clock, game_start + app.cfg.round.duration_s - clock.t + 0.05, seen)
+    assert rnd.finished and rnd.end_reason == "time" and rnd.throws == 12
     assert app.flow.state == F.ENDING
     count = len(rnd.targets)
     ball(app, clock, *rnd.targets[0].center_at(app.clock.now()))
@@ -344,7 +351,7 @@ def test_a_complete_game_as_it_ships(game):
     assert rnd.score == score and len(rnd.targets) == count
 
     rec = app.flow.summary
-    assert rec["player_name"] == "سارا" and rec["score"] == rnd.score and rec["end_reason"] == "balls"
+    assert rec["player_name"] == "سارا" and rec["score"] == rnd.score and rec["end_reason"] == "time"
     assert rec["profile"]["key"] in app.cfg.profiles.styles.raw()
     assert rec["profile"]["statement"] in app.cfg.profiles.styles[rec["profile"]["key"]].statements
     assert rec["rush"]["count"] == 2

@@ -12,7 +12,15 @@ from market_pulse import replay as R
 from market_pulse.app import App, Paths
 from market_pulse.game import flow as F
 from conftest import ROOT, game_cfg, make_cfg
-from test_app import FakeTime, make_app, step
+from test_app import FakeTime, step
+from test_app import make_app as _make_app
+
+
+def make_app(tmp_path, resolution, extra=None):
+    """These tests are about the profile card, which is off by default (results.show_photo)."""
+    extra = dict(extra or {})
+    extra["results"] = {"show_photo": True, **extra.get("results", {})}
+    return _make_app(tmp_path, resolution, extra)
 
 SHAPE = (1080, 1920, 3)
 WHOLE = [0.0, 0.0, 1.0, 1.0]
@@ -403,7 +411,7 @@ def end_round(app, clock, hits=0):
     rnd = app.flow.round
     for i in range(rnd.balls):  # a few hits, the rest thrown and missed
         if i < hits:
-            tg = next(t for t in rnd.targets if t.color == "green")
+            tg = next((t for t in rnd.targets if t.tier == "medium"), rnd.targets[0])
             x, y = tg.center_at(app.clock.now())
             app.flow.handle_impact(x, y, app.clock.now(), app.clock.now())
             step(app, clock, 0.8)
@@ -470,7 +478,7 @@ def test_results_screen_with_and_without_the_photo_slot(tmp_path, enabled):
 
 def test_game_runs_when_the_camera_cannot_start(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "import_cv2", lambda: None)
-    over = {"display": {"resolution": [450, 600]}, "results": {"log_file": str(tmp_path / "r.jsonl")},
+    over = {"display": {"resolution": [450, 600]}, "results": {"log_file": str(tmp_path / "r.jsonl"), "show_photo": True},
             "input": {"sources": []}, "web": {"enabled": False},
             "flow": {"countdown_s": 1.0, "results_s": 2.0}, "round": {"end_delay_s": 0.5}}
     clock = FakeTime()
@@ -567,7 +575,7 @@ def test_unknown_look_in_settings_is_reported():
 def card_app(tmp_path, cam=None):
     app, clock = make_app(tmp_path, [450, 600], {"camera": {"effect_chance": 0.0, **(cam or {})}})
     from market_pulse.game.profile import classify
-    summary = {"score": 260, "hits": {"green": 2, "blue": 1, "red": 3}, "rush": {"count": 1, "hits": 2, "points": 80},
+    summary = {"score": 260, "hits": {"medium": 2, "small": 1, "tiny": 3}, "rush": {"count": 1, "hits": 2, "points": 80},
                "total_hits": 6, "throws": 10, "best_multiplier": 3}
     app.flow.summary = {"round_id": "r9", "player_name": "Sara", **summary, "profile": classify(summary, app.cfg.profiles)}
     app.flow.rank, app.flow.since = 2, 0.0

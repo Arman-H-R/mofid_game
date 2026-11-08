@@ -100,6 +100,10 @@ class Paths:
         return self.assets / "images"
 
     @property
+    def products(self) -> Path:
+        return self.assets / "products"
+
+    @property
     def sounds(self) -> Path:
         return self.assets / "sounds"
 
@@ -142,6 +146,12 @@ class App:
 
         self.text = Text(FontBook(paths.fonts, cfg.fonts.raw()), cfg.ui.digits == "fa")
         self.sprites = Sprites(self.assets)
+        self.sprites.set_products(paths.products, cfg.raw()["products"])  # the 13 product tiles
+        missing = [p["file"] for p in cfg.raw()["products"] if not (paths.products / p["file"]).is_file()]
+        if missing:
+            msg = f"assets: product tiles not found in {paths.products}: {', '.join(missing)} (plain tiles drawn)"
+            log.warning("%s", msg)
+            self.warnings.append(msg)
         self.effects = Effects(self.sprites, self.text)
         self.renderer = Renderer(cfg, paths.images, self.text, self.sprites, self.effects)
         self.renderer.set_viewport(self.vp)
@@ -180,7 +190,7 @@ class App:
         self._update_cursor()
         self.panel = Panel(cfg, self.store, paths.assets) if start_inputs and cfg.web.enabled else None
         self.camera: PlayerCam | None = None
-        if start_inputs and cfg.camera.enabled:
+        if start_inputs and cfg.camera.enabled and cfg.results.get("show_photo", False):  # only the photo card uses it
             dirs = [base / cfg.camera.model_dir for base in (paths.root, paths.bundle) if base is not None]
             self.camera, problem = PlayerCam.create(cfg.camera, dirs)
             if problem:
@@ -404,8 +414,8 @@ class App:
                     continue  # the lidar plays the round only; names and Start come from the phone page
                 out = self.flow.handle_impact(ev.x, ev.y, ev.t, now)
                 if out is not None:
-                    log.info("throw %d: %s %s (%.0f, %.0f) +%d", self.flow.round.throws, out.kind, out.color or "",
-                             ev.x, ev.y, out.points)
+                    log.info("throw %d: %s %s %s (%.0f, %.0f) +%d", self.flow.round.throws, out.kind, out.tier or "",
+                             out.product or "", ev.x, ev.y, out.points)
                     if out.kind == "miss":
                         self._log_nearest_box(ev.x, ev.y, ev.t)
         if self.capture is not None:
@@ -605,7 +615,8 @@ class App:
         tg = min(boxes, key=outside)
         cx, cy = tg.center_at(t)
         log.info("  nearest box: %s at (%.0f, %.0f), side %.0f cm; the hit was %.0f cm outside its hit box "
-                 "(%.0f, %.0f from its centre)", tg.color, cx, cy, tg.side_at(t), outside(tg), x - cx, y - cy)
+                 "(%.0f, %.0f from its centre)", f"{tg.tier} {tg.product}", cx, cy, tg.side_at(t), outside(tg),
+                 x - cx, y - cy)
 
     # -- lidar (F2 then C, F6) ------------------------------------------------------------------
     def rescan_lidar(self) -> None:
@@ -812,8 +823,20 @@ def render_gallery(cfg: Section, paths: Paths, out_dir: Path, seed: int = 7) -> 
         x, y = tg.center_at(now)
         app.flow.handle_impact(x + offset[0], y + offset[1], now, now)
 
-    step(1.2)
+    def attract_at(scene: str, t: float, board: bool = False) -> None:  # the idle loop, that far into a scene
+        fake["t"] = app.renderer.attract.start_of(scene, app.clock.now(), board) + t - 0.45
+        app._last_now = app.clock.now()
+        step(0.45)  # past the scenes' cross-fade
+
+    attract_at("title", 1.5)
     shot("attract")
+    if cfg.flow.attract_demo:
+        A = app.renderer.attract
+        for name, t in (("attract_demo_hit", A.HIT1 + 0.25), ("attract_demo_new", A.NEW + 0.6),
+                        ("attract_demo_sizes", A.SIZES + 1.5), ("attract_demo_rush", A.HIT2 + 0.7)):
+            attract_at("demo", t)
+            shot(name)
+    attract_at("title", 1.5)
     app.flow.request_start(app.clock.now())
     if app.flow.state == F.INSTRUCTIONS:
         step(3.0)
@@ -841,27 +864,30 @@ def render_gallery(cfg: Section, paths: Paths, out_dir: Path, seed: int = 7) -> 
     step(0.25)
     shot("go")
     step(1.5)
-    red = lambda ts: next(t for t in ts if t.color == "red")  # noqa: E731
-    green = lambda ts: next(t for t in ts if t.color == "green")  # noqa: E731
-    blue = lambda ts: next(t for t in ts if t.color == "blue")  # noqa: E731
-    throw_at(green)
-    step(0.8)
-    throw_at(red)
+    def by_tier(tier: str) -> Callable:  # a box of that size, or else the first box
+        return lambda ts: next((t for t in ts if t.tier == tier and not t.gone(app.clock.now())), ts[0])
+
+    tiny, medium, small = by_tier("tiny"), by_tier("medium"), by_tier("small")
+    throw_at(medium)
+    step(0.25)
+    shot("hit_popup")
+    step(0.55)
+    throw_at(tiny)
     step(0.12)
-    shot("hit_red_spawn")
+    shot("hit_tiny_rush")
     if app.flow.round.rush is not None:
         step(0.5)
         shot("rush_fading_in")
     step(1.0)
-    throw_at(blue)
+    throw_at(small)
     step(0.15)
     shot("combo_x2")
     step(1.0)
-    throw_at(red)
+    throw_at(tiny)
     step(1.0)
-    throw_at(red)
+    throw_at(tiny)
     step(1.2)
-    shot("field_12_targets")
+    shot("field_rush")
     app.flow.handle_impact(150.0, 380.0, app.clock.now(), app.clock.now())  # a miss (footer area)
     step(0.15)
     shot("miss")
@@ -887,11 +913,7 @@ def render_gallery(cfg: Section, paths: Paths, out_dir: Path, seed: int = 7) -> 
         {"player_name": "", "score": 215, "timestamp": 2},
         {"player_name": "Ali", "score": 150, "timestamp": 3},
     ]
-    period = cfg.flow.attract_panel_s
-    k = int(fake["t"] / period) + 1
-    fake["t"] = (k + (k + 1) % 2) * period + 1.0  # start of an odd period: the leaderboard panel
-    app._last_now = app.clock.now()
-    step(0.5)
+    attract_at("board", 1.5, board=True)
     shot("attract_leaderboard")
     app.flow.request_start(app.clock.now())
     app.flow.request_start(app.clock.now())

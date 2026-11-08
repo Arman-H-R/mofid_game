@@ -2,8 +2,12 @@
   "display": {
     "fullscreen": true,
     "display_index": 0,
-    "resolution": "auto",
+    "resolution": [
+      800,
+      1280
+    ],
     "fill_screen": true,
+    "scale": 1.0,
     "windowed_height_fraction": 0.88,
     "fps": 60,
     "vsync": true,
@@ -23,66 +27,140 @@
     "spawn_s": 0.32,
     "start_button": {
       "x_cm": 150,
-      "y_cm": 282,
-      "size_cm": 84
+      "y_cm": 318,
+      "size_cm": 70
     }
   },
   "round": {
     "balls": 10,
     "duration_s": 60,
-    "initial": [
-      "green",
-      "red",
-      "blue"
-    ],
-    "max_targets": 12,
-    "end_delay_s": 1.8
+    "end_delay_s": 1.8,
+    "ball_limit": true
   },
   "targets": {
-    "green": {
-      "size_cm": 60,
+    "active": 4,
+    "medium": {
+      "size_cm": 54,
       "points": 10,
-      "spawn_on_hit": []
+      "weight": 3
     },
-    "blue": {
-      "size_cm": 45,
+    "small": {
+      "size_cm": 42,
       "points": 15,
-      "spawn_on_hit": []
+      "weight": 3
     },
-    "red": {
-      "size_cm": 25,
+    "tiny": {
+      "size_cm": 29,
       "points": 30,
-      "spawn_on_hit": [
-        "green",
-        "blue",
-        "red"
-      ]
+      "weight": 2
     },
+    "min_tiny": 1,
     "min_size_cm": 20
   },
+  "products": [
+    {
+      "key": "gold",
+      "name": "طلای گرمی",
+      "file": "gold.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "atiyeh",
+      "name": "آتیه",
+      "file": "atiyeh.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "hamnag",
+      "name": "همنگ",
+      "file": "hamnag.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "tavan",
+      "name": "توان",
+      "file": "tavan.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "hami",
+      "name": "حامی",
+      "file": "hami.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "ayar",
+      "name": "عیار",
+      "file": "ayar.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "amoozesh",
+      "name": "آموزش مفید",
+      "file": "amoozesh.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "bimeh",
+      "name": "بیمه زندگی مفید",
+      "file": "bimeh.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "boursview",
+      "name": "بورس ویو",
+      "file": "boursview.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "boursview2",
+      "name": "بورس ویو ۲.۰",
+      "file": "boursview2.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "jet",
+      "name": "مفید کارت جت",
+      "file": "jet.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "mofidapp",
+      "name": "مفید اپ",
+      "file": "mofidapp.png",
+      "aspect": 0.92
+    },
+    {
+      "key": "easytrader",
+      "name": "ایزی تریدر",
+      "file": "easytrader.png",
+      "aspect": 0.92
+    }
+  ],
   "motion": {
     "enabled": true,
     "speed": 1.0,
-    "green": {
+    "variation": 0.18,
+    "medium": {
       "pattern": "sway_x",
-      "amplitude_cm": 14,
-      "period_s": 5.0,
+      "amplitude_cm": 10,
+      "period_s": 5.4,
       "pulse": 0.0,
       "pulse_period_s": 2.0
     },
-    "blue": {
+    "small": {
       "pattern": "figure8",
-      "amplitude_cm": 12,
-      "period_s": 5.2,
-      "pulse": 0.05,
+      "amplitude_cm": 9,
+      "period_s": 5.0,
+      "pulse": 0.0,
       "pulse_period_s": 2.6
     },
-    "red": {
+    "tiny": {
       "pattern": "volatile",
-      "amplitude_cm": 13,
-      "period_s": 3.8,
-      "pulse": 0.12,
-      "pulse_period_s": 1.4
+      "amplitude_cm": 8,
+      "period_s": 4.2,
+      "pulse": 0.04,
+      "pulse_period_s": 1.6
     }
   },
   "combo": {
@@ -105,33 +183,33 @@
   "rush": {
     "enabled": true,
     "duration_s": 4,
-    "trigger_red_hits": 1,
-    "restart_on_red_hit": true,
+    "trigger_tiny_hits": 1,
+    "restart_on_tiny_hit": true,
     "max_per_round": 100,
     "cooldown_s": 0,
     "score_multiplier": 2,
     "stack_with_combo": true,
     "speed": 1.6,
     "speed_ramp_s": 0.4,
-    "max_targets": 12,
+    "max_targets": 8,
     "spawn_interval_s": 1.0,
     "spawn_lifetime_s": 4.0,
-    "spawn_colors": [
-      "red",
-      "blue",
-      "green",
-      "red"
+    "spawn_tiers": [
+      "tiny",
+      "small",
+      "medium",
+      "small"
     ],
     "transition_s": 0.4
   },
   "profiles": {
     "min_hits": 3,
-    "aggressive_red_share": 0.5,
-    "risk_red_share": 0.3,
+    "aggressive_tiny_share": 0.5,
+    "risk_tiny_share": 0.3,
     "rush_min_hits": 4,
     "rush_share": 0.6,
-    "growth_green_share": 0.5,
-    "cautious_red_share": 0.1,
+    "growth_medium_share": 0.5,
+    "cautious_tiny_share": 0.1,
     "score_tiers": [
       90,
       180
@@ -196,7 +274,9 @@
     "countdown_s": 3.0,
     "results_s": 25.0,
     "attract_panel_s": 8.0,
-    "time_warning_s": 10
+    "attract_demo": true,
+    "attract_demo_s": 14.0,
+    "time_warning_s": 8
   },
   "input": {
     "sources": [
@@ -205,7 +285,7 @@
     ],
     "simulation": false,
     "latency_ms": 0,
-    "ball_radius_cm": 10,
+    "ball_radius_cm": 20,
     "merge_window_ms": 250,
     "merge_radius_cm": 35,
     "rebound_window_ms": 600,
@@ -243,38 +323,38 @@
             25.0
           ],
           "lidar_mm": [
-            -678.9,
-            1886.5
+            -377.0,
+            1868.3
           ]
         },
         {
           "wall_cm": [
-            686.1,
+            275.0,
             25.0
           ],
           "lidar_mm": [
-            1123.7,
-            1870.4
+            372.5,
+            1902.9
           ]
         },
         {
           "wall_cm": [
-            686.1,
-            375.0
+            275.0,
+            455.0
           ],
           "lidar_mm": [
-            1149.4,
-            974.7
+            400.4,
+            669.4
           ]
         },
         {
           "wall_cm": [
             25.0,
-            375.0
+            455.0
           ],
           "lidar_mm": [
-            -693.9,
-            959.4
+            -358.7,
+            669.4
           ]
         }
       ]
@@ -373,7 +453,7 @@
   },
   "text": {
     "title": "نبض بازار",
-    "subtitle": "بازی تعاملی کارگزاری مفید",
+    "subtitle": "بازی تعاملی گروه مالی مفید",
     "start": "شروع",
     "cta_throw": "برای شروع، توپ را به این مربع بزنید",
     "cta_operator": "برای شروع آماده شوید",
@@ -381,24 +461,30 @@
     "how_to_title": "راهنمای بازی",
     "rule_balls": "{balls} توپ و {seconds} ثانیه فرصت دارید",
     "rule_time": "{seconds} ثانیه فرصت دارید",
-    "rule_rush": "هر برخورد به باکس قرمز، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
+    "rule_rush": "هر برخورد به باکس کوچک، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
     "register_title": "ثبت‌نام بازیکن",
     "register_prompt": "نام خود را وارد کنید",
     "register_placeholder": "نام شما",
     "register_empty": "لطفاً نام خود را وارد کنید",
     "register_start": "شروع بازی",
     "register_hint": "بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید",
-    "rule_positive": "هر سه رنگ امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
-    "rule_move": "بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند",
+    "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
+    "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
     "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-    "red_extra": "+ سه باکس تازه",
+    "rule_size": "امتیاز هر محصول را اندازه‌ی باکس تعیین می‌کند",
     "points_unit": "امتیاز",
-    "word_green": "رشد",
-    "word_blue": "تنوع سبد",
-    "word_red": "نوسان",
-    "meaning_green": "رشد پایدار؛ ریسک کم، بازده کم",
-    "meaning_blue": "مدیریت ریسک؛ ریسک و بازده متوسط",
-    "meaning_red": "نوسان و هیجان؛ ریسک و بازده احتمالی زیاد",
+    "tier_medium": "باکس بزرگ",
+    "tier_small": "باکس متوسط",
+    "tier_tiny": "باکس کوچک",
+    "tiny_rush": "+ طوفان بازار",
+    "attract_tag": "13 PRODUCTS · ONE MARKET",
+    "demo_title": "چطور بازی کنیم؟",
+    "demo_hit": "توپ را به محصول‌ها بزنید",
+    "demo_new": "محصول تازه جای آن را می‌گیرد",
+    "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
+    "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
+    "loading_market": "LOADING THE MARKET · 13 PRODUCTS",
+    "portfolio": "سبد محصولات شما",
     "rush_title": "طوفان بازار",
     "rush_start": "طوفان بازار! امتیاز {m}",
     "rush_end": "بازار آرام شد",
@@ -420,6 +506,8 @@
     "results_best": "بیشترین ضریب",
     "results_rush": "در طوفان بازار: {hits} برخورد و {points} امتیاز",
     "profile_title": "سبک بازی شما",
+    "replay_label": "تکرار صحنه",
+    "replay_slow": "حرکت آهسته",
     "profile_note": "این نتیجه فقط سبک بازی شما را توصیف می‌کند و ارزیابی مالی یا توصیه‌ی سرمایه‌گذاری نیست.",
     "results_rank": "رتبه‌ی {rank} امروز",
     "results_next": "نفر بعدی، آماده شوید",
