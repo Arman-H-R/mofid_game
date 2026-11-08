@@ -198,8 +198,8 @@ def test_frame_errors_recover_to_attract_then_exit_when_repeated(tmp_path):
 
 
 def test_frame_time_budget(tmp_path):
-    """Busiest screen (all 13 products moving, Market Rush, the hit badges) at the reference wall resolution."""
-    app, clock = make_app(tmp_path, [1536, 2048], {"flow": {"show_instructions": False}, "targets": {"active": 13},
+    """Busiest screen (all 10 products moving, Market Rush, the hit badges) at the reference wall resolution."""
+    app, clock = make_app(tmp_path, [1536, 2048], {"flow": {"show_instructions": False}, "targets": {"active": 10},
                                                    "rush": {"enabled": True}})
     try:
         app.flow.request_start(app.clock.now())
@@ -209,7 +209,7 @@ def test_frame_time_budget(tmp_path):
             tg = next(t for t in rnd.targets if t.tier == "tiny")
             sensor_hit(app, clock, *tg.center_at(app.clock.now()))
             step(app, clock, 0.7)
-        assert len(rnd.targets) == 13 and rnd.rush is not None
+        assert len(rnd.targets) == 10 and rnd.rush is not None
         step(app, clock, 1.0)  # caches warm
         times = []
         for _ in range(120):

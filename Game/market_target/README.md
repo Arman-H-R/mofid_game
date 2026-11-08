@@ -17,9 +17,10 @@ The game now follows *MOFID_UI_v4.1_1.pdf*. **Where this file below still talks 
 blue and red boxes, read the three sizes instead** (green → medium, blue → small,
 red → tiny). Those sections describe the game before the redesign.
 
-**Targets: the 13 Mofid products.** The boxes are the 13 official product tiles from the
-PDF (طلای گرمی، آتیه، همنگ، توان، حامی، عیار، آموزش مفید، بیمه زندگی مفید، بورس ویو،
-بورس ویو ۲.۰، مفید کارت جت، مفید اپ، ایزی تریدر). They are cut out unchanged by
+**Targets: 10 Mofid products.** The boxes are 10 of the official product tiles from the
+PDF (آتیه، حامی، عیار، آموزش مفید، بیمه زندگی مفید، بورس ویو، بورس ویو ۲.۰، مفید کارت جت،
+مفید اپ، ایزی تریدر). The PDF's طلای گرمی، همنگ and توان are not in the game (since
+2026-11-09): `config.RETIRED` leaves them out even when an older `settings.json` lists them. They are cut out unchanged by
 `tools/extract_product_tiles.py` into `assets/products/`, listed in `config.PRODUCTS`, and
 never recoloured. A tile is slightly wider than tall (aspect 0.92), and the hit area is the
 tile itself.
@@ -30,12 +31,12 @@ tile itself.
 | `small` | 42 cm | 15 | باکس متوسط |
 | `tiny` | 29 cm | 30, and starts Market Rush | باکس کوچک |
 
-- **`targets.active` is how many boxes are on the wall at once** (default 4, from 1 to 13).
+- **`targets.active` is how many boxes are on the wall at once** (default 4, from 1 to 10).
   It is the only place that number is set. A hit box is replaced at once, so the count never
   changes outside Market Rush, and all boxes then move. The old growth to 12 boxes on a red
   hit is gone.
 - **Which product and which size** comes from `game/products.py`. Products are drawn from a
-  shuffled bag of all 13: none already on the wall, and not the one just hit. Sizes are drawn
+  shuffled bag of all 10: none already on the wall, and not the one just hit. Sizes are drawn
   from a bag weighted by `targets.<size>.weight` (3 : 3 : 2). `targets.min_tiny` (1) keeps a
   tiny box up whenever there are 3 or more boxes, so Market Rush can always be reached.
 - **Movement:** each size has a gentle pattern (`motion.*`), and every box gets its own speed
@@ -53,14 +54,14 @@ tile itself.
   the project.
 - **The attract screen (`ui/attract.py`) is a loop driven only by the clock.** It never
   touches the game. It plays three scenes:
-  - **01:** the 13 tiles circle the title.
+  - **01:** the 10 tiles circle the title.
   - **02:** a demonstration round: a hit with its name and points, a new product, the three
     sizes and their points, and a tiny hit that starts Market Rush.
   - **03:** today's best three.
 
   `flow.attract_panel_s`, `flow.attract_demo` and `flow.attract_demo_s` control it.
-- **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–13),
-  with a live row of all 13 products lit for the active ones. Below it are each size's width
+- **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–10),
+  with a live row of all 10 products lit for the active ones. Below it are each size's width
   and points. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits

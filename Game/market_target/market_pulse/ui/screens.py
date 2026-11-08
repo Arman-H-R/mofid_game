@@ -841,7 +841,7 @@ class Renderer:
 
     def _countdown(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
         """MOFID_UI v4.1, 04 COUNTDOWN: "get ready", the number in a ring whose arc runs down,
-        and the 13 products waiting along the bottom."""
+        and the products waiting along the bottom."""
         vp, W = self.vp, self.W
         n = flow.countdown_value(now)
         total = max(0.1, float(self.cfg.flow.countdown_s))

@@ -18,29 +18,38 @@ def test_defaults_are_valid():
     assert warnings == []
     assert cfg.round.balls == 10 and cfg.round.duration_s == 60  # whichever comes first
     assert cfg.targets.tiny.points > cfg.targets.small.points > cfg.targets.medium.points > 0
-    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 13
+    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 10
 
 
-def test_the_13_product_tiles_ship_with_the_game():
+def test_the_10_product_tiles_ship_with_the_game():
     cfg, _ = config.load(None)
     keys = [p["key"] for p in cfg.raw()["products"]]
-    assert len(set(keys)) == 13
+    assert len(set(keys)) == 10
     for p in cfg.raw()["products"]:
         assert (ROOT / "assets" / "products" / p["file"]).is_file(), p["file"]
         assert p["name"].strip()  # the label shown with the points after a hit
     names = {p["name"] for p in cfg.raw()["products"]}
-    assert {"طلای گرمی", "آتیه", "همنگ", "توان", "حامی", "عیار", "آموزش مفید", "بیمه زندگی مفید", "بورس ویو",
+    assert {"آتیه", "حامی", "عیار", "آموزش مفید", "بیمه زندگی مفید", "بورس ویو",
             "بورس ویو ۲.۰", "مفید کارت جت", "مفید اپ", "ایزی تریدر"} == names
+    for gone in ("gold", "hamnag", "tavan"):  # taken out of the game, tile files too
+        assert gone not in keys and not (ROOT / "assets" / "products" / f"{gone}.png").exists()
 
 
-def test_bad_products_fall_back_to_the_13(tmp_path):
+def test_products_taken_out_stay_out_of_an_older_settings_file(tmp_path):
+    old = [{"key": k, "name": k, "file": f"{k}.png"} for k in ("gold", "atiyeh", "hamnag", "tavan", "hami")]
+    cfg, warnings = load_json(tmp_path, {"products": old})
+    assert [p["key"] for p in cfg.raw()["products"]] == ["atiyeh", "hami"]
+    assert sum("no longer in the game" in w for w in warnings) == 3
+
+
+def test_bad_products_fall_back_to_the_10(tmp_path):
     cfg, warnings = load_json(tmp_path, {"products": [{"key": "x"}, "y"]})
-    assert warnings and len(cfg.raw()["products"]) == 13
+    assert warnings and len(cfg.raw()["products"]) == 10
 
 
 def test_active_targets_are_kept_within_the_products(tmp_path):
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 40}})
-    assert warnings and cfg.targets.active == 13
+    assert warnings and cfg.targets.active == 10
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 0}})
     assert warnings and cfg.targets.active == 1
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 7}})

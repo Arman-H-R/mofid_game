@@ -1,6 +1,6 @@
 """Which product, and at which size, every new box shows. Pure Python, no pygame.
 
-Products come from a shuffled bag: every one of the 13 is drawn once before any is drawn
+Products come from a shuffled bag: every one of the 10 is drawn once before any is drawn
 again, so the wall keeps showing different products instead of the same few. A product that
 is already on the wall, or the one that was just hit, is skipped (and stays in the bag for
 the next box). With every other product up, the one just hit comes back; only with more boxes

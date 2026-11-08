@@ -1,35 +1,11 @@
 [
   {
-    "key": "gold",
-    "name": "طلای گرمی",
-    "file": "gold.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#832C73"
-  },
-  {
     "key": "atiyeh",
     "name": "آتیه",
     "file": "atiyeh.png",
     "aspect": 0.92,
     "radius": 0.1665,
     "fill": "#B1BAC0"
-  },
-  {
-    "key": "hamnag",
-    "name": "همنگ",
-    "file": "hamnag.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#832C73"
-  },
-  {
-    "key": "tavan",
-    "name": "توان",
-    "file": "tavan.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#77C2BE"
   },
   {
     "key": "hami",

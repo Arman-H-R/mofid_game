@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RECORD = {
     "round_id": "r1", "timestamp": 1793379633.0, "player_id": "", "player_name": "سارا", "score": 400, "throws": 10,
     "hits": {"medium": 3, "small": 2, "tiny": 1}, "points_by_tier": {"medium": 30, "small": 30, "tiny": 60}, "total_hits": 6,
-    "products": {"gold": 2, "jet": 1, "hami": 3},
+    "products": {"ayar": 2, "jet": 1, "hami": 3},
     "rush": {"count": 1, "throws": 4, "hits": 2, "points": 90}, "best_streak": 3, "best_multiplier": 4.0, "end_reason": "balls",
     "duration_s": 18.2, "targets_at_end": 9, "profile": {"key": "balanced", "label": "متعادل", "statement": "..."},
     "balls": 10, "round_duration_s": 60.0,
@@ -92,7 +92,7 @@ def test_every_saved_value_has_a_csv_column():
     assert row["player_name"] == "سارا" and row["score"] == "400" and row["round_id"] == "r1"
     assert (row["hits_medium"], row["hits_small"], row["hits_tiny"]) == ("3", "2", "1")
     assert (row["points_by_tier_medium"], row["points_by_tier_tiny"]) == ("30", "60")
-    assert (row["products_gold"], row["products_jet"]) == ("2", "1")  # hits per product: a column each
+    assert (row["products_ayar"], row["products_jet"]) == ("2", "1")  # hits per product: a column each
     assert (row["rush_count"], row["rush_throws"], row["rush_hits"], row["rush_points"]) == ("1", "4", "2", "90")
     assert (row["profile_key"], row["profile_label"]) == ("balanced", "متعادل")
     assert (row["best_streak"], row["best_multiplier"], row["end_reason"]) == ("3", "4.0", "balls")

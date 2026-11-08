@@ -1,4 +1,7 @@
-"""Cut the 13 product tiles out of MOFID_UI_v4.1_1.pdf page 1 (attract) as RGBA PNGs.
+"""Cut the product tiles out of MOFID_UI_v4.1_1.pdf page 1 (attract) as RGBA PNGs.
+
+The PDF has 13 tiles; طلای گرمی (gold), همنگ (hamnag) and توان (tavan) are not in the game,
+so they are not cut (see config.RETIRED).
 
 Each tile is a filled rounded rectangle; it is rendered at high zoom and given an
 anti-aliased rounded-corner alpha mask with the tile's own corner radius, so only the
@@ -15,10 +18,7 @@ page = pymupdf.open(pdf)[0]
 
 # tile top-left (pt) -> key, Persian label (from the PDF's components page)
 TILES = [
-    ((287.5, 123.2), "gold", "طلای گرمی"),
     ((160.2, 189.6), "atiyeh", "آتیه"),
-    ((78.3, 307.6), "hamnag", "همنگ"),
-    ((60.6, 450.1), "tavan", "توان"),
     ((111.1, 584.5), "hami", "حامی"),
     ((218.4, 680.0), "ayar", "عیار"),
     ((357.7, 714.7), "amoozesh", "آموزش مفید"),

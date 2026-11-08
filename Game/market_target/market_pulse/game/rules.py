@@ -2,7 +2,7 @@
 
 Rules implemented (from the scenario PDF, the add-on text and the MOFID_UI v4.1 redesign):
 - 60 seconds, with an optional ball limit. targets.active boxes are on the wall, each one
-  of the 13 Mofid products at one of three sizes (medium, small, tiny).
+  of the 10 Mofid products at one of three sizes (medium, small, tiny).
 - A valid hit scores that size's points (the smaller, the more), replaces the hit box at
   once with another product at a new size (game.products.Picker), and moves every box to
   a new random position, so the number of boxes outside Market Rush never changes.

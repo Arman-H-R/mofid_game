@@ -1,4 +1,4 @@
-"""The rules for one round (pure logic, no pygame): the 13 products at three sizes."""
+"""The rules for one round (pure logic, no pygame): the 10 products at three sizes."""
 import copy
 from collections import Counter
 
@@ -54,7 +54,7 @@ def test_round_starts_with_the_configured_number_of_different_products(cfg, rng)
     assert rnd.time_left(T0) == 60.0
 
 
-@pytest.mark.parametrize("active", [1, 2, 3, 6, 9, 13])
+@pytest.mark.parametrize("active", [1, 2, 3, 6, 9, 10])
 def test_any_number_of_active_boxes_up_to_every_product(active):
     cfg = make_cfg({"targets": {"active": active}})
     rnd = started(cfg, np.random.default_rng(active))
@@ -141,7 +141,7 @@ def test_every_product_comes_up_before_any_repeats_much():
         now += 1.0
         out = throw_at(rnd, None, now)
         shown[next(t.product for t in rnd.targets if t.id == out.spawned[0])] += 1
-    assert set(shown) == {p["key"] for p in PRODUCTS}  # all 13
+    assert set(shown) == {p["key"] for p in PRODUCTS}  # all 10
     assert max(shown.values()) <= 4  # a shuffled bag, not the same few again and again
 
 
@@ -321,7 +321,7 @@ def check_field(rnd, t, seed=None):
 def test_random_rounds_never_overlap_and_stay_on_the_field(seed):
     """Play random rounds and sample the field after every move settles."""
     rng = np.random.default_rng(seed)
-    cfg = make_cfg({"targets": {"active": int(rng.integers(1, 14))}})
+    cfg = make_cfg({"targets": {"active": int(rng.integers(1, len(PRODUCTS) + 1))}})
     rnd = started(cfg, rng)
     settle = cfg.layout.transition_s + cfg.layout.spawn_s + 0.05
     now = T0

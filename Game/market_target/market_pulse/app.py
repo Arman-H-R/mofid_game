@@ -146,7 +146,7 @@ class App:
 
         self.text = Text(FontBook(paths.fonts, cfg.fonts.raw()), cfg.ui.digits == "fa")
         self.sprites = Sprites(self.assets)
-        self.sprites.set_products(paths.products, cfg.raw()["products"])  # the 13 product tiles
+        self.sprites.set_products(paths.products, cfg.raw()["products"])  # the product tiles
         missing = [p["file"] for p in cfg.raw()["products"] if not (paths.products / p["file"]).is_file()]
         if missing:
             msg = f"assets: product tiles not found in {paths.products}: {', '.join(missing)} (plain tiles drawn)"

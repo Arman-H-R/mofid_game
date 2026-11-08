@@ -12,19 +12,17 @@ import json
 from pathlib import Path
 from typing import Any
 
-# The three box sizes. Every one of the 13 products can appear at any size; the size alone
+# The three box sizes. Every one of the 10 products can appear at any size; the size alone
 # sets the points (MOFID_UI v4.1: L +10, M +15, S +30). A hit on a tiny box starts Market Rush.
 TIERS = ("medium", "small", "tiny")
 COLORS = TIERS  # the old name (green, blue, red boxes), still imported by the design-kit tools
 
-# The 13 official product tiles (assets/products, cut from MOFID_UI_v4.1 page 1 by
-# tools/extract_product_tiles.py). "name" is the label shown with the points after a hit.
+# The 10 product tiles in the game (assets/products, cut from MOFID_UI_v4.1 page 1 by
+# tools/extract_product_tiles.py). The PDF has 13; RETIRED lists the 3 left out.
+# "name" is the label shown with the points after a hit.
 # "aspect" is the tile's height / width: the hit area is the tile itself.
 PRODUCTS: list[dict[str, Any]] = [
-    {"key": "gold", "name": "طلای گرمی", "file": "gold.png", "aspect": 0.92},
     {"key": "atiyeh", "name": "آتیه", "file": "atiyeh.png", "aspect": 0.92},
-    {"key": "hamnag", "name": "همنگ", "file": "hamnag.png", "aspect": 0.92},
-    {"key": "tavan", "name": "توان", "file": "tavan.png", "aspect": 0.92},
     {"key": "hami", "name": "حامی", "file": "hami.png", "aspect": 0.92},
     {"key": "ayar", "name": "عیار", "file": "ayar.png", "aspect": 0.92},
     {"key": "amoozesh", "name": "آموزش مفید", "file": "amoozesh.png", "aspect": 0.92},
@@ -35,6 +33,9 @@ PRODUCTS: list[dict[str, Any]] = [
     {"key": "mofidapp", "name": "مفید اپ", "file": "mofidapp.png", "aspect": 0.92},
     {"key": "easytrader", "name": "ایزی تریدر", "file": "easytrader.png", "aspect": 0.92},
 ]
+
+# Products taken out of the game (2026-11-09): left out even when a settings.json lists them.
+RETIRED = frozenset({"gold", "hamnag", "tavan"})  # طلای گرمی، همنگ، توان
 
 DEFAULTS: dict[str, Any] = {
     "display": {
@@ -211,7 +212,7 @@ DEFAULTS: dict[str, Any] = {
         "intro_s": 2.6,  # the Mofid logo zooms in and fades before the countdown (0 = no intro)
         "countdown_s": 3.0,
         "results_s": 25.0,  # long enough for players to take a picture of the results
-        # The idle screen loops: the 13 tiles around the title, a short demonstration of a
+        # The idle screen loops: the 10 tiles around the title, a short demonstration of a
         # round (a hit, a new box, the sizes and points, Market Rush), then today's best.
         "attract_panel_s": 8.0,  # the title and the leaderboard, each
         "attract_demo": True,
@@ -352,13 +353,13 @@ DEFAULTS: dict[str, Any] = {
         "tier_small": "باکس متوسط",
         "tier_tiny": "باکس کوچک",
         "tiny_rush": "+ طوفان بازار",
-        "attract_tag": "13 PRODUCTS · ONE MARKET",
+        "attract_tag": "10 PRODUCTS · ONE MARKET",
         "demo_title": "چطور بازی کنیم؟",
         "demo_hit": "توپ را به محصول‌ها بزنید",
         "demo_new": "محصول تازه جای آن را می‌گیرد",
         "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
         "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-        "loading_market": "LOADING THE MARKET · 13 PRODUCTS",
+        "loading_market": "LOADING THE MARKET · 10 PRODUCTS",
         "portfolio": "سبد محصولات شما",
         "rush_title": "طوفان بازار",
         "rush_start": "طوفان بازار! امتیاز {m}",
@@ -407,8 +408,8 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("wall", "height_cm"): (50, 5000),
     ("round", "balls"): (0, 100),
     ("round", "duration_s"): (5, 3600),
-    ("targets", "active"): (1, 13),
-    ("targets", "min_tiny"): (0, 13),
+    ("targets", "active"): (1, len(PRODUCTS)),
+    ("targets", "min_tiny"): (0, len(PRODUCTS)),
     ("targets", "min_size_cm"): (1, 500),
     ("motion", "variation"): (0, 0.5),
     ("profiles", "min_hits"): (1, 100),
@@ -573,6 +574,9 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
 
     products, seen = [], set()
     for p in cfg["products"] if isinstance(cfg["products"], list) else []:
+        if isinstance(p, dict) and p.get("key") in RETIRED:  # an older settings.json still lists it
+            warnings.append(f"product {p['key']!r} is no longer in the game; left out")
+            continue
         if (isinstance(p, dict) and isinstance(p.get("key"), str) and p["key"] and p["key"] not in seen
                 and isinstance(p.get("name"), str) and isinstance(p.get("file"), str)):
             aspect = p.get("aspect", 1.0)
@@ -582,7 +586,7 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
         else:
             warnings.append(f"ignored invalid product {p!r} (needs key, name and file)")
     if not products:
-        warnings.append("'products' has no valid product; using the 13 Mofid products")
+        warnings.append(f"'products' has no valid product; using the {len(PRODUCTS)} Mofid products")
         products = copy.deepcopy(PRODUCTS)
     cfg["products"] = products
     if cfg["targets"]["active"] > len(products):

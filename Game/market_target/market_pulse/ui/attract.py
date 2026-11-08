@@ -1,7 +1,7 @@
 """The idle (attract) screen of MOFID_UI v4.1: a loop that draws people in and shows them how
 to play, with nobody to explain it.
 
-    title   the 13 product tiles circle the title slowly (1 turn in 40 s), 01 ATTRACT
+    title   the 10 product tiles circle the title slowly (1 turn in 40 s), 01 ATTRACT
     demo    a round played by itself on a small field: products appear, a ball hits one, its
             name and points open in rings, a new product takes its place and the boxes move;
             then the three sizes and their points (the smaller, the more), and a tiny box
@@ -218,7 +218,7 @@ class Attract:
 
     def _script(self) -> None:
         """Who is where in the demonstration. The products are taken in turn from the list."""
-        keys = [p["key"] for p in self.r.cfg.raw()["products"]] or ["gold"]
+        keys = [p["key"] for p in self.r.cfg.raw()["products"]] or ["atiyeh"]
         k = lambda i: keys[i % len(keys)]  # noqa: E731
         N, H1, H2 = self.NEW, self.HIT1, self.HIT2
         self.hit1 = DemoTile(k(12), "medium", [(0, 78, 148)], 0.2, H1, hit=True)

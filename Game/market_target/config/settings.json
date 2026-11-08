@@ -59,27 +59,9 @@
   },
   "products": [
     {
-      "key": "gold",
-      "name": "طلای گرمی",
-      "file": "gold.png",
-      "aspect": 0.92
-    },
-    {
       "key": "atiyeh",
       "name": "آتیه",
       "file": "atiyeh.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "hamnag",
-      "name": "همنگ",
-      "file": "hamnag.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "tavan",
-      "name": "توان",
-      "file": "tavan.png",
       "aspect": 0.92
     },
     {
@@ -477,13 +459,13 @@
     "tier_small": "باکس متوسط",
     "tier_tiny": "باکس کوچک",
     "tiny_rush": "+ طوفان بازار",
-    "attract_tag": "13 PRODUCTS · ONE MARKET",
+    "attract_tag": "10 PRODUCTS · ONE MARKET",
     "demo_title": "چطور بازی کنیم؟",
     "demo_hit": "توپ را به محصول‌ها بزنید",
     "demo_new": "محصول تازه جای آن را می‌گیرد",
     "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
     "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-    "loading_market": "LOADING THE MARKET · 13 PRODUCTS",
+    "loading_market": "LOADING THE MARKET · 10 PRODUCTS",
     "portfolio": "سبد محصولات شما",
     "rush_title": "طوفان بازار",
     "rush_start": "طوفان بازار! امتیاز {m}",
