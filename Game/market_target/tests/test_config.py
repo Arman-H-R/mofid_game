@@ -18,7 +18,7 @@ def test_defaults_are_valid():
     assert warnings == []
     assert cfg.round.balls == 10 and cfg.round.duration_s == 60  # whichever comes first
     assert cfg.targets.tiny.points > cfg.targets.small.points > cfg.targets.medium.points > 0
-    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 9
+    assert cfg.targets.active == 6 and cfg.targets.grow_to == 9 and len(cfg.raw()["products"]) == 9
 
 
 # the score table: 10 points (big box), 15 (medium box), 30 (small box, starts Market Rush)
@@ -116,7 +116,7 @@ def test_partial_override_and_comments(tmp_path):
         ({"targets": {"medium": {"points": -5}}}, ("targets", "medium", "points"), 0),
         ({"motion": {"tiny": {"pattern": "zigzag"}}}, ("motion", "tiny", "pattern"), "still"),
         ({"input": {"udp_json": {"units": "inch"}}}, ("input", "udp_json", "units"), "normalized"),
-        ({"targets": {"green": {"points": 5}}}, ("targets", "active"), 4),  # the old colours: reported, ignored
+        ({"targets": {"green": {"points": 5}}}, ("targets", "active"), 6),  # the old colours: reported, ignored
         ({"round": "x"}, ("round", "balls"), config.DEFAULTS["round"]["balls"]),
     ],
 )

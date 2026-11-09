@@ -36,7 +36,7 @@ are out of the game (`config.RETIRED`). A `settings.json` with the older product
 sizes and points) gets the 9 products, with a warning. A tile is square (aspect 1.0), and the
 hit area is the tile itself.
 
-- **`targets.active` is how many boxes are on the wall at once** (default 4, from 1 to 10).
+- **`targets.active` is how many boxes are on the wall at once** (default 6, from 1 to 20).
   It is the only place that number is set. A hit box is replaced at once, so the count never
   changes outside Market Rush, and all boxes then move. The old growth to 12 boxes on a red
   hit is gone.
@@ -70,9 +70,9 @@ hit area is the tile itself.
   boxes some products come up twice, each about as often), with a live row of all the products lit for the active ones. Below it are each size's width;
   the points are on the **امتیاز محصولات** tab, one slider per product. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
-- **More boxes as the round runs (`targets.grow_to`, default 6):** the round starts with
+- **More boxes as the round runs (`targets.grow_to`, default 9):** the round starts with
   `targets.active` boxes and gets one more at a time, evenly over the round, up to `grow_to`.
-  4 → 6 in 60 s: a 5th box at 20 s and a 6th at 40 s. Up to 20 (`MAX_BOXES` in config.py), as is `rush.max_targets`.
+  6 → 9 in 60 s: a 7th box at 15 s, an 8th at 30 s and a 9th at 45 s (every product once). Up to 20 (`MAX_BOXES` in config.py), as is `rush.max_targets`.
   The hit margin row is on the «دور بازی» tab and the Start square's size on «نمایش». Without a time limit it goes by the balls
   thrown. A new box takes a free spot and the others stay where they are. 0 turns it off
   (F5, tab «باکس‌ها», row «باکس‌های بیشتر با گذشت زمان، تا»).

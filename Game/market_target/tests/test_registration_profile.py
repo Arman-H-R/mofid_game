@@ -296,10 +296,10 @@ def test_a_complete_game_as_it_ships(game):
         tick(app, clock, 0.8, seen)  # past the merge and rebound windows
         return tg
 
-    assert len(rnd.targets) == app.cfg.targets.active == 4
+    assert len(rnd.targets) == app.cfg.targets.active == 6
     throw("medium")
     assert rnd.rush is None and app.renderer.fx is not None  # a box that is not tiny starts nothing
-    assert len(rnd.targets) == 4  # replaced at once
+    assert len(rnd.targets) == 6  # replaced at once
     before_rush = len(rnd.targets)
     throw("tiny")
     rush = rnd.rush
@@ -326,7 +326,7 @@ def test_a_complete_game_as_it_ships(game):
     assert rnd.rush is None and rnd.warp.rate(app.clock.now()) == 1.0
     assert not any(t.rush_extra for t in rnd.targets)
     assert sum(app.screen.get_at((x, y))[:3]) == pytest.approx(field, abs=6)  # the field's own colour again
-    assert len(rnd.targets) == 4
+    assert len(rnd.targets) == rnd.active  # the wall without the rush's extras
 
     # and the next tiny hit: another one, of 4 seconds
     throw("tiny")

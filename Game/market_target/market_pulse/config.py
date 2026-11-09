@@ -124,11 +124,12 @@ DEFAULTS: dict[str, Any] = {
     # box; min_tiny keeps at least that many tiny boxes up (with 3 or more boxes), so Market
     # Rush can always be reached.
     "targets": {
-        "active": 4,
+        "active": 6,
         # More boxes as the round runs: it starts with "active" boxes and gets one more at a time,
         # evenly over the round (the time, or the balls without a time limit), up to grow_to.
-        # 4 -> 6 in 60 s: a 5th box at 20 s, a 6th at 40 s. 0 (or not above active): no growth.
-        "grow_to": 6,
+        # 6 -> 9 in 60 s: a 7th box at 15 s, an 8th at 30 s, a 9th at 45 s (every product once).
+        # 0 (or not above active): no growth.
+        "grow_to": 9,
         "medium": {"size_cm": 54, "points": 10, "weight": 3},
         "small": {"size_cm": 42, "points": 15, "weight": 3},
         "tiny": {"size_cm": 29, "points": 30, "weight": 2},

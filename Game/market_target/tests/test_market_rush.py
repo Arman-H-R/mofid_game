@@ -403,14 +403,15 @@ def test_more_boxes_appear_during_it_and_the_field_returns_afterwards():
     rnd = started()
     _, t0 = start_rush(rnd)
     baseline = len(rnd.targets)
-    assert baseline == rnd.cfg.targets.active == 4  # a tiny hit replaces its box; no more boxes outside the rush
+    assert baseline == rnd.cfg.targets.active == 6  # a tiny hit replaces its box; no more boxes outside the rush
     run(rnd, t0, t0 + 7.5)
     assert len(rnd.targets) > baseline
     assert len(rnd.targets) <= rnd.cfg.rush.max_targets
     assert any(t.rush_extra for t in rnd.targets)
     assert "rush_spawn" in names(rnd)
     run(rnd, t0 + 7.5, t0 + 15.5)
-    assert rnd.rush is None and len(rnd.targets) == baseline
+    # back to the wall without the extras (targets.grow_to may have added one as the round ran)
+    assert rnd.rush is None and len(rnd.targets) == rnd.active >= baseline
     assert not any(t.rush_extra for t in rnd.targets)
 
 

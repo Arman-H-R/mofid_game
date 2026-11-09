@@ -45,10 +45,10 @@ def products(rnd):
 
 
 def test_round_starts_with_the_configured_number_of_different_products(cfg, rng):
-    assert cfg.targets.active == 4  # the default
+    assert cfg.targets.active == 6  # the default
     rnd = started(cfg, rng)
-    assert len(rnd.targets) == 4
-    assert len(set(products(rnd))) == 4
+    assert len(rnd.targets) == 6
+    assert len(set(products(rnd))) == 6
     assert all(t.tier in TIERS for t in rnd.targets)
     assert rnd.throws_left == 10
     assert rnd.time_left(T0) == 60.0
@@ -411,7 +411,7 @@ def test_summary_fields():
     assert s["points_by_tier"] == {"medium": 0, "small": 0, "tiny": 30}
     assert s["products"] == {hit: 1}
     assert s["product_points"] == {hit: 30}  # the results' bars: points per product
-    assert s["end_reason"] == "time" and s["targets_at_end"] == 4
+    assert s["end_reason"] == "time" and s["targets_at_end"] == 6
     assert s["duration_s"] == pytest.approx(60.0)
 
 
