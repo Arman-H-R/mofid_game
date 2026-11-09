@@ -37,13 +37,17 @@ class Picker:
 
     def product(self, on_wall: Iterable[str] = (), avoid: Iterable[str] = ()) -> str:
         """The next product: not on the wall, not in avoid, if there is any such product."""
-        on_wall, avoid = set(on_wall), set(avoid)
+        up = list(on_wall)
+        on_wall, avoid = set(up), set(avoid)
         keys = self.keys
         free = [k for k in keys if k not in on_wall and k not in avoid]
         if not free:  # every other product is up: the one just hit comes back rather than a twin
             free = [k for k in keys if k not in on_wall]
-        if not free:  # more boxes than products (Market Rush extras): a second copy, not the one just hit
-            free = [k for k in keys if k not in avoid] or keys
+        if not free:  # more boxes than products (Market Rush extras, or targets.active above them):
+            # another copy of a product that is up the fewest times, not the one just hit
+            cands = [k for k in keys if k not in avoid] or keys
+            fewest = min(up.count(k) for k in cands)
+            free = [k for k in cands if up.count(k) == fewest]
             return free[int(self.rng.integers(len(free)))]
         for _ in range(2):  # the bag may hold only products that are up; then a fresh bag
             for i, key in enumerate(self._bag):

@@ -85,13 +85,11 @@ class Item:
 def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     """The tabs: title, rows, and what is drawn with the rows ("boxes": the boxes at their
     size, "best": the most one hit can score, "screen": the canvas now and when changes apply)."""
-    n_products = max(1, len(raw.get("products") or C.PRODUCTS))
-    boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, n_products, 1, "boxes"),
-             Item(("targets", "grow_to"), "باکس‌های بیشتر با گذشت زمان، تا", 0, n_products, 1, "boxes", zero="خاموش")]
+    boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, C.MAX_BOXES, 1, "boxes"),
+             Item(("targets", "grow_to"), "باکس‌های بیشتر با گذشت زمان، تا", 0, C.MAX_BOXES, 1, "boxes", zero="خاموش")]
     for tier, name in TIER_NAMES:
         boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm"),
                   Item(("targets", tier, "points"), f"امتیاز باکس {name}", 0, 200, 5, "pts")]
-    boxes.append(Item(("input", "ball_radius_cm"), "حاشیه‌ی برخورد دور هر باکس", 0, 50, 1, "cm"))
 
     combo = [Item(("combo", "enabled"), "ضریب برخوردهای پشت‌سرهم", switch=True)]
     for i in range(min(MAX_LEVELS, len(raw["combo"]["levels"]))):
@@ -106,7 +104,7 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item(("rush", "trigger_tiny_hits"), "چند برخورد به باکس کوچک طوفان را شروع کند", 1, 10, 1, "hits"),
         Item(("targets", "min_tiny"), "کمترین تعداد باکس کوچک روی دیوار", 0, 4, 1, "boxes"),
         Item(("rush", "speed"), "سرعت باکس‌ها در طوفان", 0.5, 3, 0.1, "x"),
-        Item(("rush", "max_targets"), "بیشترین تعداد باکس در طوفان", 1, n_products, 1, "boxes"),
+        Item(("rush", "max_targets"), "بیشترین تعداد باکس در طوفان", 1, C.MAX_BOXES, 1, "boxes"),
         Item(("rush", "spawn_interval_s"), "هر چند ثانیه یک باکس تازه", 0.3, 5, 0.1, "s"),
         Item(("rush", "cooldown_s"), "استراحت بین دو طوفان", 0, 30, 1, "s"),
     ]
@@ -118,7 +116,7 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item(("motion", "enabled"), "حرکت باکس‌ها", switch=True),
         Item(("motion", "speed"), "سرعت حرکت باکس‌ها", 0.2, 3, 0.1, "x"),
         Item(("flow", "registration"), "صفحه‌ی نوشتن نام", switch=True),
-        Item(("layout", "start_button", "size_cm"), "اندازه‌ی مربع شروع", 40, 140, 2, "cm"),
+        Item(("input", "ball_radius_cm"), "حاشیه‌ی برخورد دور هر باکس", 0, 50, 1, "cm"),
         Item(("flow", "countdown_s"), "شمارش معکوس", 1, 10, 1, "s"),
         Item(("flow", "results_s"), "زمان صفحه‌ی نتیجه", 8, 60, 1, "s"),
         Item(("flow", "time_warning_s"), "هشدار ثانیه‌های آخر", 0, 20, 1, "s"),
@@ -141,6 +139,7 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item(("display", "resolution", 0), "عرض تصویر بازی (بنویسید)", 0, 7680, 1, "px", zero="خودکار", entry=True),
         Item(("display", "resolution", 1), "ارتفاع تصویر بازی (بنویسید)", 0, 7680, 1, "px", zero="خودکار", entry=True),
         Item(("display", "scale"), "مقیاس تصویر", 0.3, 1, 0.01, "%"),
+        Item(("layout", "start_button", "size_cm"), "اندازه‌ی مربع شروع", 40, 140, 2, "cm"),
     ]
     return [("باکس‌ها", boxes, "boxes"), ("ضریب‌ها", combo, "best"), ("طوفان بازار", rush, ""),
             ("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen")]
@@ -181,7 +180,7 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 # Under each slider: what the low end does (left, by −) and what the high end does (right, by +).
 # A key with "*" stands for every colour or multiplier level.
 HINTS: dict[Key, tuple[str, str]] = {
-    ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا همه‌ی محصول‌ها): آسان‌تر"),
+    ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا 20؛ بالای 10 بعضی محصول‌ها دو بار): آسان‌تر"),
     ("targets", "grow_to"): ("خاموش یا کمتر از تعداد بالا: تعداد باکس‌ها ثابت می‌ماند",
                             "بیشتر: با گذشت زمان یکی‌یکی باکس اضافه می‌شود"),
     ("targets", "min_tiny"): ("0: باکس کوچک فقط به شانس می‌آید", "باکس کوچک بیشتر: طوفان زودتر"),
@@ -762,7 +761,8 @@ class SettingsPage:
             surf.blit(tile, tile.get_rect(center=vp.px(x, row_y)))
             tile.set_alpha(255)
             x -= tw + 1.5
-        self.text.blit(surf, f"{active} از {n} محصول هم‌زمان", "bold", vp.s(3.6), theme.TURQUOISE_RAMP[0],
+        label = f"{active} از {n} محصول هم‌زمان" if active <= n else f"{active} باکس، بعضی محصول‌ها دو بار"
+        self.text.blit(surf, label, "bold", vp.s(3.6), theme.TURQUOISE_RAMP[0],
                        vp.px(12, row_y), "midleft")
         return row_y + tw * aspect / 2 + 3
 

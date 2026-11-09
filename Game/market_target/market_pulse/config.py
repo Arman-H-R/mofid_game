@@ -35,6 +35,9 @@ PRODUCTS: list[dict[str, Any]] = [
 ]
 
 # Products taken out of the game (2026-11-09): left out even when a settings.json lists them.
+# The most boxes on the wall at once (targets.active, targets.grow_to, rush.max_targets). Above
+# the number of products, a product comes up twice.
+MAX_BOXES = 20
 RETIRED = frozenset({"gold", "hamnag", "tavan"})  # طلای گرمی، همنگ، توان
 
 DEFAULTS: dict[str, Any] = {
@@ -420,9 +423,9 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("wall", "height_cm"): (50, 5000),
     ("round", "balls"): (0, 100),
     ("round", "duration_s"): (5, 3600),
-    ("targets", "active"): (1, len(PRODUCTS)),
+    ("targets", "active"): (1, MAX_BOXES),
     ("targets", "min_tiny"): (0, len(PRODUCTS)),
-    ("targets", "grow_to"): (0, len(PRODUCTS)),
+    ("targets", "grow_to"): (0, MAX_BOXES),
     ("targets", "min_size_cm"): (1, 500),
     ("motion", "variation"): (0, 0.5),
     ("profiles", "min_hits"): (1, 100),
@@ -436,7 +439,7 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("rush", "score_multiplier"): (1, 20),
     ("rush", "speed"): (0.1, 5),
     ("rush", "speed_ramp_s"): (0, 5),
-    ("rush", "max_targets"): (1, len(PRODUCTS)),
+    ("rush", "max_targets"): (1, MAX_BOXES),
     ("rush", "spawn_interval_s"): (0.2, 60),
     ("rush", "spawn_lifetime_s"): (0.5, 600),
     ("rush", "transition_s"): (0, 5),
@@ -602,12 +605,8 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
         warnings.append(f"'products' has no valid product; using the {len(PRODUCTS)} Mofid products")
         products = copy.deepcopy(PRODUCTS)
     cfg["products"] = products
-    if cfg["targets"]["active"] > len(products):
-        warnings.append(f"'targets.active'={cfg['targets']['active']} but there are {len(products)} products; "
-                        f"using {len(products)}")
-        cfg["targets"]["active"] = len(products)
     cfg["targets"]["active"] = int(cfg["targets"]["active"])
-    cfg["targets"]["grow_to"] = int(min(cfg["targets"].get("grow_to", 0), len(products)))
+    cfg["targets"]["grow_to"] = int(cfg["targets"].get("grow_to", 0))
 
     rush = cfg["rush"]
     tiers = [c for c in rush["spawn_tiers"] if c in TIERS]

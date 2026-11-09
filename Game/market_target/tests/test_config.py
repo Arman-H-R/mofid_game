@@ -47,9 +47,9 @@ def test_bad_products_fall_back_to_the_10(tmp_path):
     assert warnings and len(cfg.raw()["products"]) == 10
 
 
-def test_active_targets_are_kept_within_the_products(tmp_path):
+def test_active_targets_are_kept_within_20(tmp_path):
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 40}})
-    assert warnings and cfg.targets.active == 10
+    assert warnings and cfg.targets.active == 20
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 0}})
     assert warnings and cfg.targets.active == 1
     cfg, warnings = load_json(tmp_path, {"targets": {"active": 7}})

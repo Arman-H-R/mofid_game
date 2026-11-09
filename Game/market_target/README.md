@@ -60,13 +60,14 @@ tile itself.
   - **03:** today's best three.
 
   `flow.attract_panel_s`, `flow.attract_demo` and `flow.attract_demo_s` control it.
-- **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–10),
-  with a live row of all 10 products lit for the active ones. Below it are each size's width
+- **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–20; above 10
+  boxes some products come up twice, each about as often), with a live row of all 10 products lit for the active ones. Below it are each size's width
   and points. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
 - **More boxes as the round runs (`targets.grow_to`, default 6):** the round starts with
   `targets.active` boxes and gets one more at a time, evenly over the round, up to `grow_to`.
-  4 → 6 in 60 s: a 5th box at 20 s and a 6th at 40 s. Without a time limit it goes by the balls
+  4 → 6 in 60 s: a 5th box at 20 s and a 6th at 40 s. Up to 20 (`MAX_BOXES` in config.py), as is `rush.max_targets`.
+  The hit margin row is on the «دور بازی» tab and the Start square's size on «نمایش». Without a time limit it goes by the balls
   thrown. A new box takes a free spot and the others stay where they are. 0 turns it off
   (F5, tab «باکس‌ها», row «باکس‌های بیشتر با گذشت زمان، تا»).
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits

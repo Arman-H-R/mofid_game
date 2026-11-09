@@ -329,14 +329,15 @@ def test_the_number_of_active_boxes_is_on_the_boxes_tab_and_saved(tmp_path):
         tab, row = find(page, ("targets", "active"))
         assert tab == 0 and row == 0  # the first row of the first tab
         item = page.pages[tab][1][row]
-        assert (item.lo, item.hi, item.step) == (1, 10, 1)
+        assert (item.lo, item.hi, item.step) == (1, 20, 1)
         assert S.shown(item, 4) == "4 باکس"
         page.select_tab(tab)
         page.row = row
-        for _ in range(20):  # it stops at the 10 products
+        for _ in range(30):  # it stops at 20 boxes (some products twice)
             page.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT, mod=0))
-        assert app.cfg.targets.active == 10
-        for _ in range(8):
+        assert app.cfg.targets.active == 20
+        step(app, clock, 0.05)  # the boxes tab draws with more boxes than products
+        for _ in range(18):
             page.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT, mod=0))
         assert app.cfg.targets.active == 2
         step(app, clock, 0.05)  # draws the boxes tab with its row of products

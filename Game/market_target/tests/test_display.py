@@ -187,11 +187,11 @@ def test_a_stray_hit_beside_the_wall_is_not_the_next_cross():
     assert cap.fit().worst_cm < 8
 
 
-def test_the_hit_margin_is_on_the_boxes_tab_and_counts_at_once(tmp_path):
+def test_the_hit_margin_is_on_the_round_tab_and_counts_at_once(tmp_path):
     from market_pulse.game.rules import Round
     app, _ = make_app(tmp_path)
     tab, row = find(app.settings, ("input", "ball_radius_cm"))
-    assert app.settings.pages[tab][0] == "باکس‌ها"
+    assert app.settings.pages[tab][0] == "دور بازی"  # the boxes tab is full
     rnd = Round(app.cfg)
     key(app, pygame.K_F5)
     app.settings.select_tab(tab)

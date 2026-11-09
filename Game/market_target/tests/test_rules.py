@@ -68,13 +68,44 @@ def test_any_number_of_active_boxes_up_to_every_product(active):
         assert len(set(products(rnd))) == active  # never the same product twice on the wall
 
 
-def test_active_cannot_exceed_the_products():
+def test_active_can_exceed_the_products_up_to_20():
     raw = copy.deepcopy(config.DEFAULTS)
     raw["products"] = raw["products"][:5]
     raw["targets"]["active"] = 9
     warnings = []
     config._validate(raw, warnings)
-    assert raw["targets"]["active"] == 5 and warnings
+    assert raw["targets"]["active"] == 9 and not warnings
+    raw["targets"]["active"] = 25
+    config._validate(raw, warnings)
+    assert raw["targets"]["active"] == config.MAX_BOXES == 20 and warnings
+
+
+@pytest.mark.parametrize("active", [14, 20])
+def test_more_boxes_than_products_fit_and_share_the_products_evenly(active):
+    from collections import Counter
+    rnd = started(make_cfg({"targets": {"active": active, "grow_to": 0}, "round": {"ball_limit": False}}),
+                  np.random.default_rng(active))
+    assert len(rnd.targets) == active
+    counts = Counter(t.product for t in rnd.targets)
+    assert len(counts) == len(PRODUCTS) and max(counts.values()) - min(counts.values()) <= 1
+    now = T0
+    for _ in range(12):
+        now += 1.0
+        assert throw_at(rnd, None, now).kind == "hit"
+        assert len(rnd.targets) == active
+    for a in rnd.targets:  # no box covers another
+        for b in rnd.targets:
+            if a is not b:
+                (ax, ay), (bx, by) = a.center_at(now + 1), b.center_at(now + 1)
+                gap = (a.side_at(now + 1) + b.side_at(now + 1)) / 2
+                assert abs(ax - bx) >= gap * 0.95 or abs(ay - by) >= gap * 0.95
+
+
+def test_boxes_grow_up_to_20(rng):
+    rnd = started(make_cfg({"targets": {"active": 4, "grow_to": 20}, "round": {"ball_limit": False}}), rng)
+    for k in range(600):
+        rnd.update(T0 + k * 0.1)
+    assert len(rnd.targets) == 20
 
 
 def test_after_a_hit_the_other_boxes_stay_and_the_new_one_takes_a_free_spot(cfg, rng):
