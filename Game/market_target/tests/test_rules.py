@@ -295,6 +295,7 @@ def test_summary_fields():
     assert s["hits"] == {"medium": 0, "small": 0, "tiny": 1}
     assert s["points_by_tier"] == {"medium": 0, "small": 0, "tiny": 30}
     assert s["products"] == {hit: 1}
+    assert s["product_points"] == {hit: 30}  # the results' bars: points per product
     assert s["end_reason"] == "time" and s["targets_at_end"] == 4
     assert s["duration_s"] == pytest.approx(60.0)
 

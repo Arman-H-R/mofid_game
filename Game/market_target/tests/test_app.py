@@ -240,3 +240,26 @@ def test_a_miss_logs_how_far_the_nearest_box_was(tmp_path, caplog):
         play_session(app, clock)
     lines = [r.getMessage() for r in caplog.records if "nearest box" in r.getMessage()]
     assert lines and "outside its hit box" in lines[0]
+
+
+def test_results_portfolio_is_a_rising_bar_chart(tmp_path):
+    """The products hit as bars of their points (the reference clip): drawn from the time
+    alone, and an older record without product_points still draws (bars by hits)."""
+    app, clock = make_app(tmp_path, [450, 600])
+    base = {"score": 150, "hits": {"medium": 1, "small": 1, "tiny": 1}, "total_hits": 3, "throws": 5,
+            "best_multiplier": 2, "player_name": "Sara"}
+    r = app.renderer
+    r.results_t0 = 0.0
+    shots = {}
+    for name, extra in (("none", {}),
+                        ("points", {"products": {"hami": 1, "jet": 2, "ayar": 1}, "product_points": {"hami": 10, "jet": 60, "ayar": 30}}),
+                        ("old", {"products": {"hami": 1, "jet": 2, "ayar": 1}})):
+        app.flow.summary = {**base, **extra}
+        for t in (3.5, 8.0, 3.5):  # out of order: nothing is carried between frames
+            r.draw_results(app.screen, app.flow, t)
+            shot = pygame.image.tobytes(app.screen, "RGB")
+            assert shots.setdefault((name, t), shot) == shot
+    assert shots[("points", 8.0)] != shots[("none", 8.0)]  # the chart is there
+    assert shots[("points", 8.0)] != shots[("old", 8.0)]  # bars by points, not by hits
+    assert shots[("points", 3.5)] != shots[("points", 8.0)]  # and it builds up
+    app.shutdown()

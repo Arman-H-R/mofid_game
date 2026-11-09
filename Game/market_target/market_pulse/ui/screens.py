@@ -1441,6 +1441,83 @@ class Renderer:
                 self.text.blit(surf, text, "body", self._fit(text, "body", 5.4, CW), theme.BLUE_PALE, vp.px(X, y), alpha=a)
         self.card_done_at = t_more + 1.0  # the note below waits for this
 
+    BARS_BASE = 62.0  # cm below the portfolio title: the chart's base line
+    BARS_MAX = 30.0  # cm, the tallest bar (the product that earned the most points)
+
+    def _portfolio_bars(self, surf, rec: dict, y: float, t: float, start: float) -> None:
+        """The portfolio as a rising bar chart (after the reference clip): a bar for each product
+        hit, as tall as the points it earned, lowest on the left. Each bar rises, its tile pops
+        up on a thin stem above it with a halo that opens and fades, and a line of moving dots
+        joins the tiles. y: the portfolio title's line, cm. Older records without
+        product_points get bars by hits."""
+        vp, W = self.vp, self.W
+        known = {p["key"] for p in self.cfg.raw()["products"]}
+        hits = rec.get("products") or {}
+        pts = rec.get("product_points") or {}
+        items = [(k, int(pts.get(k, 0)) if pts else int(n), int(n)) for k, n in hits.items() if k in known and n > 0]
+        if not items:
+            return
+        items.sort(key=lambda it: it[1])  # rising, as the clip's chart
+        n = len(items)
+        slot = min(30.0, (W - 32) / n)
+        tile_cm = min(18.0, slot - 4.0)
+        bar_w = tile_cm * 0.62
+        base_y = y + self.BARS_BASE
+        top = max(v for _, v, _ in items) or 1
+        x0 = W / 2 - (n - 1) * slot / 2
+        line = theme.lerp_color(theme.FIELD, theme.MIST, 0.35)
+        body = theme.lerp_color(theme.FIELD, theme.MIST, 0.3)
+        thin = max(1, vp.s(0.3))
+        p = _ease_out(_phase(t, start - 0.1, 0.4))  # the base line draws out first
+        if p > 0:
+            half = (W - 32) / 2 * p
+            surf.fill(line, vp.cm_rect(W / 2 - half, base_y, W / 2 + half, base_y + 0.35))
+        heads = []
+        for i, (key, value, count) in enumerate(items):
+            x = x0 + i * slot
+            grow = _ease_out(_phase(t, start + 0.07 * i, 0.45))
+            if grow <= 0:
+                continue
+            h = max(3.0, self.BARS_MAX * value / top) * grow
+            radius = max(1, vp.s(0.9))
+            pygame.draw.rect(surf, body, vp.cm_rect(x - bar_w / 2, base_y - h, x + bar_w / 2, base_y),
+                             border_top_left_radius=radius, border_top_right_radius=radius)
+            pygame.draw.rect(surf, theme.TURQ, vp.cm_rect(x - bar_w / 2, base_y - h, x + bar_w / 2, base_y - h + min(h, 1.0)),
+                             border_top_left_radius=radius, border_top_right_radius=radius)
+            label = f"+{value}" if pts else f"×{count}"
+            self.text.blit(surf, label, "numbers", vp.s(3.8), theme.MIST, vp.px(x, base_y + 4.2), alpha=int(255 * grow))
+            q = _phase(t, start + 0.35 + 0.1 * i, 0.35)  # the stem grows, then the tile pops on it
+            if q <= 0:
+                continue
+            stem = 4.0 * min(1.0, q * 2.0)
+            pygame.draw.line(surf, line, vp.px(x, base_y - h), vp.px(x, base_y - h - stem), thin)
+            s = _ease_back(max(0.0, q * 2.0 - 1.0))
+            tile_h = tile_cm * self.sprites.product_aspect.get(key, 0.92)
+            cy = base_y - h - 4.0 - tile_h / 2
+            if s > 0:
+                base = vp.s(tile_cm)
+                img = self.sprites.product_scaled(key, base * s, base, ring=False)
+                surf.blit(img, img.get_rect(center=vp.px(x, cy)))
+            halo = _phase(t, start + 0.6 + 0.1 * i, 0.6)  # then a thin halo opens around it and fades
+            if 0.0 < halo < 1.0:
+                col = theme.lerp_color(theme.MIST, theme.FIELD, halo ** 0.8)
+                pygame.draw.aacircle(surf, col, vp.px(x, cy), int(vp.sf(tile_cm * 0.62 + 4.0 * _ease_out(halo))), thin)
+            if s >= 1.0:
+                heads.append((x, cy - tile_h / 2 - 1.5))
+        d = _phase(t, start + 0.55 + 0.1 * n, 0.5)  # moving dots join the tiles, left to right
+        if d > 0 and len(heads) > 1:
+            flow = (t * 0.9) % 1.0
+            dot = max(1.0, vp.sf(0.45))
+            for (ax, ay), (bx, by) in zip(heads, heads[1:]):
+                ax, bx = ax + tile_cm * 0.25, bx - tile_cm * 0.25
+                for j in range(7):
+                    u = (j + flow) / 7
+                    if u > d:
+                        continue
+                    lift = 5.0 * 4 * u * (1 - u)
+                    px, py = vp.px(ax + (bx - ax) * u, ay + (by - ay) * u - lift)
+                    pygame.draw.circle(surf, theme.lerp_color(theme.FIELD, theme.TURQ, min(1.0, 0.35 + u)), (px, py), dot)
+
     def _portfolio(self, surf, rec: dict, cx: float, y: float, width: float, tile_cm: float, t: float, start: float) -> None:
         """The products the player hit, most-hit first, in a row centred at cx (MOFID_UI v4.1:
         "your portfolio"), each popping in, with ×n when it was hit more than once."""
@@ -1554,7 +1631,7 @@ class Renderer:
                            _ease_out(_phase(t, 2.4 + 0.18 * i, 0.4)))
                 yy += int(px * 1.35)
             y += 25 + len(lines) * 5.8 * 1.35
-        y = max(y + 22, 252)
+        y = max(y + 16, 240)  # the portfolio chart needs room under it
 
         # 2.9 the portfolio: the products hit
         t_cards = 2.9 if profile else 1.9
@@ -1562,12 +1639,12 @@ class Renderer:
         if a and rec.get("products"):
             self.text.blit(surf, T.portfolio, "title", vp.s(8), theme.WHITE, vp.px(W - 16, y), "midright", alpha=a)
             self._micro(surf, f"YOUR PORTFOLIO · {hits_n} HITS", vp.px(16, y), "midleft", theme.MIST, 2.6)
-            self._portfolio(surf, rec, W / 2, y + 24, W - 32, 26.0, t, t_cards)
+            self._portfolio_bars(surf, rec, y, t, t_cards)
         rush = rec.get("rush") or {}
         a = int(255 * _phase(t, t_cards + 0.6, 0.4))
         if rush.get("count") and a:
             self.text.blit(surf, T.results_rush.format(hits=rush.get("hits", 0), points=rush.get("points", 0)), "body", vp.s(5),
-                           theme.CORAL, vp.px(W / 2, y + 48), alpha=a)
+                           theme.CORAL, vp.px(W / 2, y + self.BARS_BASE + 11), alpha=a)
         if profile:
             self.text.blit(surf, T.profile_note, "body", self._fit(T.profile_note, "body", 4.2, W - 30), theme.MIST,
                            vp.px(W / 2, 332), alpha=int(255 * _phase(t, t_cards + 0.8, 0.5)))

@@ -65,7 +65,14 @@ tile itself.
   and points. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits
-  per product). The CSV gets the matching columns.
+  per product) and `product_points` (points per product). The CSV gets the matching columns.
+- **Motion from the reference clip** (rings of dots, as on a floor):
+  - A new tile pops up while rings of dots close in on it, then a thin halo opens.
+  - A hit tile sends rings of dots out under its badge.
+  - A leaving tile (Market Rush extras) shrinks while rings of dots spread out.
+  - On the results screen, «سبد محصولات شما» is a rising bar chart: one bar per product hit,
+    as tall as its points, lowest on the left. Each tile pops up on a thin stem with a halo,
+    and moving dots join the tiles. The photo card (`results.show_photo`) keeps its row of tiles.
 - **Not updated:** the design-kit and guide generators in `tools/` (`export_design_kit.py`,
   `export_quick_guide.py`, `export_player_guide.py`, `build_svg_assets.py`) still draw the old
   coloured boxes, and so does `design/`.

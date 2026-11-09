@@ -102,6 +102,7 @@ class Round:
         self.hits = {c: 0 for c in TIERS}
         self.points_by_tier = {c: 0 for c in TIERS}
         self.product_hits: dict[str, int] = {}  # hits per product, in the order they were first hit
+        self.product_points: dict[str, int] = {}  # points per product, same order (the results' bars)
         self.streak = 0
         self.best_streak = 0
         self.best_multiplier: float = 1
@@ -399,6 +400,7 @@ class Round:
         self.hits[tier] += 1
         self.points_by_tier[tier] += points
         self.product_hits[target.product] = self.product_hits.get(target.product, 0) + 1
+        self.product_points[target.product] = self.product_points.get(target.product, 0) + points
         self.streak += 1
         self.best_streak = max(self.best_streak, self.streak)
         self.best_multiplier = max(self.best_multiplier, mult)
@@ -521,6 +523,7 @@ class Round:
             "hits": dict(self.hits),
             "points_by_tier": dict(self.points_by_tier),
             "products": dict(self.product_hits),
+            "product_points": dict(self.product_points),
             "total_hits": self.total_hits,
             "rush": {
                 "count": len(self.rushes),
