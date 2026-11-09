@@ -98,7 +98,7 @@ def test_a_hit_shows_the_products_name_and_its_points(app):
     sensor_hit(app, clock, *tg.center_at(app.clock.now()))
     step(app, clock, 0.05)
     badge = app.renderer.fx.badges[-1]
-    assert badge.name == name and badge.points == f"+{app.cfg.targets[tg.tier].points}"
+    assert badge.name == name and badge.points == f"+{next(p['points'] for p in app.cfg.raw()['products'] if p['key'] == tg.product)}"
     step(app, clock, 2.0)
     assert not app.renderer.fx.badges  # gone after a moment
     assert app.frame_errors == 0

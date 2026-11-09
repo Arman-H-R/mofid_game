@@ -216,18 +216,25 @@ def test_keys_change_values_live_and_save_writes_them(tmp_path):
     page = app.settings
     try:
         key(app, pygame.K_F5)
-        tab, row = find(page, ("targets", "tiny", "points"))
+        i = next(i for i, p in enumerate(app.cfg.raw()["products"]) if p["key"] == "atiyeh")
+        tab, row = find(page, ("products", i, "points"))
+        assert page.pages[tab][0] == "امتیاز محصولات" and page.pages[tab][1][row].label == "آتیه"
         page.select_tab(tab)
         for _ in range(row):
             key(app, pygame.K_DOWN)
         key(app, pygame.K_RIGHT)
         key(app, pygame.K_RIGHT, pygame.KMOD_SHIFT)  # five steps
-        assert app.cfg.targets.tiny.points == 60  # 30 + 5 + 25, in the game at once
-        assert page.changed() == [("targets", "tiny", "points")]
+        raw = app.cfg.raw()
+        assert config.points_of(raw, "atiyeh", "tiny") == 60  # 30 + 5 + 25, in the game at once
+        assert config.points_of(raw, "ayar", "tiny") == 30  # the other small-box products keep theirs
+        assert page.changed() == [("products", i, "points")]
         step(app, clock, 0.1)  # the page draws
         key(app, pygame.K_s, pygame.KMOD_CTRL)
         assert not page.open and page.changed() == []
-        assert json.loads((tmp_path / "settings.json").read_text(encoding="utf-8")) == {"targets": {"tiny": {"points": 60}}}
+        saved = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
+        assert list(saved) == ["products"] and saved["products"][i] == {**config.PRODUCTS[i], "points": 60}
+        cfg, warnings = config.load(tmp_path / "settings.json")
+        assert not warnings and config.points_of(cfg.raw(), "atiyeh", "tiny") == 60
     finally:
         app.shutdown()
 
@@ -298,7 +305,9 @@ def test_the_next_round_uses_the_new_values(tmp_path):
     try:
         app.open_settings()
         S.put(page.raw, ("targets", "medium", "size_cm"), 80)
-        S.put(page.raw, ("targets", "medium", "points"), 50)
+        for i, prod in enumerate(page.raw["products"]):  # the big-box products: 50 points each
+            if prod["tier"] == "medium":
+                S.put(page.raw, ("products", i, "points"), 50)
         S.put(page.raw, ("targets", "active"), 7)
         S.put(page.raw, ("round", "balls"), 3)
         S.put(page.raw, ("round", "ball_limit"), True)
@@ -310,7 +319,7 @@ def test_the_next_round_uses_the_new_values(tmp_path):
         key(app, pygame.K_SPACE)
         step(app, clock, 1.2)
         rnd = app.flow.round
-        assert len(rnd.targets) == 7 and len({t.product for t in rnd.targets}) == 7
+        assert len(rnd.targets) == 7 and len({t.product for t in rnd.targets}) == 3  # the 3 big-box products
         medium = next(t for t in rnd.targets if t.tier == "medium")
         assert medium.size == 80 and rnd.balls == 3
         x, y = medium.center_at(app.clock.now())

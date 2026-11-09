@@ -35,7 +35,7 @@ from pathlib import Path
 
 import pygame
 
-from ..config import TIERS, Section, layout_left, layout_top
+from ..config import TIERS, Section, layout_left, layout_top, points_of, product_for
 from ..game import flow as F
 from ..game.rules import Outcome
 from . import theme
@@ -692,7 +692,7 @@ class Renderer:
         h = side * tg.aspect
         grow = min(1.0, max(0.0, (age / self.SHOW_S - 0.7) / 0.3)) if showing else 1.0
         if grow > 0.0 and alpha >= 1.0:  # its points under it, in mist, once it has formed
-            pts = int(self.cfg.targets[tg.tier].points)
+            pts = points_of(self.cfg.raw(), tg.product, tg.tier)
             self.text.blit(surf, f"+{pts}", "numbers", vp.s(4.6), theme.MIST, vp.px(cx, cy + h / 2 + 6.5),
                            alpha=int(255 * grow))
         age = t - tg.born
@@ -1137,16 +1137,16 @@ class Renderer:
             pygame.draw.line(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.25), vp.px(W / 2, 86), vp.px(W / 2, 148),
                              max(1, vp.s(0.25)))
         self.text.blit(surf, T.rule_size, "body", vp.s(5.6), theme.MIST, vp.px(W - 16, 166), "midright")
-        keys = [pr["key"] for pr in cfg.raw()["products"]]
-        for i, (tier, x, key) in enumerate((("medium", 236, keys[12 % len(keys)]), ("small", 150, keys[8 % len(keys)]),
-                                           ("tiny", 64, keys[10 % len(keys)]))):
+        raw = cfg.raw()
+        for i, (tier, x, key) in enumerate((("medium", 236, product_for(raw, "medium")), ("small", 150, product_for(raw, "small")),
+                                           ("tiny", 64, product_for(raw, "tiny")))):
             appear = _ease_back((el - 0.15 * i) / 0.4)
             if appear <= 0:
                 continue
             size = cfg.targets[tier].size_cm  # true size on the wall
             spr = self.sprites.product(key, max(4, vp.s(size * appear)), ring=True)
             surf.blit(spr, spr.get_rect(center=vp.px(x, 205)))
-            self.text.blit(surf, f"+{cfg.targets[tier].points}", "numbers", vp.s(12), theme.WHITE, vp.px(x, 244))
+            self.text.blit(surf, f"+{points_of(raw, key, tier)}", "numbers", vp.s(12), theme.WHITE, vp.px(x, 244))
             self.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 260))
             if tier == "tiny" and cfg.rush.enabled:
                 self.text.blit(surf, T.tiny_rush, "heading", vp.s(5), theme.CORAL, vp.px(x, 270))

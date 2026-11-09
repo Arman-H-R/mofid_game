@@ -12,33 +12,62 @@ import json
 from pathlib import Path
 from typing import Any
 
-# The three box sizes. Every one of the 10 products can appear at any size; the size alone
-# sets the points (MOFID_UI v4.1: L +10, M +15, S +30). A hit on a tiny box starts Market Rush.
+# The three box sizes. Each product has its own size ("tier") and its own points: the 10-point
+# products come in the big box, the 15-point ones in the medium box, the 30-point ones in the
+# small box. A hit on a small (tiny) box starts Market Rush.
 TIERS = ("medium", "small", "tiny")
 COLORS = TIERS  # the old name (green, blue, red boxes), still imported by the design-kit tools
 
-# The 10 product tiles in the game (assets/products, cut from MOFID_UI_v4.1 page 1 by
-# tools/extract_product_tiles.py). The PDF has 13; RETIRED lists the 3 left out.
-# "name" is the label shown with the points after a hit.
+# The 9 product tiles in the game (assets/products, made from the product icons by
+# tools/import_product_icons.py). RETIRED lists the products taken out.
+# "name" is the label shown with the points after a hit; "tier" the box size; "points" a hit's
+# base points (set per product on the settings page).
 # "aspect" is the tile's height / width: the hit area is the tile itself.
 PRODUCTS: list[dict[str, Any]] = [
-    {"key": "atiyeh", "name": "آتیه", "file": "atiyeh.png", "aspect": 0.92},
-    {"key": "hami", "name": "حامی", "file": "hami.png", "aspect": 0.92},
-    {"key": "ayar", "name": "عیار", "file": "ayar.png", "aspect": 0.92},
-    {"key": "amoozesh", "name": "آموزش مفید", "file": "amoozesh.png", "aspect": 0.92},
-    {"key": "bimeh", "name": "بیمه زندگی مفید", "file": "bimeh.png", "aspect": 0.92},
-    {"key": "boursview", "name": "بورس ویو", "file": "boursview.png", "aspect": 0.92},
-    {"key": "boursview2", "name": "بورس ویو ۲.۰", "file": "boursview2.png", "aspect": 0.92},
-    {"key": "jet", "name": "مفید کارت جت", "file": "jet.png", "aspect": 0.92},
-    {"key": "mofidapp", "name": "مفید اپ", "file": "mofidapp.png", "aspect": 0.92},
-    {"key": "easytrader", "name": "ایزی تریدر", "file": "easytrader.png", "aspect": 0.92},
+    # 10 points, the big box: the main Mofid products
+    {"key": "easytrader", "name": "ایزی تریدر", "file": "easytrader.png", "aspect": 1.0, "tier": "medium", "points": 10},
+    {"key": "mofidapp", "name": "مفید اپ", "file": "mofidapp.png", "aspect": 1.0, "tier": "medium", "points": 10},
+    {"key": "boursview", "name": "بورس ویو ۲.۰", "file": "boursview.png", "aspect": 1.0, "tier": "medium", "points": 10},
+    # 15 points, the medium box: the second layer
+    {"key": "bimeh", "name": "بیمه زندگی مفید", "file": "bimeh.png", "aspect": 1.0, "tier": "small", "points": 15},
+    {"key": "amoozesh", "name": "آموزش مفید", "file": "amoozesh.png", "aspect": 1.0, "tier": "small", "points": 15},
+    {"key": "jetcard", "name": "جت کارت", "file": "jetcard.png", "aspect": 1.0, "tier": "small", "points": 15},
+    # 30 points, the small box: the smart achievements (a hit starts Market Rush)
+    {"key": "atiyeh", "name": "آتیه", "file": "atiyeh.png", "aspect": 1.0, "tier": "tiny", "points": 30},
+    {"key": "ayar", "name": "عیار", "file": "ayar.png", "aspect": 1.0, "tier": "tiny", "points": 30},
+    {"key": "jetpay", "name": "جت پی", "file": "jetpay.png", "aspect": 1.0, "tier": "tiny", "points": 30},
 ]
+
+
+def products_of(raw: dict, tier: str) -> list[str]:
+    """The products shown in boxes of this size."""
+    return [p["key"] for p in raw["products"] if p.get("tier", "medium") == tier]
+
+
+def points_of(raw: dict, key: str | None, tier: str) -> int:
+    """A hit's base points: the product's own, else (a product not in the list) the size's."""
+    for p in raw["products"]:
+        if p["key"] == key and "points" in p:
+            return int(p["points"])
+    return int(raw["targets"][tier]["points"])
+
+
+def tier_points(raw: dict, tier: str) -> int:
+    """The points shown for a size (how-to-play, the settings preview): its products' highest."""
+    pts = [int(p["points"]) for p in raw["products"] if p.get("tier", "medium") == tier and "points" in p]
+    return max(pts) if pts else int(raw["targets"][tier]["points"])
+
+
+def product_for(raw: dict, tier: str, i: int = 0) -> str:
+    """The i-th product of a size (in turn), for the demos; any product if the size has none."""
+    keys = products_of(raw, tier) or [p["key"] for p in raw["products"]] or ["atiyeh"]
+    return keys[i % len(keys)]
 
 # Products taken out of the game (2026-11-09): left out even when a settings.json lists them.
 # The most boxes on the wall at once (targets.active, targets.grow_to, rush.max_targets). Above
 # the number of products, a product comes up twice.
 MAX_BOXES = 20
-RETIRED = frozenset({"gold", "hamnag", "tavan"})  # طلای گرمی، همنگ، توان
+RETIRED = frozenset({"gold", "hamnag", "tavan", "hami", "boursview2", "jet"})  # طلای گرمی، همنگ، توان، حامی، ...
 
 DEFAULTS: dict[str, Any] = {
     "display": {
@@ -90,7 +119,8 @@ DEFAULTS: dict[str, Any] = {
     # The product boxes. "active" is how many are on the wall at once, outside Market Rush:
     # every hit box is replaced at once, so the number stays the same (the one place it is set).
     # Sizes are the tile widths on the wall (MOFID_UI v4.1: 196 / 150 / 104 px of 1080 on 3 m);
-    # the smaller the box, the more points. "weight" is how often each size is drawn for a new
+    # the smaller the box, the more points ("points" here only for a product without its own).
+    # "weight" is how often each size is drawn for a new
     # box; min_tiny keeps at least that many tiny boxes up (with 3 or more boxes), so Market
     # Rush can always be reached.
     "targets": {
@@ -361,20 +391,20 @@ DEFAULTS: dict[str, Any] = {
         "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
         "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
         "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-        "rule_size": "امتیاز هر محصول را اندازه‌ی باکس تعیین می‌کند",
+        "rule_size": "هر محصول امتیاز خودش را دارد؛ باکس کوچک‌تر، امتیاز بیشتر",
         "points_unit": "امتیاز",
         # the three sizes as the design names them (MOFID_UI v4.1): big, medium, small box
         "tier_medium": "باکس بزرگ",
         "tier_small": "باکس متوسط",
         "tier_tiny": "باکس کوچک",
         "tiny_rush": "+ طوفان بازار",
-        "attract_tag": "10 PRODUCTS · ONE MARKET",
+        "attract_tag": "9 PRODUCTS · ONE MARKET",
         "demo_title": "چطور بازی کنیم؟",
         "demo_hit": "توپ را به محصول‌ها بزنید",
         "demo_new": "محصول تازه جای آن را می‌گیرد",
         "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
         "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-        "loading_market": "LOADING THE MARKET · 10 PRODUCTS",
+        "loading_market": "LOADING THE MARKET · 9 PRODUCTS",
         "portfolio": "سبد محصولات شما",
         "rush_title": "طوفان بازار",
         "rush_start": "طوفان بازار! امتیاز {m}",
@@ -589,7 +619,12 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
             cfg["targets"][tier]["weight"] = DEFAULTS["targets"][tier]["weight"]
 
     products, seen = [], set()
-    for p in cfg["products"] if isinstance(cfg["products"], list) else []:
+    listed = cfg["products"] if isinstance(cfg["products"], list) else []
+    if listed and not any(isinstance(p, dict) and "tier" in p for p in listed):
+        # a list from before the products had their own size and points: the 9 products now
+        warnings.append(f"'products' is an older list; using the {len(PRODUCTS)} Mofid products")
+        listed = copy.deepcopy(PRODUCTS)
+    for p in listed:
         if isinstance(p, dict) and p.get("key") in RETIRED:  # an older settings.json still lists it
             warnings.append(f"product {p['key']!r} is no longer in the game; left out")
             continue
@@ -597,7 +632,16 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
                 and isinstance(p.get("name"), str) and isinstance(p.get("file"), str)):
             aspect = p.get("aspect", 1.0)
             aspect = float(aspect) if _number(aspect) and 0.3 <= aspect <= 3.0 else 1.0
-            products.append({"key": p["key"], "name": p["name"], "file": p["file"], "aspect": aspect})
+            tier = p.get("tier", "medium")
+            if tier not in TIERS:
+                warnings.append(f"product {p['key']!r}: 'tier' must be one of {', '.join(TIERS)}; using medium")
+                tier = "medium"
+            points = p.get("points", cfg["targets"][tier]["points"])
+            if not _number(points) or points < 0:
+                warnings.append(f"product {p['key']!r}: 'points' must be 0 or more; using the {tier} box's")
+                points = cfg["targets"][tier]["points"]
+            products.append({"key": p["key"], "name": p["name"], "file": p["file"], "aspect": aspect,
+                             "tier": tier, "points": int(points)})
             seen.add(p["key"])
         else:
             warnings.append(f"ignored invalid product {p!r} (needs key, name and file)")

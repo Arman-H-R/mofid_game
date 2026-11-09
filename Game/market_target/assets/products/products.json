@@ -1,82 +1,74 @@
 [
   {
-    "key": "atiyeh",
-    "name": "آتیه",
-    "file": "atiyeh.png",
-    "aspect": 0.92,
+    "key": "easytrader",
+    "name": "ایزی تریدر",
+    "file": "easytrader.png",
+    "aspect": 1.0,
     "radius": 0.1665,
-    "fill": "#B1BAC0"
-  },
-  {
-    "key": "hami",
-    "name": "حامی",
-    "file": "hami.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#77C2BE"
-  },
-  {
-    "key": "ayar",
-    "name": "عیار",
-    "file": "ayar.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#005379"
-  },
-  {
-    "key": "amoozesh",
-    "name": "آموزش مفید",
-    "file": "amoozesh.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#B1BAC0"
-  },
-  {
-    "key": "bimeh",
-    "name": "بیمه زندگی مفید",
-    "file": "bimeh.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#77C2BE"
-  },
-  {
-    "key": "boursview",
-    "name": "بورس ویو",
-    "file": "boursview.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#005379"
-  },
-  {
-    "key": "boursview2",
-    "name": "بورس ویو ۲.۰",
-    "file": "boursview2.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#832C73"
-  },
-  {
-    "key": "jet",
-    "name": "مفید کارت جت",
-    "file": "jet.png",
-    "aspect": 0.92,
-    "radius": 0.1665,
-    "fill": "#B1BAC0"
+    "fill": "#E8E8E8"
   },
   {
     "key": "mofidapp",
     "name": "مفید اپ",
     "file": "mofidapp.png",
-    "aspect": 0.92,
+    "aspect": 1.0,
     "radius": 0.1665,
-    "fill": "#005379"
+    "fill": "#00425C"
   },
   {
-    "key": "easytrader",
-    "name": "ایزی تریدر",
-    "file": "easytrader.png",
-    "aspect": 0.92,
+    "key": "boursview",
+    "name": "بورس ویو ۲.۰",
+    "file": "boursview.png",
+    "aspect": 1.0,
     "radius": 0.1665,
-    "fill": "#832C73"
+    "fill": "#00425C"
+  },
+  {
+    "key": "bimeh",
+    "name": "بیمه زندگی مفید",
+    "file": "bimeh.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#8BC43D"
+  },
+  {
+    "key": "amoozesh",
+    "name": "آموزش مفید",
+    "file": "amoozesh.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#E8E8E8"
+  },
+  {
+    "key": "jetcard",
+    "name": "جت کارت",
+    "file": "jetcard.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#EAEAEA"
+  },
+  {
+    "key": "atiyeh",
+    "name": "آتیه",
+    "file": "atiyeh.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#00A8A3"
+  },
+  {
+    "key": "ayar",
+    "name": "عیار",
+    "file": "ayar.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#C7A556"
+  },
+  {
+    "key": "jetpay",
+    "name": "جت پی",
+    "file": "jetpay.png",
+    "aspect": 1.0,
+    "radius": 0.1665,
+    "fill": "#E8E8E8"
   }
 ]

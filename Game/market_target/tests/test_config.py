@@ -18,33 +18,56 @@ def test_defaults_are_valid():
     assert warnings == []
     assert cfg.round.balls == 10 and cfg.round.duration_s == 60  # whichever comes first
     assert cfg.targets.tiny.points > cfg.targets.small.points > cfg.targets.medium.points > 0
-    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 10
+    assert cfg.targets.active == 4 and len(cfg.raw()["products"]) == 9
 
 
-def test_the_10_product_tiles_ship_with_the_game():
+# the score table: 10 points (big box), 15 (medium box), 30 (small box, starts Market Rush)
+TABLE = {"ایزی تریدر": ("medium", 10), "مفید اپ": ("medium", 10), "بورس ویو ۲.۰": ("medium", 10),
+         "بیمه زندگی مفید": ("small", 15), "آموزش مفید": ("small", 15), "جت کارت": ("small", 15),
+         "آتیه": ("tiny", 30), "عیار": ("tiny", 30), "جت پی": ("tiny", 30)}
+
+
+def test_the_9_product_tiles_ship_with_the_game_with_their_size_and_points():
     cfg, _ = config.load(None)
-    keys = [p["key"] for p in cfg.raw()["products"]]
-    assert len(set(keys)) == 10
-    for p in cfg.raw()["products"]:
+    raw = cfg.raw()
+    keys = [p["key"] for p in raw["products"]]
+    assert len(set(keys)) == 9
+    for p in raw["products"]:
         assert (ROOT / "assets" / "products" / p["file"]).is_file(), p["file"]
-        assert p["name"].strip()  # the label shown with the points after a hit
-    names = {p["name"] for p in cfg.raw()["products"]}
-    assert {"آتیه", "حامی", "عیار", "آموزش مفید", "بیمه زندگی مفید", "بورس ویو",
-            "بورس ویو ۲.۰", "مفید کارت جت", "مفید اپ", "ایزی تریدر"} == names
-    for gone in ("gold", "hamnag", "tavan"):  # taken out of the game, tile files too
+        assert TABLE[p["name"]] == (p["tier"], p["points"])
+    assert {p["name"] for p in raw["products"]} == set(TABLE)
+    for gone in ("gold", "hamnag", "tavan", "hami", "boursview2", "jet"):  # taken out, tile files too
         assert gone not in keys and not (ROOT / "assets" / "products" / f"{gone}.png").exists()
+    assert config.tier_points(raw, "tiny") == 30 and config.products_of(raw, "small") == ["bimeh", "amoozesh", "jetcard"]
 
 
-def test_products_taken_out_stay_out_of_an_older_settings_file(tmp_path):
-    old = [{"key": k, "name": k, "file": f"{k}.png"} for k in ("gold", "atiyeh", "hamnag", "tavan", "hami")]
+def test_an_older_product_list_becomes_the_9_products(tmp_path):
+    """A settings.json from before the products had their own size and points."""
+    old = [{"key": k, "name": k, "file": f"{k}.png", "aspect": 0.92} for k in ("atiyeh", "hami", "jet")]
     cfg, warnings = load_json(tmp_path, {"products": old})
-    assert [p["key"] for p in cfg.raw()["products"]] == ["atiyeh", "hami"]
-    assert sum("no longer in the game" in w for w in warnings) == 3
+    assert [p["key"] for p in cfg.raw()["products"]] == [p["key"] for p in config.PRODUCTS]
+    assert any("older list" in w for w in warnings)
 
 
-def test_bad_products_fall_back_to_the_10(tmp_path):
-    cfg, warnings = load_json(tmp_path, {"products": [{"key": "x"}, "y"]})
-    assert warnings and len(cfg.raw()["products"]) == 10
+def test_products_taken_out_stay_out_of_a_settings_file(tmp_path):
+    new = [dict(p) for p in config.PRODUCTS[:2]] + [{"key": "hami", "name": "حامی", "file": "hami.png", "tier": "small"}]
+    cfg, warnings = load_json(tmp_path, {"products": new})
+    assert [p["key"] for p in cfg.raw()["products"]] == ["easytrader", "mofidapp"]
+    assert sum("no longer in the game" in w for w in warnings) == 1
+
+
+def test_a_product_points_and_size_are_checked(tmp_path):
+    new = [{"key": "a", "name": "a", "file": "a.png", "tier": "huge", "points": -3},
+           {"key": "b", "name": "b", "file": "b.png", "tier": "tiny"}]
+    cfg, warnings = load_json(tmp_path, {"products": new})
+    a, b = cfg.raw()["products"]
+    assert (a["tier"], a["points"]) == ("medium", 10) and (b["tier"], b["points"]) == ("tiny", 30)
+    assert len(warnings) == 2
+
+
+def test_bad_products_fall_back_to_the_9(tmp_path):
+    cfg, warnings = load_json(tmp_path, {"products": [{"key": "x", "tier": "tiny"}, "y"]})
+    assert warnings and len(cfg.raw()["products"]) == 9
 
 
 def test_active_targets_are_kept_within_20(tmp_path):

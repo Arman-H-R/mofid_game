@@ -18,6 +18,7 @@ import math
 
 import pygame
 
+from .. import config as C
 from . import theme
 from .effects import Badge
 
@@ -217,21 +218,21 @@ class Attract:
     HIT1, NEW, SIZES, HIT2, CALM = 2.1, 2.5, 5.2, 9.0, 12.6  # the script's moments, s
 
     def _script(self) -> None:
-        """Who is where in the demonstration. The products are taken in turn from the list."""
-        keys = [p["key"] for p in self.r.cfg.raw()["products"]] or ["atiyeh"]
-        k = lambda i: keys[i % len(keys)]  # noqa: E731
+        """Who is where in the demonstration. Each size shows its own products, in turn."""
+        raw = self.r.cfg.raw()
+        k = lambda tier, i: C.product_for(raw, tier, i)  # noqa: E731
         N, H1, H2 = self.NEW, self.HIT1, self.HIT2
-        self.hit1 = DemoTile(k(12), "medium", [(0, 78, 148)], 0.2, H1, hit=True)
-        self.tiny = DemoTile(k(3), "tiny", [(0, 214, 226), (N, 222, 206)], 0.5, H2, hit=True)
+        self.hit1 = DemoTile(k("medium", 0), "medium", [(0, 78, 148)], 0.2, H1, hit=True)
+        self.tiny = DemoTile(k("tiny", 0), "tiny", [(0, 214, 226), (N, 222, 206)], 0.5, H2, hit=True)
         self.tiles = [
             self.hit1,
-            DemoTile(k(11), "small", [(0, 210, 140), (N, 196, 128)], 0.35),
+            DemoTile(k("small", 0), "small", [(0, 210, 140), (N, 196, 128)], 0.35),
             self.tiny,
-            DemoTile(k(0), "medium", [(0, 92, 232), (N, 108, 226)], 0.65),
-            DemoTile(k(4), "small", [(N, 132, 172)], N + 0.1),  # takes the hit one's place
-            DemoTile(k(8), "tiny", [(H2, 64, 132)], H2 + 0.5, extra=True),  # Market Rush brings more
-            DemoTile(k(9), "small", [(H2, 160, 112)], H2 + 1.1, extra=True),
-            DemoTile(k(7), "tiny", [(H2 + 1.2, 150, 236)], H2 + 1.6, extra=True),
+            DemoTile(k("medium", 1), "medium", [(0, 92, 232), (N, 108, 226)], 0.65),
+            DemoTile(k("small", 1), "small", [(N, 132, 172)], N + 0.1),  # takes the hit one's place
+            DemoTile(k("tiny", 1), "tiny", [(H2, 64, 132)], H2 + 0.5, extra=True),  # Market Rush brings more
+            DemoTile(k("small", 2), "small", [(H2, 160, 112)], H2 + 1.1, extra=True),
+            DemoTile(k("tiny", 2), "tiny", [(H2 + 1.2, 150, 236)], H2 + 1.6, extra=True),
         ]
 
     def _demo(self, surf, t: float, dur: float) -> None:
@@ -268,7 +269,7 @@ class Attract:
                 col = theme.lerp_color(theme.FIELD, theme.CORAL if storm > 0.5 else theme.WHITE, 0.6 * alpha / 255)
                 r._ticks(surf, x, y, w / 2 + 3, w * 0.46 + 3, 5, col, 0.45)
             if s > 0.8 and alpha > 120:
-                pts = int(r.cfg.targets[tile.tier].points)
+                pts = C.points_of(r.cfg.raw(), tile.key, tile.tier)
                 r.text.blit(surf, f"+{pts}", "numbers", vp.s(4.2), theme.MIST, vp.px(x, y + w * 0.46 + 6),
                             alpha=alpha)
         for target, when in ((self.hit1, self.HIT1), (self.tiny, self.HIT2)):
@@ -334,7 +335,7 @@ class Attract:
             if q < 1.0:
                 rad = vp.sf(DEMO_TILE[target.tier] / 2 + 18 * _ease(q))
                 pygame.draw.aacircle(surf, theme.lerp_color(color, theme.FIELD, q), vp.px(tx, ty), int(rad), max(1, vp.s(1.0)))
-            pts = int(r.cfg.targets[target.tier].points)
+            pts = C.points_of(r.cfg.raw(), target.key, target.tier)
             if storm:
                 pts = int(round(pts))  # the hit that starts the rush is not multiplied
             badge = Badge(tx, ty, r.product_name(target.key), f"+{pts}", "", color, storm, age=age)
@@ -344,14 +345,15 @@ class Attract:
         """The three sizes side by side with their points: the smaller, the more (03 SCORING)."""
         r, vp, W = self.r, self.r.vp, self.r.W
         T = r.T
-        keys = [p["key"] for p in r.cfg.raw()["products"]]
-        slots = (("medium", 222, keys[12 % len(keys)]), ("small", 150, keys[8 % len(keys)]), ("tiny", 78, keys[10 % len(keys)]))
+        raw = r.cfg.raw()
+        slots = (("medium", 222, C.product_for(raw, "medium")), ("small", 150, C.product_for(raw, "small")),
+                 ("tiny", 78, C.product_for(raw, "tiny")))
         alpha = int(255 * a)
         for i, (tier, x, key) in enumerate(slots):
             w = DEMO_TILE[tier] * 1.25
             pop = _back(min(1.0, a * 1.3 - 0.1 * i))
             self._tile(surf, key, w, x, 168 - (w * 0.46), pop, alpha=alpha)
-            pts = int(r.cfg.targets[tier].points)
+            pts = C.points_of(raw, key, tier)
             r.text.blit(surf, f"+{pts}", "numbers", vp.s(13), theme.WHITE, vp.px(x, 196), alpha=alpha)
             r.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 214), alpha=alpha)
             if tier == "tiny":

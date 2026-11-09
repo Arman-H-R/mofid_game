@@ -1,4 +1,4 @@
-"""The rules for one round (pure logic, no pygame): the 10 products at three sizes."""
+"""The rules for one round (pure logic, no pygame): the 9 products, each at its own size."""
 import copy
 from collections import Counter
 
@@ -54,7 +54,7 @@ def test_round_starts_with_the_configured_number_of_different_products(cfg, rng)
     assert rnd.time_left(T0) == 60.0
 
 
-@pytest.mark.parametrize("active", [1, 2, 3, 6, 9, 10])
+@pytest.mark.parametrize("active", [1, 2, 3, 6, 9])
 def test_any_number_of_active_boxes_up_to_every_product(active):
     cfg = make_cfg({"targets": {"active": active}})
     rnd = started(cfg, np.random.default_rng(active))
@@ -106,6 +106,12 @@ def test_boxes_grow_up_to_20(rng):
     for k in range(600):
         rnd.update(T0 + k * 0.1)
     assert len(rnd.targets) == 20
+    for a in rnd.targets:  # no box covers another
+        for b in rnd.targets:
+            if a is not b:
+                (ax, ay), (bx, by) = a.center_at(T0 + 61), b.center_at(T0 + 61)
+                gap = (a.side_at(T0 + 61) + b.side_at(T0 + 61)) / 2
+                assert abs(ax - bx) >= gap - 1e-6 or abs(ay - by) >= gap - 1e-6
 
 
 def test_after_a_hit_the_other_boxes_stay_and_the_new_one_takes_a_free_spot(cfg, rng):
@@ -357,7 +363,7 @@ def test_the_hit_area_is_the_tile_itself():
     now = T0 + 2.0
     cx, cy = tg.center_at(now)
     side = tg.side_at(now)
-    assert tg.aspect == pytest.approx(0.92)
+    assert tg.aspect == pytest.approx(1.0)  # the tiles are square
     assert tg.contains(cx + side / 2 - 0.1, cy, now)
     assert not tg.contains(cx + side / 2 + 0.1, cy, now)
     assert tg.contains(cx, cy + side * tg.aspect / 2 - 0.1, now)
@@ -444,3 +450,31 @@ def test_random_rounds_never_overlap_and_stay_on_the_field(seed):
             throw_at(rnd, None if rng.random() < 0.5 else "tiny", now)
         else:
             throw_away(rnd, now)
+
+
+@pytest.mark.parametrize("tier", TIERS)
+def test_each_box_shows_a_product_of_its_size_and_scores_that_products_points(tier):
+    """10 points: the big box, 15: the medium box, 30: the small box (and Market Rush)."""
+    cfg = only(tier, round={"ball_limit": False}, combo={"enabled": False})
+    cfg.raw()["products"][[p["tier"] for p in cfg.raw()["products"]].index(tier)]["points"] = 77
+    rnd = started(cfg, np.random.default_rng(3))
+    mine = {p["key"]: p for p in cfg.raw()["products"] if p["tier"] == tier}
+    seen, now = set(), T0 + 1.0
+    for _ in range(12):
+        assert all(tg.tier == tier and tg.product in mine for tg in rnd.targets)
+        tg = rnd.targets[0]
+        before = rnd.score
+        out = rnd.register_impact(*tg.center_at(now), now, now)
+        assert out.kind == "hit" and rnd.score - before == mine[tg.product]["points"]
+        seen.add(tg.product)
+        now += 3.0
+        rnd.update(now)
+    assert seen == set(mine)
+
+
+def test_the_sizes_on_the_wall_follow_the_products():
+    raw_cfg = make_cfg({"targets": {"active": 9}})
+    rnd = started(raw_cfg, np.random.default_rng(5))
+    by_key = {p["key"]: p["tier"] for p in PRODUCTS}
+    assert all(by_key[tg.product] == tg.tier for tg in rnd.targets)
+    assert sorted(products(rnd)) == sorted(by_key)  # all 9, once each

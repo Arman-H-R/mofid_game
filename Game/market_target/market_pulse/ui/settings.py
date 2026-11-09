@@ -40,7 +40,6 @@ Key = tuple  # where a value is: ("targets", "tiny", "points"), ("combo", "level
 UNITS = {"cm": "سانتی‌متر", "s": "ثانیه", "pts": "امتیاز", "hits": "برخورد", "%": "درصد", "px": "پیکسل",
          "mm": "میلی‌متر", "deg": "درجه", "pct": "درصد", "Hz": "هرتز", "scans": "اسکن", "boxes": "باکس", "": ""}
 TIER_NAMES = (("medium", "بزرگ"), ("small", "متوسط"), ("tiny", "کوچک"))  # as the design names the three sizes
-PREVIEW_PRODUCTS = ("easytrader", "boursview", "jet")  # the tiles the Boxes tab shows at the three sizes
 LIDAR_UNITS = {"mm": "mm", "°": "deg", "s": "s", "%": "pct", "Hz": "Hz", "scans": "scans", "": ""}
 LIDAR_CHOICES = {"circle": "دایره", "square": "مربع", "rectangle": "مستطیل", "touch": "لمس", "ball": "توپ"}
 # the game's picture size in pixels: landscape (افقی) and portrait (عمودی) screens; [0, 0] = the display's own
@@ -88,8 +87,9 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, C.MAX_BOXES, 1, "boxes"),
              Item(("targets", "grow_to"), "باکس‌های بیشتر با گذشت زمان، تا", 0, C.MAX_BOXES, 1, "boxes", zero="خاموش")]
     for tier, name in TIER_NAMES:
-        boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm"),
-                  Item(("targets", tier, "points"), f"امتیاز باکس {name}", 0, 200, 5, "pts")]
+        boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm")]
+    # every product its own points (its box size stays: 10 big, 15 medium, 30 small)
+    points = [Item(("products", i, "points"), p["name"], 0, 200, 5, "pts") for i, p in enumerate(raw["products"])]
 
     combo = [Item(("combo", "enabled"), "ضریب برخوردهای پشت‌سرهم", switch=True)]
     for i in range(min(MAX_LEVELS, len(raw["combo"]["levels"]))):
@@ -141,7 +141,7 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item(("display", "scale"), "مقیاس تصویر", 0.3, 1, 0.01, "%"),
         Item(("layout", "start_button", "size_cm"), "اندازه‌ی مربع شروع", 40, 140, 2, "cm"),
     ]
-    return [("باکس‌ها", boxes, "boxes"), ("ضریب‌ها", combo, "best"), ("طوفان بازار", rush, ""),
+    return [("باکس‌ها", boxes, "boxes"), ("امتیاز محصولات", points, ""), ("ضریب‌ها", combo, "best"), ("طوفان بازار", rush, ""),
             ("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen")]
 
 
@@ -186,6 +186,7 @@ HINTS: dict[Key, tuple[str, str]] = {
     ("targets", "min_tiny"): ("0: باکس کوچک فقط به شانس می‌آید", "باکس کوچک بیشتر: طوفان زودتر"),
     ("targets", "*", "size_cm"): ("باکس کوچک‌تر: زدنش سخت‌تر", "باکس بزرگ‌تر: زدنش آسان‌تر"),
     ("targets", "*", "points"): ("امتیاز کمتر؛ 0: بی‌امتیاز", "امتیاز بیشتر برای هر برخورد"),
+    ("products", "*", "points"): ("امتیاز کمتر؛ 0: بی‌امتیاز", "امتیاز بیشتر برای هر برخورد به این محصول"),
     ("input", "ball_radius_cm"): ("0: فقط خود باکس امتیاز دارد", "برخورد دورتر از باکس هم امتیاز دارد"),
     ("combo", "levels", "*", "after_hits"): ("ضریب زودتر می‌رسد", "برخورد پشت‌سرهم بیشتری لازم است"),
     ("combo", "levels", "*", "multiplier"): ("×1: بی‌اثر", "امتیازها چند برابر می‌شوند"),
@@ -734,7 +735,8 @@ class SettingsPage:
         k = min(1.0, (self.W - 60 - 2 * gap) / sum(sizes), room_h / (max(sizes) * aspect + 2 * pad))
         base = y + 4 + room_h
         x = (self.W + sum(sizes) * k + 2 * gap) / 2  # from the right
-        for (tier, _), size, key in zip(TIER_NAMES, sizes, PREVIEW_PRODUCTS):
+        keys = [C.product_for(self.raw, tier) for tier, _ in TIER_NAMES]  # a product of each size
+        for (tier, _), size, key in zip(TIER_NAMES, sizes, keys):
             w = size * k
             h = w * self.sprites.product_aspect.get(key, aspect)
             cx, cy = x - w / 2, base - h / 2
@@ -744,7 +746,7 @@ class SettingsPage:
                 rx, ry = w / 2 + pad * k, h / 2 + pad * k
                 pygame.draw.rect(surf, theme.TURQUOISE, vp.cm_rect(cx - rx, cy - ry, cx + rx, cy + ry),
                                  max(1, vp.s(0.5)), border_radius=vp.s(1.5))
-            self.text.blit(surf, f"+{raw[tier]['points']}", "numbers", vp.s(4.2), theme.DARK_BLUE,
+            self.text.blit(surf, f"+{C.tier_points(self.raw, tier)}", "numbers", vp.s(4.2), theme.DARK_BLUE,
                            vp.px(cx, base + 4.5 + pad * k))
             x -= w + gap
         note = "اندازه‌ی واقعی روی دیوار" if k >= 1.0 else f"کوچک‌شده تا {round(k * 100)} درصد"
@@ -848,7 +850,7 @@ class SettingsPage:
     def _best_hit(self, surf: pygame.Surface, vp: Viewport, y: float) -> None:
         """What one hit can score at most, worked out the way the game does."""
         raw = self.raw
-        pts = max(raw["targets"][c]["points"] for c in C.TIERS)
+        pts = max(C.tier_points(raw, c) for c in C.TIERS)
         combo = max([1] + [lv["multiplier"] for lv in raw["combo"]["levels"]]) if raw["combo"]["enabled"] else 1
         rush = raw["rush"]["score_multiplier"] if raw["rush"]["enabled"] else 1
         if raw["rush"]["stack_with_combo"]:

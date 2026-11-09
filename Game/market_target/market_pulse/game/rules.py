@@ -2,8 +2,8 @@
 
 Rules implemented (from the scenario PDF, the add-on text and the MOFID_UI v4.1 redesign):
 - 60 seconds, with an optional ball limit. targets.active boxes are on the wall, each one
-  of the 10 Mofid products at one of three sizes (medium, small, tiny).
-- A valid hit scores that size's points (the smaller, the more), replaces the hit box at
+  of the Mofid products, each at its own size (medium, small, tiny).
+- A valid hit scores that product's points (the smaller, the more), replaces the hit box at
   once with another product at a new size (game.products.Picker), and moves every box to
   a new random position, so the number of boxes outside Market Rush never changes.
 - A miss uses up one ball. Nothing is subtracted and the field does not change.
@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..config import TIERS, Section
+from ..config import TIERS, Section, points_of
 from .layout import Footprint, Rect, place, place_one
 from .products import Picker
 from .targets import Motion, Target, TimeWarp
@@ -91,6 +91,7 @@ class Round:
         self.duration: float = float(rd.duration_s) if self.timed else math.inf
         self.active: int = int(cfg.targets.active)  # boxes on the wall now (outside Market Rush's extras)
         self.start_active = self.active
+        self._grow_misses = 0  # frames a new box found no free spot
         # targets.grow_to: one more box at a time as the round runs (not above: no growth)
         self.grow_to: int = max(self.active, int(cfg.targets.get("grow_to", 0) or 0))
         self.levels = [(lv["after_hits"], lv["multiplier"]) for lv in cfg.combo.levels] if cfg.combo.enabled else []
@@ -278,7 +279,7 @@ class Round:
             ex, ey = tg.motion.extent()
             half = tg.max_side() / 2.0
             others.append((tg.x, tg.y, half + ex * tg.motion_scale, half + ey * tg.motion_scale))
-        tiers = self.cfg.rush.spawn_tiers
+        tiers = [c for c in self.cfg.rush.spawn_tiers if c in self.picker.sizes] or self.picker.sizes
         for _ in range(len(tiers)):  # if this size does not fit, try the next
             tier = tiers[self._rush_spawn_i % len(tiers)]
             self._rush_spawn_i += 1
@@ -323,6 +324,8 @@ class Round:
         if any(tg.gone(now) for tg in self.targets):
             self.targets = [tg for tg in self.targets if not tg.gone(now)]
 
+    GROW_TRIES = 15  # frames a new box looks for a free spot before all the boxes make room
+
     def wanted_active(self, now: float) -> int:
         """Boxes the wall should have by now: targets.active at the start, then one more at each
         equal part of the round (by time, or by balls without a time limit), up to targets.grow_to."""
@@ -339,7 +342,8 @@ class Round:
 
     def _grow(self, now: float) -> None:
         """One more box (the others stay where they are: a ball may be in the air). One that does
-        not fit now is tried again on the next frame."""
+        not fit now is tried again on the next frame; after GROW_TRIES frames (a crowded wall)
+        every box slides to a new layout that fits them all."""
         if self.active >= self.wanted_active(now):
             return
         others = []
@@ -352,11 +356,17 @@ class Round:
         spot = place_one(Footprint(tg.max_side() / 2.0, ex, ey), others, self.field, float(self.cfg.layout.gap_cm),
                          self.rng)
         if spot is None:
-            self._next_id -= 1  # not used
-            return
-        tg.x, tg.y, tg.motion_scale = spot
-        tg.from_x, tg.from_y, tg.from_scale = spot
-        self.targets.append(tg)
+            self._grow_misses += 1
+            if self._grow_misses < self.GROW_TRIES:
+                self._next_id -= 1  # not used
+                return
+            self.targets.append(tg)
+            self._relayout(now, moving=self.targets[:-1])
+        else:
+            tg.x, tg.y, tg.motion_scale = spot
+            tg.from_x, tg.from_y, tg.from_scale = spot
+            self.targets.append(tg)
+        self._grow_misses = 0
         self.active += 1
         self.events.append(("target_added", {"ids": [tg.id], "active": self.active}))
 
@@ -432,7 +442,7 @@ class Round:
         combo = self.multiplier_for(self.streak)
         rush_mult = self.rush_multiplier_at(t)
         mult = combo * rush_mult if self.cfg.rush.stack_with_combo else max(combo, rush_mult)
-        base = int(self.cfg.targets[tier].points)
+        base = points_of(self.cfg.raw(), target.product, tier)  # the product's own points
         points = int(round(base * mult))  # the one place a hit's points are worked out
         self.score += points
         if self.rush_at(t) is not None:
@@ -495,8 +505,9 @@ class Round:
         """A box with the next product (none already on the wall, nor ``avoid``) at the
         given size, or the next size from the picker."""
         if tier is None:
-            tier = self.picker.tier(tg.tier for tg in self.targets if not tg.rush_extra)
-        product = self.picker.product((tg.product for tg in self.targets), avoid)
+            tier = self.picker.tier((tg.tier for tg in self.targets if not tg.rush_extra),
+                                    (tg.product for tg in self.targets), avoid)
+        product = self.picker.product((tg.product for tg in self.targets), avoid, tier)
         mc = self.cfg.motion[tier]
         enabled = self.cfg.motion.enabled
         vary = float(self.cfg.motion.variation)  # every box its own speed and reach

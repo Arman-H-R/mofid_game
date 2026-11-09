@@ -1,5 +1,7 @@
 """Cut the product tiles out of MOFID_UI_v4.1_1.pdf page 1 (attract) as RGBA PNGs.
 
+No longer used: the tiles are now made from the product icons by tools/import_product_icons.py.
+
 The PDF has 13 tiles; طلای گرمی (gold), همنگ (hamnag) and توان (tavan) are not in the game,
 so they are not cut (see config.RETIRED).
 

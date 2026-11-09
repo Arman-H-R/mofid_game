@@ -17,26 +17,32 @@ The game now follows *MOFID_UI_v4.1_1.pdf*. **Where this file below still talks 
 blue and red boxes, read the three sizes instead** (green → medium, blue → small,
 red → tiny). Those sections describe the game before the redesign.
 
-**Targets: 10 Mofid products.** The boxes are 10 of the official product tiles from the
-PDF (آتیه، حامی، عیار، آموزش مفید، بیمه زندگی مفید، بورس ویو، بورس ویو ۲.۰، مفید کارت جت،
-مفید اپ، ایزی تریدر). The PDF's طلای گرمی، همنگ and توان are not in the game (since
-2026-11-09): `config.RETIRED` leaves them out even when an older `settings.json` lists them. They are cut out unchanged by
-`tools/extract_product_tiles.py` into `assets/products/`, listed in `config.PRODUCTS`, and
-never recoloured. A tile is slightly wider than tall (aspect 0.92), and the hit area is the
-tile itself.
+**Targets: 9 Mofid products, each with its own size and points.** The tiles are made from the
+square product icons (their own colour, with the game's rounded corners) by
+`tools/import_product_icons.py "<icons folder>" assets/products`, which finds each icon by the
+product's Persian name. جت کارت has no icon yet, so it gets a plain tile with its name until its
+icon is added and the tool is run again. The products are listed in `config.PRODUCTS` with their
+size (`tier`) and points; the size stays with the points, so the smaller box is worth more:
 
-| Size (`targets.*`) | Width | Points | Named on screen |
+| Points | Products | Box (`tier`) | Width |
 |---|---|---|---|
-| `medium` | 54 cm | 10 | باکس بزرگ |
-| `small` | 42 cm | 15 | باکس متوسط |
-| `tiny` | 29 cm | 30, and starts Market Rush | باکس کوچک |
+| 10 | ایزی تریدر، مفید اپ، بورس ویو ۲.۰ | باکس بزرگ (`medium`) | 54 cm |
+| 15 | بیمه زندگی مفید، آموزش مفید، جت کارت | باکس متوسط (`small`) | 42 cm |
+| 30, and starts Market Rush | آتیه، عیار، جت پی | باکس کوچک (`tiny`) | 29 cm |
+
+Each product's points can be changed on the settings page, tab **امتیاز محصولات** (one slider per
+product); its box size stays. حامی، توان، طلای گرمی، همنگ and the older بورس ویو / مفید کارت جت tiles
+are out of the game (`config.RETIRED`). A `settings.json` with the older product list (without
+sizes and points) gets the 9 products, with a warning. A tile is square (aspect 1.0), and the
+hit area is the tile itself.
 
 - **`targets.active` is how many boxes are on the wall at once** (default 4, from 1 to 10).
   It is the only place that number is set. A hit box is replaced at once, so the count never
   changes outside Market Rush, and all boxes then move. The old growth to 12 boxes on a red
   hit is gone.
-- **Which product and which size** comes from `game/products.py`. Products are drawn from a
-  shuffled bag of all 10: none already on the wall, and not the one just hit. Sizes are drawn
+- **Which product and which size** comes from `game/products.py`. The size is drawn first,
+  then a product of that size from a shuffled bag: none already on the wall, and not the one
+  just hit. Sizes are drawn
   from a bag weighted by `targets.<size>.weight` (3 : 3 : 2). `targets.min_tiny` (1) keeps a
   tiny box up whenever there are 3 or more boxes, so Market Rush can always be reached.
 - **Movement:** each size has a gentle pattern (`motion.*`), and every box gets its own speed
@@ -61,8 +67,8 @@ tile itself.
 
   `flow.attract_panel_s`, `flow.attract_demo` and `flow.attract_demo_s` control it.
 - **Settings page (F5):** the Boxes tab starts with **تعداد باکس‌های فعال روی دیوار** (1–20; above 10
-  boxes some products come up twice, each about as often), with a live row of all 10 products lit for the active ones. Below it are each size's width
-  and points. Save writes `targets.active` into `config/settings.json`, as with every other
+  boxes some products come up twice, each about as often), with a live row of all the products lit for the active ones. Below it are each size's width;
+  the points are on the **امتیاز محصولات** tab, one slider per product. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
 - **More boxes as the round runs (`targets.grow_to`, default 6):** the round starts with
   `targets.active` boxes and gets one more at a time, evenly over the round, up to `grow_to`.

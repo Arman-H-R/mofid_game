@@ -252,8 +252,8 @@ def test_results_portfolio_is_a_rising_bar_chart(tmp_path):
     r.results_t0 = 0.0
     shots = {}
     for name, extra in (("none", {}),
-                        ("points", {"products": {"hami": 1, "jet": 2, "ayar": 1}, "product_points": {"hami": 10, "jet": 60, "ayar": 30}}),
-                        ("old", {"products": {"hami": 1, "jet": 2, "ayar": 1}})):
+                        ("points", {"products": {"bimeh": 1, "jetcard": 2, "ayar": 1}, "product_points": {"bimeh": 15, "jetcard": 60, "ayar": 30}}),
+                        ("old", {"products": {"bimeh": 1, "jetcard": 2, "ayar": 1}})):
         app.flow.summary = {**base, **extra}
         for t in (3.5, 8.0, 3.5):  # out of order: nothing is carried between frames
             r.draw_results(app.screen, app.flow, t)
