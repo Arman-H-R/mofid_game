@@ -16,6 +16,7 @@ from .theme import Viewport
 
 MAX_PARTICLES = 240
 MAX_RIPPLES = 24
+MAX_DOT_RINGS = 16
 MAX_POPUPS = 16
 
 
@@ -34,6 +35,39 @@ class Ripple:
     dur: float
     delay: float = 0.0
     age: float = 0.0
+
+
+@dataclass
+class DotRing:
+    """Rings of small dots (the reference clip's motion): they close in where a box appears
+    (r1 < r0) and spread out where one is hit or leaves (r1 > r0)."""
+    x: float
+    y: float
+    r0: float  # cm, the outer ring at the start
+    r1: float  # cm, the outer ring at the end
+    color: tuple
+    dur: float
+    delay: float = 0.0
+    age: float = 0.0
+
+
+def dot_rings(surf: pygame.Surface, vp: Viewport, x: float, y: float, r: float, color, bg, spin: float = 0.0,
+              rings: int = 3, gap: float = 0.24, spacing: float = 3.4, dot: float = 0.55) -> None:
+    """Concentric rings of small dots around (x, y) cm, the outer one of radius r cm. Inner
+    rings are fainter; neighbouring rings turn opposite ways by spin (radians)."""
+    cx, cy = vp.px(x, y)
+    d = max(1.0, vp.sf(dot))
+    for k in range(rings):
+        rr = r * (1.0 - gap * k)
+        if rr <= dot * 2:
+            break
+        n = max(6, int(math.tau * rr / spacing))
+        a0 = spin if k % 2 == 0 else -spin
+        rp = vp.sf(rr)
+        col = theme.lerp_color(color, bg, 0.3 * k)
+        for i in range(n):
+            a = a0 + math.tau * i / n
+            pygame.draw.circle(surf, col, (cx + rp * math.cos(a), cy + rp * math.sin(a)), d)
 
 
 @dataclass
@@ -146,6 +180,7 @@ class Effects:
         self.sprites = sprites
         self.text = text
         self.ripples: list[Ripple] = []
+        self.dot_rings: list[DotRing] = []
         self.particles: list[Particle] = []
         self.popups: list[Popup] = []
         self.banners: list[Banner] = []
@@ -159,6 +194,7 @@ class Effects:
 
     def clear(self) -> None:
         self.ripples.clear()
+        self.dot_rings.clear()
         self.particles.clear()
         self.popups.clear()
         self.banners.clear()
@@ -170,6 +206,11 @@ class Effects:
         if len(self.ripples) >= MAX_RIPPLES:
             self.ripples.pop(0)
         self.ripples.append(Ripple(x, y, r0, r1, width, color, dur, delay))
+
+    def dot_ring(self, x, y, r0, r1, color, dur=0.5, delay=0.0) -> None:
+        if len(self.dot_rings) >= MAX_DOT_RINGS:
+            self.dot_rings.pop(0)
+        self.dot_rings.append(DotRing(x, y, r0, r1, color, dur, delay))
 
     def burst(self, x, y, color, count=12, speed=(70.0, 150.0), size=(3.0, 5.5), life=0.75, start_r=0.0) -> None:
         """Brand symbols flying out from a ring of radius start_r (cm) around (x, y)."""
@@ -221,6 +262,9 @@ class Effects:
         for r in self.ripples:
             r.age += dt
         self.ripples = [r for r in self.ripples if r.age < r.delay + r.dur]
+        for d in self.dot_rings:
+            d.age += dt
+        self.dot_rings = [d for d in self.dot_rings if d.age < d.delay + d.dur]
         drag = math.exp(-3.2 * dt)
         for p in self.particles:
             p.age += dt
@@ -243,6 +287,15 @@ class Effects:
             self.flash_age += dt
             if self.flash_age >= self.flash_dur:
                 self.flash_color = None
+
+    def draw_under(self, surf: pygame.Surface, vp: Viewport, bg) -> None:
+        """The rings of dots: on the field under the boxes, as the clip's dots lie on the floor."""
+        for d in self.dot_rings:
+            if d.age < d.delay:
+                continue
+            p = (d.age - d.delay) / d.dur
+            r = d.r0 + (d.r1 - d.r0) * _ease_out(p)
+            dot_rings(surf, vp, d.x, d.y, r, theme.lerp_color(d.color, bg, p**1.5), bg, spin=0.5 * p)
 
     def draw(self, surf: pygame.Surface, vp: Viewport, field_rect: pygame.Rect, bg) -> None:
         """Flash, ripples, particles and floating words (everything under the HUD)."""

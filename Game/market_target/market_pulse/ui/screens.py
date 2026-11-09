@@ -155,6 +155,7 @@ class Renderer:
         self.badge_shake_t = -10.0
         self.results_t0 = 0.0
         self.rush_title_t = -10.0
+        self._leaving: set[int] = set()  # boxes whose leaving rings have been started (draw_play)
         self._fade_pending = False
         self._fade_t0 = -10.0
         self._prewarm: list[tuple[str, int]] = []
@@ -516,6 +517,8 @@ class Renderer:
             storm = flow.round is not None and flow.round.rush is not None
             color = theme.CORAL if storm else theme.TURQ
             half = o.target_side / 2
+            if o.target_side:  # rings of dots spread out from the box that was hit
+                fx.dot_ring(o.target_x, o.target_y, half * 0.8, half * 2.4, color, 0.6)
             if o.tier == "tiny":  # the brand's symbols fly out: this one starts Market Rush
                 fx.burst(o.x, o.y, color, count=10, speed=(50.0, 110.0), life=0.9, start_r=half)
             # the product's name, the points and the multiplier in rings where the ball hit
@@ -557,6 +560,7 @@ class Renderer:
         elif name == "end":
             self.end_t0 = now
         elif name == "go" and flow.round is not None:
+            self._leaving.clear()
             self._spawn_rings(flow, now, {tg.id for tg in flow.round.targets})
         elif name == "results":
             self.results_t0 = now
@@ -568,13 +572,15 @@ class Renderer:
                 self._fade_pending = True
 
     def _spawn_rings(self, flow: F.Flow, now: float, ids: set[int]) -> None:
-        """A thin ring that opens around each newly placed box (its corner ticks close in as
-        it is drawn, draw_play)."""
+        """Each newly placed box: rings of dots close in on it as it pops up, then a thin halo
+        opens around it (its corner ticks close in as it is drawn, draw_play)."""
         storm = flow.round.rush is not None
+        color = theme.CORAL if storm else theme.TURQ
         for tg in flow.round.targets:
             if tg.id in ids:
                 cx, cy = tg.center_at(now + tg.spawn_dur)
-                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, theme.CORAL if storm else theme.TURQ, 0.45, 0.1)
+                self.fx.dot_ring(cx, cy, tg.size * 1.3, tg.size * 0.45, color, 0.35)
+                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, color, 0.45, 0.22)
 
     # -- frame ----------------------------------------------------------------------------
     def draw(self, surf: pygame.Surface, flow: F.Flow, now: float, overlays: dict) -> None:
@@ -632,7 +638,12 @@ class Renderer:
         st = flow.state
         if rnd is not None and rnd.started_at is not None:
             fade = 1.0 - _ease_in_out((now - self.end_t0) / 0.4) if st == F.ENDING else 1.0
+            self.fx.draw_under(surf, vp, bg)
             for tg in rnd.targets:
+                if tg.die_at is not None and tg.die_at <= t and tg.id not in self._leaving:
+                    self._leaving.add(tg.id)  # rings of dots spread out as it shrinks away
+                    cx, cy = tg.center_at(tg.die_at)
+                    self.fx.dot_ring(cx, cy, tg.size * 0.4, tg.size * 1.5, theme.CORAL if storm > 0.5 else theme.TURQ, 0.5)
                 if fade > 0.0:
                     self._draw_target(surf, tg, t, bg, storm, fade)
         field_rect = vp.cm_rect(0, self.hud_h, self.W, self.footer_y)
