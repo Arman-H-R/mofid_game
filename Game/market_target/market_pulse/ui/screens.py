@@ -682,7 +682,9 @@ class Renderer:
         if showing:
             self._draw_showing(surf, tg, side, c, age / self.SHOW_S)
         else:
-            spr = self.sprites.product_scaled(tg.product, vp.sf(side), vp.s(tg.size), ring=True)
+            if alpha >= 1.0:
+                self._rest_halo(surf, tg, side, c, age, bg)
+            spr = self.sprites.product_turned(tg.product, vp.sf(side), vp.s(tg.size), self._turn(tg, age), ring=True)
             if alpha < 1.0:
                 spr.set_alpha(int(255 * alpha))
             surf.blit(spr, spr.get_rect(center=c))
@@ -704,6 +706,28 @@ class Renderer:
             self._ticks(surf, cx, cy, tg.size / 2 + inset, tg.size * tg.aspect / 2 + inset, min(7.0, tg.size * 0.2), col)
 
     SHOW_S = 0.9  # s, a new tile's appear morph (after the reference clip's icon)
+    # A resting tile, besides its slow float (motion): it turns a little now and then, as under the
+    # clip's slowly moving camera, and a thin halo opens around it and fades every so often.
+    TURN_DEPTH = 0.07  # the narrowest it gets: 93 % of its width
+    TURN_S = 6.5  # s, one slow turn and back (each tile a little different)
+    HALO_EVERY = 5.5  # s, between two halos of one tile (each tile at its own moment)
+    HALO_S = 1.0  # s, one halo opening and fading
+
+    def _turn(self, tg, age: float) -> float:
+        """How much of its width a resting tile shows: 1 facing us, down to 1 - TURN_DEPTH."""
+        period = self.TURN_S * (1.0 + 0.11 * ((tg.id * 7) % 5 - 2))
+        k = 0.5 - 0.5 * math.cos(math.tau * (age / period + 0.37 * tg.id))
+        return 1.0 - self.TURN_DEPTH * k
+
+    def _rest_halo(self, surf, tg, side: float, c: tuple[int, int], age: float, bg) -> None:
+        """Now and then a thin ring opens around a resting tile and fades (the clip's icon halo)."""
+        ph = (age - self.SHOW_S + 1.9 * tg.id) % self.HALO_EVERY
+        if age < self.SHOW_S + 1.0 or ph >= self.HALO_S:
+            return
+        q = ph / self.HALO_S
+        r = side * 0.62 + 7.0 * _ease_out(q)
+        col = theme.lerp_color(bg, theme.MIST, 0.55 * (1.0 - q) ** 1.3)
+        pygame.draw.aacircle(surf, col, c, int(self.vp.sf(r)), max(1, self.vp.s(0.3)))
 
     def _draw_showing(self, surf, tg, side: float, c: tuple[int, int], p: float) -> None:
         """A new tile appearing, p 0..1 (the reference clip's icon): born small as a thin sliver

@@ -71,7 +71,9 @@ tile itself.
     morphs into the tile's rounded square while it keeps growing, and its artwork fades in
     (0.9 s, `SHOW_S`), as rings of dots close in. Then a thin halo opens.
   - Tiles float slowly a few cm in place (`motion`: `sway_y`, 2–3 cm, 6–8 s; `motion.enabled`
-    false keeps them still). After a hit the other tiles stay where they are, and the new
+    false keeps them still). A resting tile also turns a little now and then (down to 93 % of
+    its width, `TURN_S` 6.5 s), and a thin halo opens around it and fades every 5.5 s
+    (`HALO_EVERY`), as in the clip. After a hit the other tiles stay where they are, and the new
     one takes a free spot. `layout.move_on_hit` true brings back the glide to new spots.
   - A hit tile sends rings of dots out under its badge.
   - A leaving tile (Market Rush extras) shrinks while rings of dots spread out.

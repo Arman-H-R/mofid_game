@@ -167,6 +167,23 @@ class Sprites:
             self._product_color[key] = c
         return c
 
+    def product_turned(self, key: str, w_px: float, base_px: int, turn: float, ring: bool = True) -> pygame.Surface:
+        """The tile as product_scaled, narrowed to ``turn`` of its width as if it turned a little
+        about its upright axis (the reference clip's slow camera). Turns are quantised to 1 %."""
+        f = w_px / max(1, base_px)
+        q = round(f / 0.02) * 0.02
+        tq = round(turn / 0.01) * 0.01
+        if tq >= 1.0 or not 0.9 <= q <= 1.1:
+            return self.product_scaled(key, w_px, base_px, ring)
+        w = int(round(base_px * q))
+        cache_key = (key, w, ring, tq)
+        surf = self._products.hit(cache_key)
+        if surf is None:
+            src = self.product(key, w, ring)
+            surf = self._products.put(cache_key, _convert(pygame.transform.smoothscale(
+                src, (max(2, int(round(src.get_width() * tq))), src.get_height()))))
+        return surf
+
     @staticmethod
     def ring_margin(w: int) -> int:
         """Room around a tile for its ring, in pixels, on each side."""
