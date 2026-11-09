@@ -77,7 +77,27 @@ def test_active_cannot_exceed_the_products():
     assert raw["targets"]["active"] == 5 and warnings
 
 
-def test_a_hit_replaces_the_box_with_another_product_and_moves_all(cfg, rng):
+def test_after_a_hit_the_other_boxes_stay_and_the_new_one_takes_a_free_spot(cfg, rng):
+    """As in the reference clip: nothing moves away; only the new box appears."""
+    assert cfg.layout.move_on_hit is False
+    rnd = started(cfg, rng)
+    now = T0 + 1.0
+    before = {t.id: (t.x, t.y) for t in rnd.targets}
+    hit = rnd.targets[0]
+    out = rnd.register_impact(*hit.center_at(now), now, now)
+    assert out.kind == "hit" and len(out.spawned) == 1
+    for t in rnd.targets:
+        if t.id in before:
+            assert (t.x, t.y) == before[t.id] and t.move_dur == 0.0
+    new = next(t for t in rnd.targets if t.id == out.spawned[0])
+    for t in rnd.targets:  # the new box covers none of the others
+        if t is not new:
+            gap = (t.max_side() + new.max_side()) / 2
+            assert abs(t.x - new.x) >= gap or abs(t.y - new.y) >= gap * max(t.aspect, new.aspect)
+
+
+def test_a_hit_replaces_the_box_with_another_product_and_moves_all(rng):
+    cfg = make_cfg({"layout": {"move_on_hit": True}})
     rnd = started(cfg, rng)
     now = T0 + 1.0
     before = {t.id: t.center_at(now) for t in rnd.targets}

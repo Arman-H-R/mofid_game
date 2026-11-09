@@ -40,7 +40,7 @@ from ..game import flow as F
 from ..game.rules import Outcome
 from . import theme
 from .attract import Attract
-from .draw import Sprites, dot_grid, draw_symbol, gradient_bar
+from .draw import PRODUCT_RADIUS, Sprites, dot_grid, draw_symbol, gradient_bar
 from .effects import BADGE_R, Effects
 from .text import Text, split_runs
 from .theme import Viewport
@@ -579,8 +579,8 @@ class Renderer:
         for tg in flow.round.targets:
             if tg.id in ids:
                 cx, cy = tg.center_at(now + tg.spawn_dur)
-                self.fx.dot_ring(cx, cy, tg.size * 1.3, tg.size * 0.45, color, 0.35)
-                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, color, 0.45, 0.22)
+                self.fx.dot_ring(cx, cy, tg.size * 1.3, tg.size * 0.3, color, 0.5)
+                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, color, 0.5, 0.55)
 
     # -- frame ----------------------------------------------------------------------------
     def draw(self, surf: pygame.Surface, flow: F.Flow, now: float, overlays: dict) -> None:
@@ -672,22 +672,27 @@ class Renderer:
         """One product tile with its thin ring, its points under it, and corner ticks while it
         appears (and always around a tiny box: the one that starts Market Rush)."""
         vp = self.vp
-        side = tg.side_at(t)
+        age = t - tg.born
+        showing = 0.0 <= age < self.SHOW_S and alpha >= 1.0
+        side = tg.full_side_at(t) if showing else tg.side_at(t)
         if side < 0.5:
             return
         cx, cy = tg.center_at(t)
         c = vp.px(cx, cy)
-        spr = self.sprites.product_scaled(tg.product, vp.sf(side), vp.s(tg.size), ring=True)
-        if alpha < 1.0:
-            spr.set_alpha(int(255 * alpha))
-        surf.blit(spr, spr.get_rect(center=c))
-        spr.set_alpha(255)
+        if showing:
+            self._draw_showing(surf, tg, side, c, age / self.SHOW_S)
+        else:
+            spr = self.sprites.product_scaled(tg.product, vp.sf(side), vp.s(tg.size), ring=True)
+            if alpha < 1.0:
+                spr.set_alpha(int(255 * alpha))
+            surf.blit(spr, spr.get_rect(center=c))
+            spr.set_alpha(255)
         h = side * tg.aspect
-        grow = tg.spawn_factor(t)
-        if grow > 0.6 and alpha >= 1.0:  # its points under it, in mist
+        grow = min(1.0, max(0.0, (age / self.SHOW_S - 0.7) / 0.3)) if showing else 1.0
+        if grow > 0.0 and alpha >= 1.0:  # its points under it, in mist, once it has formed
             pts = int(self.cfg.targets[tg.tier].points)
             self.text.blit(surf, f"+{pts}", "numbers", vp.s(4.6), theme.MIST, vp.px(cx, cy + h / 2 + 6.5),
-                           alpha=int(255 * min(1.0, (grow - 0.6) / 0.4)))
+                           alpha=int(255 * grow))
         age = t - tg.born
         spawn = 1.0 - min(1.0, age / 0.45)
         if spawn > 0.0 or tg.tier == "tiny":
@@ -697,6 +702,32 @@ class Renderer:
             strength = max(spawn, 0.55 if tg.tier == "tiny" else 0.0) * alpha
             col = theme.lerp_color(bg, theme.CORAL if storm > 0.5 else theme.WHITE, strength)
             self._ticks(surf, cx, cy, tg.size / 2 + inset, tg.size * tg.aspect / 2 + inset, min(7.0, tg.size * 0.2), col)
+
+    SHOW_S = 0.9  # s, a new tile's appear morph (after the reference clip's icon)
+
+    def _draw_showing(self, surf, tg, side: float, c: tuple[int, int], p: float) -> None:
+        """A new tile appearing, p 0..1 (the reference clip's icon): born small as a thin sliver
+        that turns to face us as a circle, it morphs into the tile's rounded square while it keeps
+        growing, then its artwork fades in. side: its full width, cm."""
+        vp = self.vp
+        d = side * (0.06 + 0.94 * (1.0 - (1.0 - p) ** 3))  # small at its birth, bigger over time
+        turn = 0.15 + 0.85 * _ease_out(min(1.0, p / 0.4))  # the sliver turning to face us
+        m = _ease_in_out(min(1.0, max(0.0, (p - 0.35) / 0.3)))  # circle -> the tile's shape
+        w, h = d * turn, d * (1.0 + (tg.aspect - 1.0) * m)
+        radius = min(w, h) / 2.0 * (1.0 - m) + d * PRODUCT_RADIUS * m
+        rect = pygame.Rect(0, 0, max(2, vp.s(w)), max(2, vp.s(h)))
+        rect.center = c
+        art = _ease_in_out(min(1.0, max(0.0, (p - 0.5) / 0.35)))  # the artwork fades in last
+        if art < 1.0:
+            color = self.sprites.product_color(tg.product)
+            r_px = max(1, int(vp.sf(radius)))
+            pygame.draw.rect(surf, color, rect, border_radius=r_px)
+            pygame.draw.rect(surf, theme.lerp_color(color, theme.WHITE, 0.55), rect, width=max(1, vp.s(0.5)), border_radius=r_px)
+        if art > 0.0:
+            spr = self.sprites.product_scaled(tg.product, vp.sf(d), vp.s(tg.size), ring=True)
+            spr.set_alpha(int(255 * art))
+            surf.blit(spr, spr.get_rect(center=c))
+            spr.set_alpha(255)
 
     def _ticks(self, surf, cx: float, cy: float, hw: float, hh: float, arm: float, col, width_cm: float = 0.55) -> None:
         """The design's corner ticks: an L at each corner of a box (cm)."""

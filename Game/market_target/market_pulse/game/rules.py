@@ -417,10 +417,12 @@ class Round:
             spawned.append(self._new_target(now, avoid=(target.product,)))
             if target.rush_extra:
                 self._mark_rush_extra(spawned[0], now)
-        # ...and every box moves.
+        # ...and the new box takes a free spot, the others staying where they are (or, with
+        # layout.move_on_hit, every box moves).
         moving = list(self.targets)
         self.targets.extend(spawned)
-        self._relayout(now, moving=moving)
+        if self.cfg.layout.move_on_hit or not self._place_new(spawned):
+            self._relayout(now, moving=moving)
         if tier == "tiny":
             self._note_tiny_hit(now)
 
@@ -487,6 +489,26 @@ class Round:
         )
         self._next_id += 1
         return tg
+
+    def _place_new(self, new: list[Target]) -> bool:
+        """Free spots for new boxes, leaving every other box where it is. False when one does
+        not fit: then the whole wall is laid out again."""
+        placed = [o for o in self.targets if o not in new]
+        for tg in new:
+            others = []
+            for o in placed:
+                ex, ey = o.motion.extent()
+                half = o.max_side() / 2.0
+                others.append((o.x, o.y, half + ex * o.motion_scale, half + ey * o.motion_scale))
+            ex, ey = tg.motion.extent()
+            spot = place_one(Footprint(tg.max_side() / 2.0, ex, ey), others, self.field,
+                             float(self.cfg.layout.gap_cm), self.rng)
+            if spot is None:
+                return False
+            tg.x, tg.y, tg.motion_scale = spot
+            tg.from_x, tg.from_y, tg.from_scale = spot
+            placed.append(tg)
+        return True
 
     def _relayout(self, now: float, moving: list[Target]) -> None:
         moving_ids = {tg.id for tg in moving}

@@ -66,6 +66,9 @@ DEFAULTS: dict[str, Any] = {
         "gap_cm": 12,
         "min_move_cm": 35,
         "transition_s": 0.35,
+        # After a hit: false, the other boxes stay where they are and the new one takes a free
+        # spot (as in the reference clip); true, every box glides to a new spot (min_move_cm).
+        "move_on_hit": False,
         "spawn_s": 0.32,
         # below the circle of tiles on the attract screen (MOFID_UI v4.1 page 1)
         "start_button": {"x_cm": 150, "y_cm": 318, "size_cm": 70},
@@ -104,9 +107,11 @@ DEFAULTS: dict[str, Any] = {
         "enabled": True,
         "speed": 1.0,
         "variation": 0.18,
-        "medium": {"pattern": "sway_x", "amplitude_cm": 10, "period_s": 5.4, "pulse": 0.0, "pulse_period_s": 2.0},
-        "small": {"pattern": "figure8", "amplitude_cm": 9, "period_s": 5.0, "pulse": 0.0, "pulse_period_s": 2.6},
-        "tiny": {"pattern": "volatile", "amplitude_cm": 8, "period_s": 4.2, "pulse": 0.04, "pulse_period_s": 1.6},
+        # Slow and small, as in the reference clip: each box floats a few cm in place.
+        # enabled false keeps them still.
+        "medium": {"pattern": "sway_y", "amplitude_cm": 3, "period_s": 8.0, "pulse": 0.0, "pulse_period_s": 2.0},
+        "small": {"pattern": "sway_y", "amplitude_cm": 2.5, "period_s": 7.2, "pulse": 0.0, "pulse_period_s": 2.6},
+        "tiny": {"pattern": "sway_y", "amplitude_cm": 2, "period_s": 6.4, "pulse": 0.02, "pulse_period_s": 3.2},
     },
     # Add-on 1.2: after N consecutive hits, the following hits use this multiplier.
     # A miss resets it to x1. Nothing is ever subtracted.

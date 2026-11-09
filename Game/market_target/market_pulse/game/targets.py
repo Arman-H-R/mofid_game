@@ -191,6 +191,10 @@ class Target:
         s = self._motion_scale(t)
         return lx + dx * s, ly + dy * s
 
+    def full_side_at(self, t: float) -> float:
+        """The width without the pop-in (the drawing's appear morph grows it by itself)."""
+        return self.size * self.motion.scale(self._age(t), self.speed) * self._leave_factor(t)
+
     def side_at(self, t: float) -> float:
         return self.size * self.motion.scale(self._age(t), self.speed) * self.spawn_factor(t) * self._leave_factor(t)
 

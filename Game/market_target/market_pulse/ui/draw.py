@@ -115,6 +115,7 @@ class Sprites:
         self.product_dir = None  # assets/products, set by set_products
         self.product_files: dict[str, str] = {}
         self.product_aspect: dict[str, float] = {}
+        self._product_color: dict[str, tuple] = {}
 
     def clear(self) -> None:
         for c in (self._targets, self._symbols, self._rounded, self._dots, self._images, self._products):
@@ -137,6 +138,7 @@ class Sprites:
         self.product_aspect = {p["key"]: float(p.get("aspect", 1.0)) for p in products}
         self._product_src.clear()
         self._products.clear()
+        self._product_color.clear()
 
     def _product_source(self, key: str) -> pygame.Surface | None:
         if key not in self._product_src:
@@ -150,6 +152,20 @@ class Sprites:
                     src = None
             self._product_src[key] = src
         return self._product_src[key]
+
+    def product_color(self, key: str) -> tuple:
+        """The tile's own colour (a strip along its top, above the logo), for the shape that
+        morphs into it as it appears."""
+        c = self._product_color.get(key)
+        if c is None:
+            src = self._product_source(key)
+            if src is None:
+                c = theme.TURQUOISE
+            else:
+                w, h = src.get_size()
+                c = tuple(pygame.transform.average_color(src, pygame.Rect(w * 3 // 10, h // 25, w * 2 // 5, max(1, h // 16))))[:3]
+            self._product_color[key] = c
+        return c
 
     @staticmethod
     def ring_margin(w: int) -> int:

@@ -67,7 +67,12 @@ tile itself.
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits
   per product) and `product_points` (points per product). The CSV gets the matching columns.
 - **Motion from the reference clip** (rings of dots, as on a floor):
-  - A new tile pops up while rings of dots close in on it, then a thin halo opens.
+  - A new tile is born small as a thin sliver and turns to face you as a circle. It then
+    morphs into the tile's rounded square while it keeps growing, and its artwork fades in
+    (0.9 s, `SHOW_S`), as rings of dots close in. Then a thin halo opens.
+  - Tiles float slowly a few cm in place (`motion`: `sway_y`, 2–3 cm, 6–8 s; `motion.enabled`
+    false keeps them still). After a hit the other tiles stay where they are, and the new
+    one takes a free spot. `layout.move_on_hit` true brings back the glide to new spots.
   - A hit tile sends rings of dots out under its badge.
   - A leaving tile (Market Rush extras) shrinks while rings of dots spread out.
   - On the results screen, «سبد محصولات شما» is a rising bar chart: one bar per product hit,
