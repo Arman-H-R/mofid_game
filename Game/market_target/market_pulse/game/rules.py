@@ -89,7 +89,10 @@ class Round:
         self.balls: int = int(rd.balls) if rd.get("ball_limit", False) else 0
         self.timed: bool = bool(rd.get("time_limit", True)) or self.balls <= 0
         self.duration: float = float(rd.duration_s) if self.timed else math.inf
-        self.active: int = int(cfg.targets.active)  # boxes on the wall, read once per round
+        self.active: int = int(cfg.targets.active)  # boxes on the wall now (outside Market Rush's extras)
+        self.start_active = self.active
+        # targets.grow_to: one more box at a time as the round runs (not above: no growth)
+        self.grow_to: int = max(self.active, int(cfg.targets.get("grow_to", 0) or 0))
         self.levels = [(lv["after_hits"], lv["multiplier"]) for lv in cfg.combo.levels] if cfg.combo.enabled else []
         self.picker = Picker(cfg, self.rng)
         self.products = {p["key"]: p for p in cfg.raw()["products"]}
@@ -316,8 +319,46 @@ class Round:
             self._finish("time", self.ends_at)
             return
         self._update_rush(now)
+        self._grow(now)
         if any(tg.gone(now) for tg in self.targets):
             self.targets = [tg for tg in self.targets if not tg.gone(now)]
+
+    def wanted_active(self, now: float) -> int:
+        """Boxes the wall should have by now: targets.active at the start, then one more at each
+        equal part of the round (by time, or by balls without a time limit), up to targets.grow_to."""
+        extra = self.grow_to - self.start_active
+        if extra <= 0 or self.started_at is None:
+            return self.start_active
+        if self.timed:
+            progress = (now - self.started_at) / self.duration
+        else:
+            progress = self.throws / self.balls
+        if self.balls > 0:
+            progress = max(progress, self.throws / self.balls)
+        return self.start_active + min(extra, int(max(0.0, progress) * (extra + 1)))
+
+    def _grow(self, now: float) -> None:
+        """One more box (the others stay where they are: a ball may be in the air). One that does
+        not fit now is tried again on the next frame."""
+        if self.active >= self.wanted_active(now):
+            return
+        others = []
+        for o in self.targets:
+            ex, ey = o.motion.extent()
+            half = o.max_side() / 2.0
+            others.append((o.x, o.y, half + ex * o.motion_scale, half + ey * o.motion_scale))
+        tg = self._new_target(now)
+        ex, ey = tg.motion.extent()
+        spot = place_one(Footprint(tg.max_side() / 2.0, ex, ey), others, self.field, float(self.cfg.layout.gap_cm),
+                         self.rng)
+        if spot is None:
+            self._next_id -= 1  # not used
+            return
+        tg.x, tg.y, tg.motion_scale = spot
+        tg.from_x, tg.from_y, tg.from_scale = spot
+        self.targets.append(tg)
+        self.active += 1
+        self.events.append(("target_added", {"ids": [tg.id], "active": self.active}))
 
     def abort(self, now: float) -> None:
         if not self.finished:

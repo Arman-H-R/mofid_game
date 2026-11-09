@@ -64,6 +64,11 @@ tile itself.
   with a live row of all 10 products lit for the active ones. Below it are each size's width
   and points. Save writes `targets.active` into `config/settings.json`, as with every other
   row.
+- **More boxes as the round runs (`targets.grow_to`, default 6):** the round starts with
+  `targets.active` boxes and gets one more at a time, evenly over the round, up to `grow_to`.
+  4 → 6 in 60 s: a 5th box at 20 s and a 6th at 40 s. Without a time limit it goes by the balls
+  thrown. A new box takes a free spot and the others stay where they are. 0 turns it off
+  (F5, tab «باکس‌ها», row «باکس‌های بیشتر با گذشت زمان، تا»).
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits
   per product) and `product_points` (points per product). The CSV gets the matching columns.
 - **Motion from the reference clip** (rings of dots, as on a floor):

@@ -552,7 +552,7 @@ class Renderer:
         elif name == "rush_end":
             if data["reason"] == "time":
                 fx.banner(self.T.rush_end, theme.TURQ, 1.6)
-        elif name == "rush_spawn" and flow.round is not None:
+        elif name in ("rush_spawn", "target_added") and flow.round is not None:
             self._spawn_rings(flow, now, set(data["ids"]))
         elif name == "start_hit":
             sb = self.cfg.layout.start_button

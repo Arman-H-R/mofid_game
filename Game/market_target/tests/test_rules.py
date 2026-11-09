@@ -96,6 +96,64 @@ def test_after_a_hit_the_other_boxes_stay_and_the_new_one_takes_a_free_spot(cfg,
             assert abs(t.x - new.x) >= gap or abs(t.y - new.y) >= gap * max(t.aspect, new.aspect)
 
 
+def grow_cfg(**round_):
+    return make_cfg({"targets": {"active": 4, "grow_to": 6},
+                     "round": {"time_limit": True, "duration_s": 60, "ball_limit": False, **round_}})
+
+
+def test_more_boxes_as_the_time_runs(rng):
+    """targets.grow_to: 4 boxes at the start, a 5th at 20 s and a 6th at 40 s of 60 s."""
+    rnd = started(grow_cfg(), rng)
+    counts = {}
+    for t in range(0, 60):
+        rnd.update(T0 + t + 0.5)
+        counts[t] = len(rnd.targets)
+    assert counts[0] == counts[19] == 4
+    assert counts[20] == counts[39] == 5
+    assert counts[40] == counts[59] == 6
+    added = [d for name, d in rnd.drain_events() if name == "target_added"]
+    assert [d["active"] for d in added] == [5, 6]
+    for a in rnd.targets:  # no box covers another
+        for b in rnd.targets:
+            if a is not b:
+                gap = (a.max_side() + b.max_side()) / 2
+                assert abs(a.x - b.x) >= gap or abs(a.y - b.y) >= gap * max(a.aspect, b.aspect)
+
+
+def test_a_new_box_from_growth_leaves_the_others_where_they_are(rng):
+    rnd = started(grow_cfg(), rng)
+    before = {t.id: (t.x, t.y) for t in rnd.targets}
+    rnd.update(T0 + 20.5)
+    assert len(rnd.targets) == 5
+    assert all((t.x, t.y) == before[t.id] for t in rnd.targets if t.id in before)
+
+
+def test_a_hit_after_growth_keeps_the_bigger_count(rng):
+    rnd = started(grow_cfg(), rng)
+    rnd.update(T0 + 41.0)
+    rnd.update(T0 + 41.02)  # one box a frame
+    assert len(rnd.targets) == 6
+    out = throw_at(rnd, None, T0 + 42.0)
+    assert out.kind == "hit" and len(rnd.targets) == 6
+
+
+def test_no_growth_when_grow_to_is_off(rng):
+    rnd = started(make_cfg({"targets": {"active": 4, "grow_to": 0}}), rng)
+    rnd.update(T0 + 55.0)
+    assert len(rnd.targets) == 4
+
+
+def test_without_a_time_limit_the_boxes_grow_with_the_balls(rng):
+    rnd = started(make_cfg({"targets": {"active": 4, "grow_to": 6},
+                            "round": {"time_limit": False, "ball_limit": True, "balls": 9}}), rng)
+    now = T0
+    for n in range(1, 7):
+        now += 1.0
+        throw_away(rnd, now)
+        rnd.update(now)
+        assert len(rnd.targets) == (4 if n < 3 else 5 if n < 6 else 6), n
+
+
 def test_a_hit_replaces_the_box_with_another_product_and_moves_all(rng):
     cfg = make_cfg({"layout": {"move_on_hit": True}})
     rnd = started(cfg, rng)

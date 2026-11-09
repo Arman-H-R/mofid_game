@@ -92,6 +92,10 @@ DEFAULTS: dict[str, Any] = {
     # Rush can always be reached.
     "targets": {
         "active": 4,
+        # More boxes as the round runs: it starts with "active" boxes and gets one more at a time,
+        # evenly over the round (the time, or the balls without a time limit), up to grow_to.
+        # 4 -> 6 in 60 s: a 5th box at 20 s, a 6th at 40 s. 0 (or not above active): no growth.
+        "grow_to": 6,
         "medium": {"size_cm": 54, "points": 10, "weight": 3},
         "small": {"size_cm": 42, "points": 15, "weight": 3},
         "tiny": {"size_cm": 29, "points": 30, "weight": 2},
@@ -418,6 +422,7 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("round", "duration_s"): (5, 3600),
     ("targets", "active"): (1, len(PRODUCTS)),
     ("targets", "min_tiny"): (0, len(PRODUCTS)),
+    ("targets", "grow_to"): (0, len(PRODUCTS)),
     ("targets", "min_size_cm"): (1, 500),
     ("motion", "variation"): (0, 0.5),
     ("profiles", "min_hits"): (1, 100),
@@ -431,7 +436,7 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("rush", "score_multiplier"): (1, 20),
     ("rush", "speed"): (0.1, 5),
     ("rush", "speed_ramp_s"): (0, 5),
-    ("rush", "max_targets"): (1, 13),
+    ("rush", "max_targets"): (1, len(PRODUCTS)),
     ("rush", "spawn_interval_s"): (0.2, 60),
     ("rush", "spawn_lifetime_s"): (0.5, 600),
     ("rush", "transition_s"): (0, 5),
@@ -602,6 +607,7 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
                         f"using {len(products)}")
         cfg["targets"]["active"] = len(products)
     cfg["targets"]["active"] = int(cfg["targets"]["active"])
+    cfg["targets"]["grow_to"] = int(min(cfg["targets"].get("grow_to", 0), len(products)))
 
     rush = cfg["rush"]
     tiers = [c for c in rush["spawn_tiers"] if c in TIERS]

@@ -86,7 +86,8 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     """The tabs: title, rows, and what is drawn with the rows ("boxes": the boxes at their
     size, "best": the most one hit can score, "screen": the canvas now and when changes apply)."""
     n_products = max(1, len(raw.get("products") or C.PRODUCTS))
-    boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, n_products, 1, "boxes")]
+    boxes = [Item(("targets", "active"), "تعداد باکس‌های فعال روی دیوار", 1, n_products, 1, "boxes"),
+             Item(("targets", "grow_to"), "باکس‌های بیشتر با گذشت زمان، تا", 0, n_products, 1, "boxes", zero="خاموش")]
     for tier, name in TIER_NAMES:
         boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm"),
                   Item(("targets", tier, "points"), f"امتیاز باکس {name}", 0, 200, 5, "pts")]
@@ -181,6 +182,8 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 # A key with "*" stands for every colour or multiplier level.
 HINTS: dict[Key, tuple[str, str]] = {
     ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا همه‌ی محصول‌ها): آسان‌تر"),
+    ("targets", "grow_to"): ("خاموش یا کمتر از تعداد بالا: تعداد باکس‌ها ثابت می‌ماند",
+                            "بیشتر: با گذشت زمان یکی‌یکی باکس اضافه می‌شود"),
     ("targets", "min_tiny"): ("0: باکس کوچک فقط به شانس می‌آید", "باکس کوچک بیشتر: طوفان زودتر"),
     ("targets", "*", "size_cm"): ("باکس کوچک‌تر: زدنش سخت‌تر", "باکس بزرگ‌تر: زدنش آسان‌تر"),
     ("targets", "*", "points"): ("امتیاز کمتر؛ 0: بی‌امتیاز", "امتیاز بیشتر برای هر برخورد"),
