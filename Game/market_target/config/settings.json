@@ -39,14 +39,15 @@
     "ball_limit": true
   },
   "targets": {
-    "active": 4,
+    "active": 6,
+    "grow_to": 9,
     "medium": {
       "size_cm": 54,
       "points": 10,
       "weight": 3
     },
     "small": {
-      "size_cm": 42,
+      "size_cm": 41,
       "points": 15,
       "weight": 3
     },
@@ -60,64 +61,76 @@
   },
   "products": [
     {
-      "key": "atiyeh",
-      "name": "آتیه",
-      "file": "atiyeh.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "hami",
-      "name": "حامی",
-      "file": "hami.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "ayar",
-      "name": "عیار",
-      "file": "ayar.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "amoozesh",
-      "name": "آموزش مفید",
-      "file": "amoozesh.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "bimeh",
-      "name": "بیمه زندگی مفید",
-      "file": "bimeh.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "boursview",
-      "name": "بورس ویو",
-      "file": "boursview.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "boursview2",
-      "name": "بورس ویو ۲.۰",
-      "file": "boursview2.png",
-      "aspect": 0.92
-    },
-    {
-      "key": "jet",
-      "name": "مفید کارت جت",
-      "file": "jet.png",
-      "aspect": 0.92
+      "key": "easytrader",
+      "name": "ایزی تریدر",
+      "file": "easytrader.png",
+      "aspect": 1.0,
+      "tier": "medium",
+      "points": 10
     },
     {
       "key": "mofidapp",
       "name": "مفید اپ",
       "file": "mofidapp.png",
-      "aspect": 0.92
+      "aspect": 1.0,
+      "tier": "medium",
+      "points": 10
     },
     {
-      "key": "easytrader",
-      "name": "ایزی تریدر",
-      "file": "easytrader.png",
-      "aspect": 0.92
+      "key": "boursview",
+      "name": "بورس ویو ۲.۰",
+      "file": "boursview.png",
+      "aspect": 1.0,
+      "tier": "medium",
+      "points": 10
+    },
+    {
+      "key": "bimeh",
+      "name": "بیمه زندگی مفید",
+      "file": "bimeh.png",
+      "aspect": 1.0,
+      "tier": "small",
+      "points": 15
+    },
+    {
+      "key": "amoozesh",
+      "name": "آموزش مفید",
+      "file": "amoozesh.png",
+      "aspect": 1.0,
+      "tier": "small",
+      "points": 15
+    },
+    {
+      "key": "jetcard",
+      "name": "جت کارت",
+      "file": "jetcard.png",
+      "aspect": 1.0,
+      "tier": "small",
+      "points": 15
+    },
+    {
+      "key": "atiyeh",
+      "name": "آتیه",
+      "file": "atiyeh.png",
+      "aspect": 1.0,
+      "tier": "tiny",
+      "points": 30
+    },
+    {
+      "key": "ayar",
+      "name": "عیار",
+      "file": "ayar.png",
+      "aspect": 1.0,
+      "tier": "tiny",
+      "points": 30
+    },
+    {
+      "key": "jetpay",
+      "name": "جت پی",
+      "file": "jetpay.png",
+      "aspect": 1.0,
+      "tier": "tiny",
+      "points": 30
     }
   ],
   "motion": {
@@ -306,8 +319,8 @@
             25.0
           ],
           "lidar_mm": [
-            -377.0,
-            1868.3
+            -467.9,
+            2136.9
           ]
         },
         {
@@ -316,8 +329,8 @@
             25.0
           ],
           "lidar_mm": [
-            372.5,
-            1902.9
+            496.3,
+            2127.9
           ]
         },
         {
@@ -326,8 +339,8 @@
             455.0
           ],
           "lidar_mm": [
-            400.4,
-            669.4
+            495.6,
+            533.3
           ]
         },
         {
@@ -336,8 +349,8 @@
             455.0
           ],
           "lidar_mm": [
-            -358.7,
-            669.4
+            -505.9,
+            508.1
           ]
         }
       ]
@@ -351,7 +364,8 @@
       "page down",
       "right"
     ],
-    "double_press_to_quit": true
+    "double_press_to_quit": true,
+    "settings_window": true
   },
   "audio": {
     "enabled": true,
@@ -454,19 +468,19 @@
     "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
     "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
     "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-    "rule_size": "امتیاز هر محصول را اندازه‌ی باکس تعیین می‌کند",
+    "rule_size": "هر محصول امتیاز خودش را دارد؛ باکس کوچک‌تر، امتیاز بیشتر",
     "points_unit": "امتیاز",
     "tier_medium": "باکس بزرگ",
     "tier_small": "باکس متوسط",
     "tier_tiny": "باکس کوچک",
     "tiny_rush": "+ طوفان بازار",
-    "attract_tag": "10 PRODUCTS · ONE MARKET",
+    "attract_tag": "9 PRODUCTS · ONE MARKET",
     "demo_title": "چطور بازی کنیم؟",
     "demo_hit": "توپ را به محصول‌ها بزنید",
     "demo_new": "محصول تازه جای آن را می‌گیرد",
     "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
     "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-    "loading_market": "LOADING THE MARKET · 10 PRODUCTS",
+    "loading_market": "LOADING THE MARKET · 9 PRODUCTS",
     "portfolio": "سبد محصولات شما",
     "rush_title": "طوفان بازار",
     "rush_start": "طوفان بازار! امتیاز {m}",
