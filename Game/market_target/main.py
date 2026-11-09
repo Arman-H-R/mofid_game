@@ -106,6 +106,8 @@ def main(argv: list[str] | None = None) -> int:
     # Real pixels on Windows high-DPI displays (no OS bitmap scaling of the wall).
     os.environ.setdefault("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2")
     os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+    # The full-screen game stays on screen while the settings window (F5) has the keyboard.
+    os.environ.setdefault("SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS", "0")
 
     from market_pulse.app import App, Paths, render_gallery
 

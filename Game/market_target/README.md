@@ -481,7 +481,7 @@ There, **Save** (Ctrl+S) writes the file and the page stays open; **Esc** or the
 «خروج بدون ذخیره» ends it. With unsaved changes the first Esc only warns, and a second Esc leaves
 without saving. The next start of the game uses the saved values.
 
-Or press **F5** while the game runs, for the same page on the wall. The game stands still while it is open: the clock stops, throws do not
+Or press **F5** while the game runs, for the same page in **a window of its own** (on a second display when there is one, else in the middle of the game's display; F5 on the game brings it to the front, its close button closes it). The game keeps its own window. `operator.settings_window: false` puts the page over the game instead. The game stands still while it is open: the clock stops, throws do not
 count and keys do not reach the name field. The mouse pointer shows. Seven tabs:
 
 | Tab | What it changes |

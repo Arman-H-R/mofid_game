@@ -391,6 +391,7 @@ class SettingsPage:
         self._leaving = False  # Esc once with unsaved changes (standalone)
         self._edit: int | None = None  # the row whose number is being typed
         self._typed = ""
+        self.game_size: tuple[int, int] | None = None  # the game's picture, when the page has a window of its own
 
     @property
     def buttons(self) -> list[tuple[str, str]]:
@@ -658,7 +659,8 @@ class SettingsPage:
 
     def _screen_notes(self, surf: pygame.Surface, vp: Viewport, y: float) -> None:
         when = "با ذخیره" if self.standalone else "با بستن این صفحه"
-        notes = (f"تصویر بازی الان {vp.win_w} × {vp.win_h} پیکسل است.",
+        gw, gh = self.game_size or (vp.win_w, vp.win_h)
+        notes = (f"تصویر بازی الان {gw} × {gh} پیکسل است.",
                  f"تغییرهای این صفحه {when} اعمال می‌شوند.",
                  "خودکار: به اندازه‌ی صفحه‌نمایش. اگر فقط یکی را بدهید، دیگری از شکل دیوار می‌آید.",
                  "تصویر هیچ‌وقت کشیده نمی‌شود. پر کردن صفحه: بازی به شکل صفحه درمی‌آید و منوها در وسط می‌مانند.",

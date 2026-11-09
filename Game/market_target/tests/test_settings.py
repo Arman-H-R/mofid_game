@@ -165,6 +165,39 @@ def test_f5_opens_the_page_and_the_game_stands_still(tmp_path):
         app.shutdown()
 
 
+def test_f5_opens_the_page_in_a_window_of_its_own(tmp_path, monkeypatch):
+    """operator.settings_window: the page has its own window; the game keeps showing in its own."""
+    monkeypatch.setattr(App, "_want_settings_window", lambda self: True)
+    app, clock = make_app(tmp_path)
+    page = app.settings
+    try:
+        key(app, pygame.K_SPACE)
+        step(app, clock, 1.2)
+        key(app, pygame.K_F5)
+        win = app.settings_win
+        assert page.open and app.clock.paused and win is not None
+        assert page.game_size == app.screen.get_size()
+        drawn = []
+        real_draw = page.draw
+        monkeypatch.setattr(page, "draw", lambda surf, *a: (drawn.append(surf), real_draw(surf, *a)))
+        step(app, clock, 0.1)
+        assert drawn and all(s is not app.screen for s in drawn)  # into its own window, not over the game
+        tab = hit_rect(page, "tab", 1)
+        mouse(app, pygame.MOUSEBUTTONDOWN, tab.center, button=1, window=win)
+        assert page.tab == 1
+        game = pygame.Window.from_display_module()
+        mouse(app, pygame.MOUSEBUTTONDOWN, hit_rect(page, "tab", 0).center, button=1, window=game)
+        assert page.tab == 1  # a click on the game's window is not a click on the page
+        app._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F5, mod=0, window=game), app.clock.now())
+        assert page.open  # F5 on the game only brings the settings window to the front
+        app.running = True
+        app._handle_event(pygame.event.Event(pygame.WINDOWCLOSE, window=win), app.clock.now())
+        assert not page.open and app.settings_win is None and not app.clock.paused and app.running
+        assert app.frame_errors == 0
+    finally:
+        app.shutdown()
+
+
 def test_a_game_paused_before_stays_paused(tmp_path):
     app, clock = make_app(tmp_path)
     try:

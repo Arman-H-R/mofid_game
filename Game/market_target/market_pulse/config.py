@@ -263,6 +263,9 @@ DEFAULTS: dict[str, Any] = {
     "operator": {
         "start_keys": ["space", "return", "enter", "page down", "right"],
         "double_press_to_quit": True,
+        # True: F5 opens the settings page in a window of its own (on another display when there
+        # is one) and the game keeps showing in its window. False: the page covers the game.
+        "settings_window": True,
     },
     "audio": {"enabled": True, "volume": 0.8},
     "results": {

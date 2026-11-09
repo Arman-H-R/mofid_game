@@ -175,6 +175,7 @@ class App:
         self.settings = SettingsPage(cfg, self.text, self.sprites, settings_file, settings_source, self._settings_changed,
                                      self._lidar_settings())
         self._settings_paused = False
+        self.settings_win: pygame.Window | None = None  # the settings page's own window (F5)
         self.running = False
         self.exit_after: float | None = None  # seconds; for unattended smoke tests
         self.frame_errors = 0
@@ -444,6 +445,7 @@ class App:
         self.renderer.prewarm()
         self.draw(now)
         pygame.display.flip()
+        self._draw_settings_window()
 
     def _serve_panel(self, now: float) -> None:
         answers = []
@@ -486,7 +488,7 @@ class App:
             self._update_cursor()
 
     def draw(self, now: float) -> None:
-        if self.settings.open:
+        if self.settings.open and self.settings_win is None:
             self.settings.draw(self.screen, self.renderer.vp_menu, self.renderer.vp.rect)
             return
         msg, until = self._notice
@@ -527,9 +529,19 @@ class App:
 
     # -- operator input ---------------------------------------------------------------------------
     def _handle_event(self, event: pygame.event.Event, now: float) -> None:
-        if event.type == pygame.QUIT:
+        win = getattr(event, "window", None)
+        own = self.settings_win is not None and win is not None and win == self.settings_win
+        if event.type == pygame.WINDOWCLOSE and own:  # the settings window's close button
+            self.close_settings()
+        elif event.type == pygame.QUIT or (event.type == pygame.WINDOWCLOSE and win is not None):
             log.info("quit: the window was closed")
             self.running = False
+        elif (self.settings.open and self.settings_win is not None and not own and win is not None
+              and event.type in SETTINGS_EVENTS and event.type != pygame.KEYDOWN):
+            pass  # the mouse over the game while the page has its own window
+        elif (self.settings.open and self.settings_win is not None and not own and win is not None
+              and event.type == pygame.KEYDOWN and event.key == pygame.K_F5):
+            self._focus(self.settings_win)  # F5 on the game: the open settings window comes to the front
         elif self.settings.open and event.type in SETTINGS_EVENTS:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_F12:
                 self.save_screenshot()
@@ -700,10 +712,59 @@ class App:
         self.settings.show()
         self._settings_paused = not self.clock.paused
         self.clock.pause()
+        self.settings_win = self._open_settings_window()
         self._update_cursor()
+
+    def _want_settings_window(self) -> bool:
+        """operator.settings_window, with a real display (not the headless gallery or tests)."""
+        return bool(self.cfg.operator.get("settings_window", True)) and os.environ.get("SDL_VIDEODRIVER") != "dummy"
+
+    def _open_settings_window(self) -> pygame.Window | None:
+        """The settings page's own window: on another display when there is one (the operator's),
+        else in the middle of the game's display. None: the page covers the game, as before."""
+        if not self._want_settings_window():
+            return None
+        try:
+            sizes = pygame.display.get_desktop_sizes() or [(1080, 1440)]
+            game = min(max(0, int(self.cfg.display.display_index)), len(sizes) - 1)
+            idx = next((i for i in range(len(sizes)) if i != game), game)
+            dw, dh = sizes[idx]
+            h = int(min(dh * 0.85, dw * 0.85 / self.settings.W * self.settings.H))
+            w = int(round(h * self.settings.W / self.settings.H))
+            pos = 0x2FFF0000 | idx  # SDL_WINDOWPOS_CENTERED_DISPLAY(idx)
+            win = pygame.Window("Market Pulse - settings (F5)", (max(360, w), max(480, h)), position=(pos, pos),
+                                resizable=True)
+            self.settings.game_size = self.screen.get_size()
+            log.info("settings page: a window of its own on display %d", idx)
+            self._focus(win)
+            return win
+        except (pygame.error, ValueError, TypeError) as exc:
+            log.warning("settings window failed (%s); the page covers the game", exc)
+            return None
+
+    @staticmethod
+    def _focus(win) -> None:
+        try:
+            win.focus()
+        except pygame.error:
+            pass
+
+    def _draw_settings_window(self) -> None:
+        win = self.settings_win
+        if win is None or not self.settings.open:
+            return
+        surf = win.get_surface()
+        vp = Viewport(*surf.get_size(), self.settings.W, self.settings.H)
+        self.settings.draw(surf, vp)
+        win.flip()
 
     def close_settings(self, saved: bool = False) -> None:
         self.settings.hide()
+        if self.settings_win is not None:
+            self.settings_win.destroy()
+            self.settings_win = None
+            self.settings.game_size = None
+            self._focus_game()
         if self._settings_paused:
             self.clock.resume()
             self._settings_paused = False
@@ -745,6 +806,17 @@ class App:
             log.info("settings page closed without saving %d change(s)", len(unsaved))
         self.shutdown()
         return 0
+
+    def _focus_game(self) -> None:
+        """The keyboard back to the game's window once the settings window is gone."""
+        import warnings
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                game = pygame.Window.from_display_module()
+        except pygame.error:
+            return
+        self._focus(game)
 
     def _settings_changed(self) -> None:
         """A value changed on the settings page: update the parts that keep a copy of it."""
