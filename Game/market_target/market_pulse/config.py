@@ -263,7 +263,8 @@ DEFAULTS: dict[str, Any] = {
         "time_warning_s": 10,
     },
     "input": {
-        # Any of: "udp_json", "tuio", "lidar". Simulation (mouse) is added with --simulate.
+        # Any of: "udp_json", "tuio", "lidar", "camera". Simulation (mouse) is added with --simulate.
+        # "lidar" and "camera" together: both find the hits and input.fusion makes one hit of each throw.
         "sources": ["udp_json"],
         "simulation": False,
         "latency_ms": 0,
@@ -296,6 +297,61 @@ DEFAULTS: dict[str, Any] = {
             "round_only": True,  # hits count only while a round is played; the start comes from the phone page
             # Written by F2 then C: [{"wall_cm": [x, y], "lidar_mm": [x, y]}, ...]
             "calibration_points": [],
+        },
+        # The IP camera facing the wall finds the ball hits (market_pulse/input/wallcam). camtool.py
+        # tests it step by step (view, calibrate, touch, hits); F2 then K in the game calibrates it with markers.
+        "camera": {
+            "source": "ws",  # ws: the camera's own web stream (lowest delay); rtsp: any camera, at "url"
+            "host": "192.168.70.66",
+            # main 1920x1080 at a steady 30 fps (the Witness camera's sub stream, 640x360, drops to ~25 fps
+            # with gaps); process_width makes every frame that wide as it arrives, so it costs no more
+            "stream": "main",
+            "process_width": 640,  # 0: the frames as the camera sends them
+            "url": "",
+            "delay_ms": 60,  # camera -> PC for its fastest frames; taken off every frame's time
+            "calibration_file": "config/camera_calibration.json",  # written by F2 then K, or camtool.py calibrate
+            "mode": "ball",  # ball: thrown balls hit; touch: a hand held still on the wall (for testing)
+            "ball_cm": 8,  # ball diameter
+            "ball_tone": "any",  # any | light | dark: the ball against the wall (light: dark sleeves never count)
+            "threshold": 18,  # grey-level change that counts as new (higher: less noise, misses dark balls)
+            "min_speed": 120,  # cm/s: slower things are not throws
+            "turn_deg": 50,  # a bend this sharp in the ball's path is the hit
+            "bend_deg": 32,  # ...or this much between the straight lines before and after (a ball thrown high)
+            # a softer turn or bend (under strong_deg) waits up to wait_frames frames for a sharper one
+            "strong_deg": 70,
+            "wait_frames": 2,
+            # the ball's width at the hit, x a ball's width on the wall there (a dark ball is measured small)
+            "size_min": 0.4,
+            "size_max": 1.6,
+            "depth_rise": 0.12,
+            "margin_cm": 25,  # hits this far outside the wall still count (at the edge)
+            "floor_margin_cm": 0,  # ...but below the picture's bottom edge only this far (the floor)
+            "color": False,  # what is new: colour and brightness (on), or brightness alone (off)
+            "end_is_hit": False,  # a fast ball that vanishes on the wall counts at its last place
+            "round_only": True,  # hits count only while a round is played; the start comes from the phone page
+            "markers": [5, 4],  # columns, rows of the F2 calibration markers
+            # The real size of the game's picture on the wall, measured with a tape (cm), when it is not
+            # the wall's size above (a projector). 0: the same as the wall.
+            "screen_width_cm": 0,
+            "screen_height_cm": 0,
+            "ignore_screen": True,  # with markers the camera sees the game: what the game draws is no ball
+        },
+        # Camera + LiDAR together (market_pulse/input/fusion.py): each sensor reports every ball it
+        # sees; one hit per throw. A LiDAR hit counts at once with its coordinates; a camera hit waits
+        # up to window_ms for a matching LiDAR hit (then the LiDAR's coordinates) and otherwise counts
+        # with its own. A sensor that is missing, disconnected or not ready is never waited for.
+        "fusion": {
+            "enabled": True,  # False: every sensor's hits count on their own (no matching)
+            "window_ms": 150,  # how long a camera hit waits for the LiDAR before it counts with its own point
+            # the two sensors' contact times of one throw are at most this far apart (the LiDAR stamps a
+            # hit 0.07-0.2 s after the camera: keep this above that, whatever the wait above)
+            "match_time_ms": 300,
+            "match_radius_cm": 60,  # the two sensors' points of one throw are at most this far apart
+            "keep_ms": 1000,  # after a hit, a late detection of the same throw is absorbed this long
+            # camera hits nobody else saw: always count | lidar_offline: only when the LiDAR is not
+            # working (a camera that sees false balls) | never
+            "camera_alone": "always",
+            "offline_after_ms": 1000,  # a sensor with no data for this long is not waited for
         },
     },
     "operator": {
@@ -687,8 +743,32 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
     cfg["combo"]["levels"] = sorted(levels, key=lambda lv: lv["after_hits"])
 
     for name in cfg["input"]["sources"]:
-        if name not in ("udp_json", "tuio", "lidar"):
-            warnings.append(f"unknown input source {name!r} (known: udp_json, tuio, lidar)")
+        if name not in ("udp_json", "tuio", "lidar", "camera"):
+            warnings.append(f"unknown input source {name!r} (known: udp_json, tuio, lidar, camera)")
+    cc = cfg["input"]["camera"]
+    for key, allowed in (("source", ("ws", "rtsp")), ("mode", ("ball", "touch")), ("ball_tone", ("any", "light", "dark")),
+                         ("stream", ("sub", "main"))):
+        if cc[key] not in allowed:
+            warnings.append(f"'input.camera.{key}' must be {' or '.join(allowed)}; using {allowed[0]}")
+            cc[key] = allowed[0]
+    if not (cc["process_width"] == 0 or 160 <= cc["process_width"] <= 3840):
+        warnings.append("'input.camera.process_width' must be 0 or 160..3840; using 640")
+        cc["process_width"] = 640
+    m = cc["markers"]
+    if not (len(m) == 2 and all(isinstance(v, int) and not isinstance(v, bool) and 2 <= v <= 10 for v in m)):
+        warnings.append("'input.camera.markers' must be [columns, rows], 2..10 each; using [5, 4]")
+        cc["markers"] = [5, 4]
+    fu = cfg["input"]["fusion"]
+    for key, (lo, hi) in (("window_ms", (0, 3000)), ("match_time_ms", (0, 3000)), ("match_radius_cm", (1, 500)),
+                          ("keep_ms", (0, 10000)),
+                          ("offline_after_ms", (100, 60000))):
+        if not lo <= fu[key] <= hi:
+            clamped = min(max(fu[key], lo), hi)
+            warnings.append(f"'input.fusion.{key}'={fu[key]} is outside {lo}..{hi}; using {clamped}")
+            fu[key] = clamped
+    if fu["camera_alone"] not in ("always", "lidar_offline", "never"):
+        warnings.append("'input.fusion.camera_alone' must be always, lidar_offline or never; using always")
+        fu["camera_alone"] = "always"
     if cfg["input"]["udp_json"]["units"] not in ("normalized", "cm", "m"):
         warnings.append("'input.udp_json.units' must be normalized, cm or m; using normalized")
         cfg["input"]["udp_json"]["units"] = "normalized"

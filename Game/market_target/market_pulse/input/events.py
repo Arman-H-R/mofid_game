@@ -15,6 +15,7 @@ class Impact:
     t: float  # time.perf_counter() when it was received
     source: str
     raw: tuple[float, float] = (0.0, 0.0)
+    trusted: bool = True  # False: rough coordinates (a LiDAR that is not calibrated yet); see input/fusion.py
 
 
 @dataclass(frozen=True)

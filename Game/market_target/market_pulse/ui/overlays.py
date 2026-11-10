@@ -36,6 +36,15 @@ def draw_debug(surf: pygame.Surface, vp: Viewport, text: Text, info: dict) -> No
     lines.append(
         f"impacts accepted {info['accepted']}  merged {flt.merged}  rebounds {flt.rebounds}  out-of-range {info['out_of_range']}"
     )
+    fusion = info.get("fusion")
+    if fusion is not None:
+        st = fusion.stats.as_dict()
+        lines.append(
+            f"fusion {'on' if fusion.enabled else 'off'} {fusion.window_s * 1000:.0f} ms: both {st['fused']}  "
+            f"lidar {st['lidar_only']}  camera {st['camera_only']}  duplicates {st['duplicates']} (late {st['late']})  "
+            f"repeats {st['repeats']}  refused {st['refused']}  rejected {st['rejected']}  waiting {fusion.pending}  "
+            f"wait avg {st['wait_avg_ms']} max {st['wait_max_ms']} ms"
+        )
     if info.get("webhook"):
         wh = info["webhook"]
         lines.append(f"webhook sent {wh.sent}  failed {wh.failed}  {wh.last_error[:60]}")
@@ -60,14 +69,20 @@ def draw_debug(surf: pygame.Surface, vp: Viewport, text: Text, info: dict) -> No
     surf.blit(box, (vp.rect.x + vp.s(2), vp.rect.y + vp.s(2)))
 
 
-def draw_calibration(surf: pygame.Surface, vp: Viewport, text: Text, cfg, recent, capture=None, lidar=None) -> None:
+def draw_calibration(surf: pygame.Surface, vp: Viewport, text: Text, cfg, recent, capture=None, lidar=None,
+                     board=None, camera=None, fusion=None) -> None:
     """A centimetre grid over the whole wall plus the last sensor impacts.
 
     Throw at the corner crosses and adjust input.calibration until the green
     dots land on them. Impacts are not counted while this overlay is open.
     capture: the lidar's calibration points being taken (C), one cross after the other.
+    board: the camera's calibration markers (K), drawn over the whole wall until the camera has found
+    them. camera: the wall camera, for its state and a small picture. fusion: its counts.
     """
     W, H = cfg.wall.width_cm, cfg.wall.height_cm
+    if board is not None:
+        _draw_board(surf, vp, text, board, camera, W, H)
+        return
     shade = pygame.Surface(vp.rect.size, pygame.SRCALPHA)
     shade.fill((*theme.WHITE, 150))
     surf.blit(shade, vp.rect.topleft)
@@ -97,7 +112,12 @@ def draw_calibration(surf: pygame.Surface, vp: Viewport, text: Text, cfg, recent
         col = theme.lerp_color(theme.TURQUOISE if ok else theme.RED, theme.WHITE, 1 - fade)
         c = vp.px(x, y)
         pygame.draw.aacircle(surf, col, c, vp.s(3), 0 if ok else max(1, vp.s(0.5)))
-        raw = f"lidar({rx:.0f},{ry:.0f})mm" if source == "lidar" else f"{source} raw({rx:.3f},{ry:.3f})"
+        if source == "lidar":
+            raw = f"lidar({rx:.0f},{ry:.0f})mm"
+        elif source == "camera":
+            raw = f"camera px({rx:.0f},{ry:.0f})"
+        else:
+            raw = f"{source} raw({rx:.3f},{ry:.3f})"
         text.blit(surf, f"{raw} wall({x:.0f},{y:.0f})cm", "latin", vp.s(2.4),
                   theme.DARK_BLUE, (c[0] + vp.s(4), c[1]), "midleft", localize=False)
     text.blit(surf, "CALIBRATION (F2) - impacts are not counted", "latin", vp.s(4), theme.PURPLE,
@@ -108,8 +128,59 @@ def draw_calibration(surf: pygame.Surface, vp: Viewport, text: Text, cfg, recent
         if capture is None:
             line += "   C: calibrate the LiDAR   F6: scan the background again"
         text.blit(surf, line, "latin", vp.s(3), theme.DARK_BLUE, vp.px(W / 2, H / 2 + 24), localize=False)
+    if camera is not None:
+        st = camera.status()
+        line = f"Camera {st['state']} {st['fps']:.0f} fps  {st['detail'] or st['error']}".rstrip()
+        if capture is None:
+            line += "   K: calibrate the camera with markers   F7: learn the empty wall again"
+        text.blit(surf, line, "latin", vp.s(3), theme.DARK_BLUE, vp.px(W / 2, H / 2 + 31), localize=False)
+        _draw_preview(surf, vp, text, camera, W, H)
+    if fusion is not None and lidar is not None and camera is not None:
+        st = fusion.stats.as_dict()
+        line = (f"Fusion: both {st['fused']}  LiDAR alone {st['lidar_only']}  camera alone {st['camera_only']}  "
+                f"duplicates {st['duplicates']}  (dots: every sensor's own detections)")
+        text.blit(surf, line, "latin", vp.s(3), theme.DARK_BLUE, vp.px(W / 2, H / 2 + 38), localize=False)
     if capture is not None:
         _draw_capture(surf, vp, text, capture, W, H, now)
+
+
+def _draw_preview(surf: pygame.Surface, vp: Viewport, text: Text, camera, W: float, H: float) -> None:
+    """What the camera sees (the wall's outline in green, the last hits in red), in a corner."""
+    rgb = camera.preview
+    if rgb is None:
+        return
+    h, w = rgb.shape[:2]
+    img = pygame.image.frombuffer(rgb.tobytes(), (w, h), "RGB")
+    tw = min(vp.rect.w // 3, vp.s(W * 0.4))
+    th = max(1, int(round(h * tw / w)))
+    img = pygame.transform.smoothscale(img, (tw, th))
+    pos = (vp.rect.right - tw - vp.s(3), vp.rect.bottom - th - vp.s(3))
+    pygame.draw.rect(surf, theme.DARK_BLUE, pygame.Rect(pos[0] - 2, pos[1] - 2, tw + 4, th + 4))
+    surf.blit(img, pos)
+    text.blit(surf, "camera", "latin", vp.s(2.6), theme.DARK_BLUE, (pos[0], pos[1] - vp.s(1)), "bottomleft",
+              localize=False)
+
+
+_BOARD: dict = {}  # (size, wall, grid) -> the markers as a surface (made once)
+
+
+def _draw_board(surf: pygame.Surface, vp: Viewport, text: Text, board, camera, W: float, H: float) -> None:
+    """The camera's calibration markers over the whole wall, black on white, at their places in wall cm."""
+    from ..input.wallcam import markers  # OpenCV: only when the camera is calibrated
+    key = (vp.rect.size, W, H, tuple(board))
+    img = _BOARD.get(key)
+    if img is None:
+        _BOARD.clear()
+        gray = markers.render(W, H, board, vp.rect.w, vp.rect.h)
+        rgb = gray[:, :, None].repeat(3, axis=2)
+        img = pygame.image.frombuffer(rgb.tobytes(), (vp.rect.w, vp.rect.h), "RGB").copy()
+        _BOARD[key] = img
+    surf.blit(img, vp.rect.topleft)
+    rows = len({p.cy for p in board})
+    y = H / max(rows, 1)  # between the first two rows of markers: never over one
+    seen = camera.markers_seen if camera is not None else 0
+    text.blit(surf, f"Camera calibration: the camera sees {seen} of {len(board)} markers   K / Esc: cancel",
+              "latin", vp.s(3.2), theme.PURPLE, vp.px(W / 2, y), localize=False)
 
 
 def _draw_capture(surf: pygame.Surface, vp: Viewport, text: Text, capture, W: float, H: float, now: float) -> None:

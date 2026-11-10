@@ -195,4 +195,5 @@ class LidarSource(Source):
             self.events += 1
             log.info("lidar hit %d at (%.0f, %.0f) mm -> wall (%.0f, %.0f) cm%s", self.events, touch.x, touch.y, wx, wy,
                      "" if self.tuning.calibrated else " (not calibrated)")
-            self.out.put(Impact(wx / self.wall_w, wy / self.wall_h, t, self.name, (float(touch.x), float(touch.y))))
+            self.out.put(Impact(wx / self.wall_w, wy / self.wall_h, t, self.name, (float(touch.x), float(touch.y)),
+                                trusted=bool(self.tuning.calibrated)))

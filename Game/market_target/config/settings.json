@@ -36,7 +36,7 @@
     "balls": 10,
     "duration_s": 60,
     "end_delay_s": 1.8,
-    "ball_limit": true
+    "ball_limit": false
   },
   "targets": {
     "active": 6,
@@ -277,7 +277,7 @@
   "input": {
     "sources": [
       "udp_json",
-      "lidar"
+      "camera"
     ],
     "simulation": false,
     "latency_ms": 0,
@@ -319,8 +319,8 @@
             25.0
           ],
           "lidar_mm": [
-            -467.9,
-            2136.9
+            -541.1,
+            2155.1
           ]
         },
         {
@@ -329,8 +329,8 @@
             25.0
           ],
           "lidar_mm": [
-            496.3,
-            2127.9
+            561.6,
+            2209.8
           ]
         },
         {
@@ -339,8 +339,8 @@
             455.0
           ],
           "lidar_mm": [
-            495.6,
-            533.3
+            596.0,
+            426.6
           ]
         },
         {
@@ -349,11 +349,33 @@
             455.0
           ],
           "lidar_mm": [
-            -505.9,
-            508.1
+            -542.7,
+            418.0
           ]
         }
       ]
+    },
+    "camera": {
+      "source": "ws",
+      "host": "192.168.70.66",
+      "stream": "main",
+      "process_width": 640,
+      "delay_ms": 60,
+      "calibration_file": "config/camera_calibration.json",
+      "ball_cm": 20,
+      "round_only": true,
+      "ball_tone": "light",
+      "screen_width_cm": 165,
+      "screen_height_cm": 205
+    },
+    "fusion": {
+      "enabled": true,
+      "window_ms": 150,
+      "match_time_ms": 300,
+      "match_radius_cm": 60,
+      "keep_ms": 1000,
+      "camera_alone": "always",
+      "offline_after_ms": 1000
     }
   },
   "operator": {

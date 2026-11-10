@@ -38,7 +38,8 @@ log = logging.getLogger(__name__)
 Key = tuple  # where a value is: ("targets", "tiny", "points"), ("combo", "levels", 0, "multiplier")
 
 UNITS = {"cm": "سانتی‌متر", "s": "ثانیه", "pts": "امتیاز", "hits": "برخورد", "%": "درصد", "px": "پیکسل",
-         "mm": "میلی‌متر", "deg": "درجه", "pct": "درصد", "Hz": "هرتز", "scans": "اسکن", "boxes": "باکس", "": ""}
+         "mm": "میلی‌متر", "deg": "درجه", "pct": "درصد", "Hz": "هرتز", "scans": "اسکن", "boxes": "باکس",
+         "cms": "سانتی‌متر بر ثانیه", "ms": "میلی‌ثانیه", "": ""}
 TIER_NAMES = (("medium", "بزرگ"), ("small", "متوسط"), ("tiny", "کوچک"))  # as the design names the three sizes
 LIDAR_UNITS = {"mm": "mm", "°": "deg", "s": "s", "%": "pct", "Hz": "Hz", "scans": "scans", "": ""}
 LIDAR_CHOICES = {"circle": "دایره", "square": "مربع", "rectangle": "مستطیل", "touch": "لمس", "ball": "توپ"}
@@ -141,8 +142,46 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item(("display", "scale"), "مقیاس تصویر", 0.3, 1, 0.01, "%"),
         Item(("layout", "start_button", "size_cm"), "اندازه‌ی مربع شروع", 40, 140, 2, "cm"),
     ]
+    cam = ("input", "camera")
+    camera = [
+        Item((*cam, "mode"), "حالت", options=(("ball", "پرتاب توپ"), ("touch", "لمس با دست (آزمایش)"))),
+        # the projected picture's real size, measured with a tape: the ball's size and the area are real cm
+        Item((*cam, "screen_width_cm"), "عرض تصویر بازی روی دیوار (بنویسید)", 0, 2000, 1, "cm",
+             zero="همان دیوار", entry=True),
+        Item((*cam, "screen_height_cm"), "ارتفاع تصویر بازی روی دیوار (بنویسید)", 0, 2000, 1, "cm",
+             zero="به نسبت عرض", entry=True),
+        Item((*cam, "ball_cm"), "قطر توپ", 4, 40, 1, "cm"),
+        Item((*cam, "ball_tone"), "رنگ توپ در برابر دیوار",
+             options=(("any", "هر رنگ"), ("light", "روشن‌تر از دیوار"), ("dark", "تیره‌تر از دیوار"))),
+        Item((*cam, "color"), "دیدن توپ با رنگ و روشنایی", switch=True),
+        Item((*cam, "round_only"), "برخورد توپ فقط در دور بازی", switch=True),
+    ]
+    sensing = [
+        Item((*cam, "threshold"), "کمترین تغییر روشنایی", 6, 60, 1),
+        Item((*cam, "min_speed"), "کمترین سرعت پرتاب", 30, 600, 10, "cms"),
+        Item((*cam, "turn_deg"), "زاویه‌ی برگشت توپ از دیوار", 20, 120, 5, "deg"),
+        Item((*cam, "margin_cm"), "حاشیه‌ی بیرون دیوار", 0, 100, 5, "cm"),
+        Item((*cam, "delay_ms"), "تأخیر تصویر دوربین", 0, 300, 10, "ms"),
+    ]
+    fu = ("input", "fusion")
+    fusion = [
+        Item((*fu, "enabled"), "ترکیب دوربین و LiDAR (یک برخورد برای هر پرتاب)", switch=True),
+        Item((*fu, "window_ms"), "تأخیر: انتظار برخورد دوربین برای LiDAR", 0, 1000, 10, "ms", zero="بدون انتظار",
+             needs=(*fu, "enabled")),
+        Item((*fu, "match_time_ms"), "بیشترین اختلاف زمان دو سنسور برای یک پرتاب", 50, 1000, 10, "ms",
+             needs=(*fu, "enabled")),
+        Item((*fu, "match_radius_cm"), "بیشترین فاصله‌ی دو سنسور برای یک پرتاب", 10, 200, 5, "cm",
+             needs=(*fu, "enabled")),
+        Item((*fu, "keep_ms"), "نادیده گرفتن تشخیص دیرِ همان پرتاب تا", 0, 3000, 100, "ms", needs=(*fu, "enabled")),
+        Item((*fu, "camera_alone"), "برخوردی که فقط دوربین دیده",
+             options=(("always", "همیشه حساب شود"), ("lidar_offline", "فقط وقتی LiDAR کار نمی‌کند"),
+                      ("never", "حساب نشود")), needs=(*fu, "enabled")),
+        Item((*fu, "offline_after_ms"), "سنسور بی‌داده قطع حساب شود بعد از", 200, 5000, 100, "ms",
+             needs=(*fu, "enabled")),
+    ]
     return [("باکس‌ها", boxes, "boxes"), ("امتیاز محصولات", points, ""), ("ضریب‌ها", combo, "best"), ("طوفان بازار", rush, ""),
-            ("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen")]
+            ("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen"),
+            ("دوربین", camera, "camera"), ("حساسیت", sensing, ""), ("ترکیب", fusion, "fusion")]
 
 
 def lidar_item(name: str, label: str, zero: str = "") -> Item:
@@ -213,6 +252,22 @@ HINTS: dict[Key, tuple[str, str]] = {
     ("display", "resolution", 0): ("0: خودکار، به اندازه‌ی صفحه", "پیکسل بیشتر: تیزتر، کار بیشتر برای کامپیوتر"),
     ("display", "resolution", 1): ("0: خودکار، به اندازه‌ی صفحه", "پیکسل بیشتر: تیزتر، کار بیشتر برای کامپیوتر"),
     ("display", "scale"): ("تصویر کوچک‌تر، با حاشیه‌ی تیره دورش", "100: تصویر همه‌ی صفحه را می‌گیرد"),
+    ("input", "camera", "ball_cm"): ("توپ کوچک‌تر", "توپ بزرگ‌تر"),
+    ("input", "camera", "threshold"): ("حساس‌تر: توپ کم‌رنگ هم دیده می‌شود، نویز بیشتر", "نویز کمتر، توپ کم‌رنگ دیده نمی‌شود"),
+    ("input", "camera", "min_speed"): ("پرتاب‌های آرام هم برخوردند", "فقط پرتاب تند؛ حرکت دست و بدن برخورد نیست"),
+    ("input", "camera", "turn_deg"): ("برگشت کم هم برخورد است", "فقط برگشت تند برخورد است"),
+    ("input", "camera", "margin_cm"): ("0: فقط روی خود دیوار", "برخورد کمی بیرون دیوار هم (در لبه) حساب می‌شود"),
+    ("input", "camera", "delay_ms"): ("0: زمان رسیدن تصویر", "برای دوربینی که تصویرش دیرتر می‌رسد"),
+    ("input", "camera", "screen_width_cm"): ("0: اندازه‌ی دیوار در تنظیمات واقعی است", "تصویر روی دیوار را با متر اندازه بگیرید"),
+    ("input", "camera", "screen_height_cm"): ("0: به نسبت عرض", "تصویر روی دیوار را با متر اندازه بگیرید"),
+    ("input", "fusion", "window_ms"): ("برخورد دوربین زودتر ثبت می‌شود؛ LiDAR دیر از دست می‌رود",
+                                       "LiDAR دیرتر هم پیدا می‌شود؛ برخوردِ فقط دوربین دیرتر ثبت می‌شود"),
+    ("input", "fusion", "match_time_ms"): ("کمتر: دو پرتاب پشت‌سرهم هرگز یکی نمی‌شوند؛ ممکن است یک پرتاب دو بار حساب شود",
+                                           "بیشتر: هر دو سنسور یک پرتاب را یکی می‌کنند؛ دو پرتاب خیلی سریع ممکن است یکی شوند"),
+    ("input", "fusion", "match_radius_cm"): ("دو پرتاب نزدیک هرگز یکی نمی‌شوند؛ کالیبراسیون باید دقیق باشد",
+                                             "خطای کالیبراسیون تحمل می‌شود؛ دو پرتاب نزدیک ممکن است یکی شوند"),
+    ("input", "fusion", "keep_ms"): ("تشخیص دیر ممکن است برخورد دوم شود", "برخورد تازه در همان جا دیرتر ممکن است"),
+    ("input", "fusion", "offline_after_ms"): ("سنسور زود قطع حساب می‌شود", "انتظار بیشتر برای سنسوری که داده نمی‌دهد"),
     ("lidar", "area_x"): ("ناحیه به چپ می‌رود", "ناحیه به راست می‌رود"),
     ("lidar", "area_y"): ("ناحیه پایین می‌رود", "ناحیه بالا می‌رود"),
     ("lidar", "radius"): ("کوچک‌تر: برخوردهای دور دیده نمی‌شوند", "بزرگ‌تر: بیرون دیوار هم دیده می‌شود"),
@@ -395,6 +450,10 @@ class SettingsPage:
         self._edit: int | None = None  # the row whose number is being typed
         self._typed = ""
         self.game_size: tuple[int, int] | None = None  # the game's picture, when the page has a window of its own
+        # the operator's phone page (type the name, start the round): its address, and how it is
+        # ("on": running, "later": runs with the game, "off": web.enabled is off, "failed": port taken)
+        self.phone = ("", "off")
+        self.help_text: str | None = None  # the keys line in the title band, when not the usual one
 
     @property
     def buttons(self) -> list[tuple[str, str]]:
@@ -637,7 +696,9 @@ class SettingsPage:
         band = vp.cm_rect(0, 0, W, 33)
         surf.fill(theme.DARK_BLUE, pygame.Rect(wall.x, wall.y, wall.w, band.bottom - wall.y))
         self.text.blit(surf, "تنظیمات بازی", "title", vp.s(11), theme.WHITE, vp.px(W / 2, 14))
-        self.text.blit(surf, HELP_ALONE if self.standalone else HELP, "latin", vp.s(2.7), theme.BLUE_PALE, vp.px(W / 2, 27.5), localize=False)
+        help_line = self.help_text or (HELP_ALONE if self.standalone else HELP)
+        self.text.blit(surf, help_line, "latin", vp.s(2.7), theme.BLUE_PALE, vp.px(W / 2, 27.5), localize=False)
+        self._phone(surf, vp)
         changed = set(self.changed())
         self._tabs(surf, vp, changed)
         title, _, extra = self.pages[self.tab]
@@ -658,7 +719,33 @@ class SettingsPage:
             self._screen_notes(surf, vp, y + 6)
         if extra == "lidar":
             self._lidar_notes(surf, vp, y + 4)
+        if extra == "camera":
+            self._notes(surf, vp, y + 4, (
+                "در بازی همان لحظه اعمال می‌شوند. عرض و ارتفاع: روی جعبه بزنید، عدد را بنویسید و Enter.",
+                "کالیبره کردن دوربین: F2 و بعد K (صفحه نشانه‌ها را نشان می‌دهد و دوربین آن‌ها را پیدا می‌کند).",
+                "دیوار واقعی بدون صفحه‌نمایش: camtool.py calibrate     F7: دوربین دیوار خالی را دوباره یاد می‌گیرد.",
+                "نشانی و جریان دوربین در config/settings.json است و بعد از اجرای دوباره اعمال می‌شود."))
+        if extra == "fusion":
+            self._notes(surf, vp, y + 4, (
+                "هر دو سنسور هر توپ را جدا پیدا می‌کنند؛ از هر پرتاب فقط یک برخورد ثبت می‌شود.",
+                "برخورد LiDAR همان لحظه با مختصات LiDAR ثبت می‌شود.",
+                "برخورد دوربین تا پایان پنجره منتظر LiDAR می‌ماند؛ اگر LiDAR آمد، مختصات LiDAR، وگرنه مختصات دوربین.",
+                "سنسوری که وصل نیست یا آماده نیست هیچ‌وقت منتظر نمی‌ماند. F3: شمارش‌ها."))
         self._buttons(surf, vp, len(changed))
+
+    def _phone(self, surf: pygame.Surface, vp: Viewport) -> None:
+        """Top left of the title band: the phone page's address (name, start the round)."""
+        url, state = self.phone
+        label = {"on": "صفحه‌ی گوشی: نام و شروع بازی", "later": "صفحه‌ی گوشی (وقتی بازی باز است)",
+                 "failed": "صفحه‌ی گوشی روشن نشد (درگاه گرفته است)", "off": "صفحه‌ی گوشی خاموش است"}[state]
+        color = theme.PURPLE if state == "failed" else theme.BLUE_PALE
+        self.text.blit(surf, label, "body", vp.s(3.6), color, vp.px(10, 4), "topleft")
+        if url:
+            self.text.blit(surf, url, "latin", vp.s(5.6), theme.WHITE, vp.px(10, 10.5), "topleft", localize=False)
+
+    def _notes(self, surf: pygame.Surface, vp: Viewport, y: float, notes) -> None:
+        for i, note in enumerate(notes):
+            self.text.blit(surf, note, "body", vp.s(3.4), theme.TEXT_GREY, vp.px(self.W - 14, y + i * 7), "topright")
 
     def _screen_notes(self, surf: pygame.Surface, vp: Viewport, y: float) -> None:
         when = "با ذخیره" if self.standalone else "با بستن این صفحه"

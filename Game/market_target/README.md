@@ -11,6 +11,45 @@ python main.py                           # installation mode: fullscreen, sensor
 
 ---
 
+## Camera + LiDAR fusion (this folder)
+
+This copy of the game finds the ball hits with **both** sensors: the STL27L LiDAR (`input/lidar`,
+section 4.2a) and the IP camera facing the wall (`input/wallcam`, taken from the "dart with cam"
+project, with `camtool.py` and `balltool.py`). `input.sources` is `["udp_json", "lidar", "camera"]`.
+The two detectors are unchanged and independent; `market_pulse/input/fusion.py` (FusionManager)
+makes one hit of each throw. It sits in `InputManager.poll`, after the calibration to wall cm and
+before the merge / rebound filter.
+
+| Case | What is registered | When |
+|---|---|---|
+| LiDAR sees it (calibrated) | LiDAR coordinates; a camera report of the same throw is absorbed | at once |
+| Camera first, LiDAR within the window | LiDAR coordinates, one hit | the moment the LiDAR's report arrives |
+| Camera alone | camera coordinates | when the window runs out (500 ms after the camera's report) |
+| The LiDAR is unplugged, silent, or learning its background | camera coordinates | at once (nothing to wait for) |
+| A late LiDAR report of a throw already registered from the camera | nothing (absorbed, counted "late") | |
+| LiDAR not calibrated yet | waits for the camera and takes its coordinates; else its own rough point | |
+
+- **Matching:** a camera and a LiDAR detection are one throw when their contact times are within
+  `window_ms` and their wall points within `match_radius_cm`; each throw takes one detection of each
+  sensor, the closest one, so two quick throws never cross or merge. The same sensor seeing one ball
+  twice (within `input.merge_window_ms` / `merge_radius_cm`) is one detection.
+- **Time:** the hit keeps the contact time of the sensor whose coordinates it uses, so the hit test
+  against the moving boxes is exact even after waiting. Both sensors stamp `time.perf_counter()`.
+- **Settings** (`input.fusion`, settings page tab «ترکیب»): `enabled`, `window_ms` (500),
+  `match_radius_cm` (60), `keep_ms` (1000: how long a registered throw absorbs late reports),
+  `camera_alone` (`always` | `lidar_offline`: a camera that sees false balls only counts while the
+  LiDAR is down | `never`), `offline_after_ms` (1000: a sensor without data for this long is not
+  waited for). The camera's own settings are on the tabs «دوربین» and «حساسیت».
+- **Keys:** F2 shows both sensors' raw detections (dots), their state, the camera picture and the
+  fusion counts. **F2 then C**: calibrate the LiDAR (crosses). **F2 then K**: calibrate the camera
+  (markers on the wall). **F6**: the LiDAR learns the empty wall again; **F7**: the camera does. F3
+  shows the fusion counts (both / LiDAR / camera / duplicates / wait).
+- **Log:** every registered throw logs `fusion: hit at (x, y) cm from lidar (matched; seen by camera+lidar)`
+  and the game's `throw N: ... [camera+lidar]`.
+- **Tests:** `tests/test_fusion.py`.
+- **Not verified yet:** real throws with both sensors live. Check `match_radius_cm` against how far
+  apart the two sensors' points are on the wall (the F2 dots), and the camera's delay against the window.
+
 ## 0. Redesign: MOFID_UI v4.1 (2026-11-06)
 
 The game now follows *MOFID_UI_v4.1_1.pdf*. **Where this file below still talks about green,

@@ -29,7 +29,7 @@ from .ui.screens import Renderer
 from .ui.settings import SettingsPage, write_changes
 from .ui.text import FontBook, Text
 from .ui.theme import Viewport
-from .web import Panel
+from .web import Panel, phone_address
 
 log = logging.getLogger(__name__)
 SETTINGS_EVENTS = (pygame.KEYDOWN, pygame.TEXTINPUT, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION,
@@ -172,6 +172,7 @@ class App:
         self.debug = bool(cfg.debug.overlay)
         self.calibration = False
         self.capture: Capture | None = None  # the lidar's calibration points being taken (F2, C)
+        self.marker_board: list | None = None  # the camera's calibration markers on the wall (F2, K)
         self.settings = SettingsPage(cfg, self.text, self.sprites, settings_file, settings_source, self._settings_changed,
                                      self._lidar_settings())
         self._settings_paused = False
@@ -204,6 +205,12 @@ class App:
                 self._notify(f"Phone page: {self.panel.url}", 30)
             else:
                 self._notify(f"Phone page could not start: port {cfg.web.port} is in use", 30)
+        # the phone page's address on the settings page (F5)
+        if self.panel is not None:
+            self.settings.phone = (self.panel.url, "on") if self.panel.url else (phone_address(cfg.web), "failed")
+        else:
+            url = phone_address(cfg.web)
+            self.settings.phone = (url, "later" if url else "off")
 
     # -- display ------------------------------------------------------------------------------
     def _open_display(self) -> pygame.Surface:
@@ -304,9 +311,11 @@ class App:
             self.flow.reset(self.clock.now())
         if self.capture is not None:
             self.stop_capture()
+        if self.marker_board is not None:
+            self.stop_markers()
         self.renderer.set_wall()
         if not self.input.set_wall(W, H):
-            self._notify("The wall has a new shape: calibrate the LiDAR again (F2 then C)", 10)
+            self._notify("The wall has a new shape: calibrate the LiDAR (F2 then C) and the camera (F2 then K) again", 10)
 
     def _set_icon(self) -> None:
         mark = self.assets.render("logo.mark", 56)
@@ -410,17 +419,19 @@ class App:
                         self.clock.resume()
                     self.flow.handle_control(ev.kind, ev.data, now)
             elif not self.calibration and not self.clock.paused:
-                if ev.source == "lidar" and self.cfg.input.lidar.round_only and self.flow.state != F.PLAYING:
-                    log.info("lidar hit ignored: no round is being played (state %s)", self.flow.state)
-                    continue  # the lidar plays the round only; names and Start come from the phone page
+                if self._round_only(ev) and self.flow.state != F.PLAYING:
+                    log.info("%s hit ignored: no round is being played (state %s)", ev.source, self.flow.state)
+                    continue  # the sensors play the round only; names and Start come from the phone page
                 out = self.flow.handle_impact(ev.x, ev.y, ev.t, now)
                 if out is not None:
-                    log.info("throw %d: %s %s %s (%.0f, %.0f) +%d", self.flow.round.throws, out.kind, out.tier or "",
-                             out.product or "", ev.x, ev.y, out.points)
+                    log.info("throw %d: %s %s %s (%.0f, %.0f) +%d [%s]", self.flow.round.throws, out.kind, out.tier or "",
+                             out.product or "", ev.x, ev.y, out.points, "+".join(ev.sensors) or ev.source)
                     if out.kind == "miss":
                         self._log_nearest_box(ev.x, ev.y, ev.t)
         if self.capture is not None:
             self._feed_capture()
+        if self.marker_board is not None:
+            self._check_markers()
         if self.panel is not None:
             self._serve_panel(now)
         if not self.clock.paused:
@@ -445,7 +456,31 @@ class App:
         self.renderer.prewarm()
         self.draw(now)
         pygame.display.flip()
+        self._show_camera_the_frame()
         self._draw_settings_window()
+
+    def _round_only(self, ev) -> bool:
+        """input.lidar.round_only / input.camera.round_only for the sensor whose coordinates these are."""
+        if ev.source == "lidar":
+            return bool(self.cfg.input.lidar.round_only)
+        if ev.source == "camera":
+            return bool(self.cfg.input.camera.round_only)
+        return False
+
+    def _show_camera_the_frame(self) -> None:
+        """The camera sees the game's picture (calibrated with markers): it gets every frame shown, small
+        and grey, and leaves out what changed there (a box sliding in is not a ball)."""
+        cam = self.input.camera
+        if cam is None or not cam.wants_screen:
+            return
+        r = self.vp.rect.clip(self.screen.get_rect())
+        if r.w < 2 or r.h < 2:
+            return
+        tw = cam.THUMB_W
+        small = pygame.transform.smoothscale(self.screen.subsurface(r), (tw, max(1, round(tw * r.h / r.w))))
+        rgb = pygame.surfarray.array3d(small)  # (w, h, 3)
+        grey = (rgb.sum(axis=2, dtype=np.uint16) // 3).astype(np.uint8).T
+        cam.screen_drawn(time.perf_counter(), np.ascontiguousarray(grey))
 
     def _serve_panel(self, now: float) -> None:
         answers = []
@@ -502,7 +537,8 @@ class App:
         self.renderer.draw(self.screen, self.flow, now, overlays_info)
         if self.calibration:
             overlays.draw_calibration(self.screen, self.vp, self.text, self.cfg, self.input.recent,
-                                      self.capture, self.input.lidar)
+                                      self.capture, self.input.lidar, self.marker_board, self.input.camera,
+                                      self.input.fusion)
         if self.debug:
             overlays.draw_debug(
                 self.screen,
@@ -517,6 +553,7 @@ class App:
                     "round": self.flow.round,
                     "inputs": self.input.status(),
                     "filter": self.input.filter,
+                    "fusion": self.input.fusion,
                     "accepted": self.input.accepted,
                     "out_of_range": self.input.out_of_range,
                     "webhook": self.webhook,
@@ -559,6 +596,9 @@ class App:
                     self.capture.undo()
                 else:
                     self.stop_capture("LiDAR calibration cancelled")
+            elif self.marker_board is not None and key in (pygame.K_ESCAPE, pygame.K_k):
+                if not event.dict.get("repeat"):  # a held K must not start it again at once
+                    self.stop_markers("Camera calibration cancelled")
             elif key == pygame.K_ESCAPE:
                 if not self.cfg.operator.double_press_to_quit or time.monotonic() - self._esc_at < 1.5:
                     log.info("quit: Esc")
@@ -570,11 +610,21 @@ class App:
                 self.calibration = not self.calibration
                 if not self.calibration and self.capture is not None:
                     self.stop_capture("LiDAR calibration cancelled")
+                if not self.calibration and self.marker_board is not None:
+                    self.stop_markers("Camera calibration cancelled")
+                if self.input.camera is not None:
+                    self.input.camera.want_preview = self.calibration
                 self._update_cursor()
             elif key == pygame.K_c and self.calibration:
-                self.start_capture()
+                if self.marker_board is None:
+                    self.start_capture()
+            elif key == pygame.K_k and self.calibration:
+                if self.capture is None and not event.dict.get("repeat"):
+                    self.start_markers()
             elif key == pygame.K_F6:
                 self.rescan_lidar()
+            elif key == pygame.K_F7:
+                self.rescan_camera()
             elif key == pygame.K_F3:
                 self.debug = not self.debug
                 self._update_cursor()
@@ -706,6 +756,42 @@ class App:
         self.stop_capture(f"LiDAR calibrated: off by {wall_map.error_cm:.0f} cm on average, "
                           f"{wall_map.worst_cm:.0f} cm at most{saved}", 8)
 
+    # -- camera (F2 then K, F7) -----------------------------------------------------------------
+    def rescan_camera(self) -> None:
+        cam = self.input.camera
+        if cam is None:
+            self._notify('No camera: add "camera" to input.sources', 4)
+            return
+        cam.rescan()
+        self._notify("Camera: learning the empty wall again - keep it clear for a moment", 4)
+
+    def start_markers(self) -> None:
+        """The wall shows a grid of markers; the camera finds them and the fit is saved."""
+        cam = self.input.camera
+        if cam is None:
+            self._notify('No camera: add "camera" to input.sources', 4)
+            return
+        self.marker_board = cam.start_markers()
+        log.info("camera calibration started: %d markers on the %.0f x %.0f cm wall", len(self.marker_board),
+                 self.cfg.wall.width_cm, self.cfg.wall.height_cm)
+
+    def stop_markers(self, message: str = "", seconds: float = 4) -> None:
+        self.marker_board = None
+        if self.input.camera is not None:
+            self.input.camera.stop_markers()
+        if message:
+            log.info("camera calibration: %s", message)
+            self._notify(message, seconds)
+
+    def _check_markers(self) -> None:
+        cam = self.input.camera
+        result = cam.marker_result if cam is not None else (False, "no camera")
+        if result is None:
+            return
+        cam.marker_result = None
+        ok, message = result
+        self.stop_markers(message if ok else f"Camera calibration failed: {message}", 8)
+
     # -- settings page (F5) -------------------------------------------------------------------
     def open_settings(self) -> None:
         """The game stands still while the page is open: no time passes and no throw counts."""
@@ -824,6 +910,9 @@ class App:
         self.audio.set_volume(self.cfg.audio.volume)
         if self.input.lidar is not None:
             self.input.lidar.tuning_changed()
+        if self.input.camera is not None:
+            self.input.camera.settings_changed()
+        self.input.settings_changed()
 
     def _lidar_settings(self) -> Settings | None:
         """The lidar tool's settings for the LiDAR tab: the running lidar's own, or else read from

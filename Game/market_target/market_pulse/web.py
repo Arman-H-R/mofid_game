@@ -48,6 +48,13 @@ def lan_address() -> str:
         return "127.0.0.1"
 
 
+def phone_address(web: Section) -> str:
+    """Where phones open the operator's page (name, Play), "" when it is turned off."""
+    if not web.enabled:
+        return ""
+    return f"http://{lan_address()}:{web.port}"
+
+
 class Command:
     def __init__(self, kind: str, name: str = ""):
         self.kind = kind

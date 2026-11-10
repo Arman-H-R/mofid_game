@@ -7,6 +7,9 @@ numpy>=1.24
 python-osc>=1.8
 # Only needed when "lidar" is listed in input.sources (the STL27L lidar on a USB serial port).
 pyserial>=3.5
-# Only for the player photo on the results screen (camera.enabled). Without it the
-# screen shows a placeholder. Model files are in models/.
-opencv-python-headless>=4.8,<5
+# The wall camera that finds the ball hits ("camera" in input.sources), its markers (F2 then K),
+# camtool.py / balltool.py windows, and the player photo on the results screen. The full
+# opencv-python, not the headless one: the tools show windows. Uninstall opencv-python-headless first.
+opencv-python>=4.8,<5
+# The camera's own web stream (input.camera.source "ws"): H.264 / HEVC decoding.
+av>=12
