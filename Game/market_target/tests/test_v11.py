@@ -90,7 +90,7 @@ def test_the_round_records_its_lottery_points(tmp_path):
         step(app, clock, rnd.time_left(app.clock.now()) + app.cfg.round.end_delay_s + 0.5)
         assert app.flow.state == F.RESULTS
         rec = app.flow.summary
-        assert rec["lottery_points"] == score // 1000 * 2
+        assert rec["lottery_points"] == (3 if score >= 3000 else 2 if score >= 1500 else 1)
         for _ in range(60):  # the results page draws through its whole entrance
             step(app, clock, 0.1)
         assert app.frame_errors == 0
@@ -102,4 +102,45 @@ def test_the_settings_have_the_sizes_points_and_no_multiplier_or_rush_tabs():
     titles = [title for title, _, _ in S.pages(config.DEFAULTS)]
     assert "امتیاز" in titles and "ضریب‌ها" not in titles and "طوفان بازار" not in titles
     keys = [it.key for _, items, _ in S.pages(config.DEFAULTS) for it in items]
-    assert ("targets", "tiny", "points") in keys and ("results", "lottery_per_1000") in keys
+    assert ("targets", "tiny", "points") in keys
+    assert ("results", "lottery_two_from") in keys and ("results", "lottery_three_from") in keys
+
+
+@pytest.mark.parametrize("score,points", [(0, 1), (1499, 1), (1500, 2), (2999, 2), (3000, 3), (99999, 3)])
+def test_only_1_2_or_3_lottery_points_by_the_two_scores(score, points):
+    assert config.lottery_points(config.DEFAULTS, score) == points
+
+
+def test_the_two_lottery_scores_can_be_set_and_stay_in_order(tmp_path):
+    raw = __import__("copy").deepcopy(config.DEFAULTS)
+    raw["results"].update({"lottery_two_from": 800, "lottery_three_from": 2000})
+    assert [config.lottery_points(raw, s) for s in (799, 800, 1999, 2000)] == [1, 2, 2, 3]
+    raw["results"]["lottery"] = False
+    assert config.lottery_points(raw, 5000) == 0
+    bad = __import__("copy").deepcopy(config.DEFAULTS)
+    bad["results"].update({"lottery_two_from": 2000, "lottery_three_from": 1000})
+    warnings: list[str] = []
+    config._validate(bad, warnings)
+    assert bad["results"]["lottery_three_from"] == 2001 and warnings
+
+
+def test_typing_the_lottery_scores_on_the_settings_page_keeps_them_in_order(tmp_path):
+    cfg = game_cfg({"display": {"resolution": [768, 1024]}, "input": {"sources": []}, "camera": {"enabled": False},
+                    "results": {"log_file": str(tmp_path / "r.jsonl")}})
+    app = App(cfg, Paths(ROOT), clock_source=FakeTime(), start_inputs=False, settings_file=tmp_path / "settings.json")
+    try:
+        page = app.settings
+        app.open_settings()
+        tab = next(i for i, (_, items, _) in enumerate(page.pages) if any(it.key == ("results", "lottery_two_from") for it in items))
+        page.select_tab(tab)
+        page.draw(app.screen, app.renderer.vp_menu)  # the notes with the three ranges draw
+        two = next(it for it in page.items if it.key == ("results", "lottery_two_from"))
+        page._set(two, 4000)  # above the score for 3: that one moves along
+        raw = app.cfg.raw()
+        assert raw["results"]["lottery_two_from"] == 4000 and raw["results"]["lottery_three_from"] == 4001
+        assert page.save()
+        import json
+        saved = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
+        assert saved["results"]["lottery_two_from"] == 4000 and saved["results"]["lottery_three_from"] == 4001
+    finally:
+        app.shutdown()

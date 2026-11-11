@@ -22,7 +22,7 @@ from typing import Callable
 
 import numpy as np
 
-from ..config import Section, layout_left, layout_top
+from ..config import Section, layout_left, layout_top, lottery_points
 from .profile import classify
 from .results import ResultsStore
 from .rules import Outcome, Round
@@ -356,8 +356,8 @@ class Flow:
             "player_name": player.get("name", ""),
             **summary,
             "profile": classify(summary, self.cfg.profiles),
-            # MOFID_UI v11: lottery points, results.lottery_per_1000 for every full 1000 points
-            "lottery_points": int(summary.get("score", 0)) // 1000 * int(self.cfg.results.get("lottery_per_1000", 0)),
+            # MOFID_UI v11: lottery points, 1, 2 or 3 by the score (results.lottery_two_from / _three_from)
+            "lottery_points": lottery_points(self.cfg.raw(), int(summary.get("score", 0))),
             "balls": rnd.balls,
             "round_duration_s": rnd.duration if rnd.timed else 0,  # 0: no time limit
         }

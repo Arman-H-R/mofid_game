@@ -401,7 +401,9 @@
     "webhook_timeout_s": 4.0,
     "leaderboard_size": 5,
     "show_names": true,
-    "lottery_per_1000": 2
+    "lottery": true,
+    "lottery_two_from": 1500,
+    "lottery_three_from": 3000
   },
   "web": {
     "enabled": true,
@@ -547,7 +549,10 @@
     "results_lottery": "امتیاز شما در قرعه‌کشی",
     "results_lottery_rule": "هر ۱۰۰۰ امتیاز معادل {n} امتیاز قرعه‌کشی",
     "results_hits_ok": "برخورد موفق",
-    "demo_tiny": "باکس کوچک: بیشترین امتیاز"
+    "demo_tiny": "باکس کوچک: بیشترین امتیاز",
+    "lottery_tier1": "۱ امتیاز برای زیر {a}",
+    "lottery_tier2": "۲ امتیاز از {a} تا {b}",
+    "lottery_tier3": "۳ امتیاز از {b} به بالا"
   },
   "debug": {
     "overlay": false,

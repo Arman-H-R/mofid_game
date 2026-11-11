@@ -247,7 +247,7 @@ def test_results_page_is_type_only_with_the_lottery_points(tmp_path):
     products hit change nothing), the lottery points follow the score."""
     app, clock = make_app(tmp_path, [450, 600])
     base = {"score": 2450, "hits": {"medium": 1, "small": 1, "tiny": 1}, "total_hits": 12, "throws": 15,
-            "best_multiplier": 1, "player_name": "Sara", "lottery_points": 4}
+            "best_multiplier": 1, "player_name": "Sara", "lottery_points": 3}
     r = app.renderer
     r.results_t0 = 0.0
     shots = {}

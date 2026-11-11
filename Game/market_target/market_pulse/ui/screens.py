@@ -35,7 +35,7 @@ from pathlib import Path
 
 import pygame
 
-from ..config import TIERS, Section, layout_left, layout_top, points_of, product_for
+from ..config import TIERS, Section, layout_left, layout_top, lottery_points, points_of, product_for
 from ..game import flow as F
 from ..game.rules import Outcome
 from . import theme
@@ -1687,17 +1687,25 @@ class Renderer:
         pygame.draw.line(surf, line, vp.px(16, 214), vp.px(W - 16, 214), lw)
 
         # 1.4 the lottery points: the title and its rule on the right, the number on the left
-        per = int(cfg.results.get("lottery_per_1000", 0))
+        on = bool(cfg.results.get("lottery", True))
         y = 214
-        if per > 0:
+        if on:
             q = _phase(t, 1.4, 0.4)
             if q > 0:
                 a, dy = int(255 * q), 4 * (1 - _ease_out(q))
-                lottery = rec.get("lottery_points", final // 1000 * per)
+                lottery = rec.get("lottery_points", lottery_points(cfg.raw(), final))
                 self.text.blit(surf, T.results_lottery, "title", vp.s(8.5), theme.WHITE, vp.px(W - 20, 228 + dy),
                                "midright", alpha=a)
-                self.text.blit(surf, T.results_lottery_rule.format(n=per), "body", vp.s(4.8), theme.MIST,
-                               vp.px(W - 20, 241 + dy), "midright", alpha=a)
+                # the three levels, right to left, each its own piece (numbers in Persian text keep their place)
+                two, three = int(cfg.results.lottery_two_from), int(cfg.results.lottery_three_from)
+                x = vp.px(W - 20, 0)[0]
+                for i, key in enumerate(("lottery_tier1", "lottery_tier2", "lottery_tier3")):
+                    piece = self.text.render(T[key].format(a=two, b=three), "body", vp.s(4.4),
+                                             theme.WHITE if i + 1 == lottery else theme.MIST)
+                    piece.set_alpha(a)
+                    r = surf.blit(piece, piece.get_rect(midright=(x, vp.px(0, 241 + dy)[1])))
+                    piece.set_alpha(255)
+                    x = r.left - vp.s(5)
                 self.text.blit(surf, str(lottery), "numbers", vp.s(26), theme.TURQ, vp.px(44, 234 + dy), alpha=a)
             y = 254
             pygame.draw.line(surf, line, vp.px(16, y), vp.px(W - 16, y), lw)

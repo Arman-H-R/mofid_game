@@ -61,6 +61,17 @@ def points_of(raw: dict, key: str | None, tier: str) -> int:
     return int(raw["targets"][tier]["points"])
 
 
+def lottery_points(raw: dict, score: int) -> int:
+    """MOFID_UI v11: a round's lottery points, only 1, 2 or 3 (0 with results.lottery off).
+    Below lottery_two_from: 1; from it up to lottery_three_from: 2; from lottery_three_from: 3."""
+    res = raw.get("results", {})
+    if not res.get("lottery", True):
+        return 0
+    if score >= int(res.get("lottery_three_from", 3000)):
+        return 3
+    return 2 if score >= int(res.get("lottery_two_from", 1500)) else 1
+
+
 def by_size(raw: dict) -> bool:
     """MOFID_UI v11: the box's size sets the score (+100 / +150 / +300) and any product may show
     at any size (targets.points_by_size). Off: every product its own size and points."""
@@ -401,8 +412,12 @@ DEFAULTS: dict[str, Any] = {
         # False (MOFID_UI v4.1, 08 RESULTS): the results are type only, no photo or replay.
         # True: with camera.enabled, the profile card with the player's replay.
         "show_photo": False,
-        # MOFID_UI v11, 07 RESULTS: lottery points, this many for every full 1000 points (0: not shown)
-        "lottery_per_1000": 2,
+        # MOFID_UI v11, 07 RESULTS: lottery points, only 1, 2 or 3. A score below lottery_two_from
+        # gets 1; from lottery_two_from up to (not including) lottery_three_from gets 2; from
+        # lottery_three_from on gets 3. F5, tab «امتیاز». lottery false: not shown or saved.
+        "lottery": True,
+        "lottery_two_from": 1500,
+        "lottery_three_from": 3000,
     },
     # The operator's phone page: name, Play, saved rounds and the CSV file.
     "web": {
@@ -470,6 +485,9 @@ DEFAULTS: dict[str, Any] = {
         "balls_unlimited": "توپ نامحدود",
         "results_lottery": "امتیاز شما در قرعه‌کشی",
         "results_lottery_rule": "هر ۱۰۰۰ امتیاز معادل {n} امتیاز قرعه‌کشی",
+        "lottery_tier1": "۱ امتیاز برای زیر {a}",
+        "lottery_tier2": "۲ امتیاز از {a} تا {b}",
+        "lottery_tier3": "۳ امتیاز از {b} به بالا",
         "results_hits_ok": "برخورد موفق",
         "demo_tiny": "باکس کوچک: بیشترین امتیاز",
         "start": "شروع",
@@ -572,6 +590,8 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("rush", "spawn_lifetime_s"): (0.5, 600),
     ("rush", "transition_s"): (0, 5),
     ("layout", "spawn_delay_s"): (0, 3),
+    ("results", "lottery_two_from"): (1, 1000000),
+    ("results", "lottery_three_from"): (2, 1000000),
     ("layout", "spawn_drop_cm"): (0, 60),
     ("flow", "registration_timeout_s"): (5, 3600),
     ("flow", "name_max_chars"): (1, 40),
@@ -679,6 +699,12 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
             clamped = min(max(value, lo), hi)
             warnings.append(f"'{section}.{key}'={value} is outside {lo}..{hi}; using {clamped}")
             cfg[section][key] = clamped
+
+    res = cfg["results"]
+    if res["lottery_three_from"] <= res["lottery_two_from"]:
+        warnings.append(f"'results.lottery_three_from' ({res['lottery_three_from']}) must be above "
+                        f"'results.lottery_two_from' ({res['lottery_two_from']}); using {res['lottery_two_from'] + 1}")
+        res["lottery_three_from"] = res["lottery_two_from"] + 1
 
     rd = cfg["round"]
     if not rd["time_limit"] and not (rd["ball_limit"] and rd["balls"] > 0):

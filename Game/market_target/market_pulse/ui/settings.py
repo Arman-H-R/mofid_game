@@ -187,9 +187,14 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
     if C.by_size(raw):
         points = [Item(("targets", tier, "points"), f"امتیاز {name}", 10, 1000, 10, "pts")
                   for tier, name in (("medium", "باکس بزرگ"), ("small", "باکس متوسط"), ("tiny", "باکس کوچک"))]
-        points.append(Item(("results", "lottery_per_1000"), "امتیاز قرعه‌کشی برای هر ۱۰۰۰ امتیاز", 0, 20, 1,
-                           zero="نمایش داده نشود"))
-    tabs = [("باکس‌ها", boxes, "boxes"), ("امتیاز" if C.by_size(raw) else "امتیاز محصولات", points, "")]
+        # the lottery points: only 1, 2 or 3; the two scores where 2 and 3 start, typed
+        points += [Item(("results", "lottery"), "امتیاز قرعه‌کشی در صفحه‌ی نتیجه", switch=True),
+                   Item(("results", "lottery_two_from"), "۲ امتیاز قرعه‌کشی از امتیاز (بنویسید)", 1, 100000, 1, "pts",
+                        entry=True, needs=("results", "lottery")),
+                   Item(("results", "lottery_three_from"), "۳ امتیاز قرعه‌کشی از امتیاز (بنویسید)", 2, 100000, 1, "pts",
+                        entry=True, needs=("results", "lottery"))]
+    tabs = [("باکس‌ها", boxes, "boxes"), ("امتیاز" if C.by_size(raw) else "امتیاز محصولات", points,
+                                             "lottery" if C.by_size(raw) else "")]
     if raw["combo"].get("enabled", False):
         tabs.append(("ضریب‌ها", combo, "best"))
     if raw["rush"].get("enabled", False):
@@ -235,7 +240,9 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 HINTS: dict[Key, tuple[str, str]] = {
     ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا 20؛ بالای 10 بعضی محصول‌ها دو بار): آسان‌تر"),
     ("targets", "*", "points"): ("امتیاز کمتر برای این اندازه", "امتیاز بیشتر برای این اندازه"),
-    ("results", "lottery_per_1000"): ("0: امتیاز قرعه‌کشی نشان داده نمی‌شود", "امتیاز قرعه‌کشی بیشتر برای هر ۱۰۰۰ امتیاز"),
+
+    ("results", "lottery_two_from"): ("۲ امتیاز قرعه‌کشی آسان‌تر", "۲ امتیاز قرعه‌کشی سخت‌تر"),
+    ("results", "lottery_three_from"): ("۳ امتیاز قرعه‌کشی آسان‌تر", "۳ امتیاز قرعه‌کشی سخت‌تر"),
     ("layout", "spawn_delay_s"): ("0: باکس تازه همان لحظه می‌آید", "باکس تازه دیرتر، بعد از شکستن باکس زده‌شده"),
     ("layout", "spawn_drop_cm"): ("0: باکس تازه از کوچک بزرگ می‌شود", "باکس تازه از بالاتر می‌افتد"),
     ("targets", "grow_to"): ("خاموش یا کمتر از تعداد بالا: تعداد باکس‌ها ثابت می‌ماند",
@@ -517,9 +524,25 @@ class SettingsPage:
             self.message = ("", "")
             self._leaving = False
             self._one_limit(item.key)
+            self._lottery_order(item.key)
             self.on_change()
 
     LIMITS = (("round", "time_limit"), ("round", "ball_limit"))
+    LOTTERY = (("results", "lottery_two_from"), ("results", "lottery_three_from"))
+
+    def _lottery_order(self, key: Key) -> None:
+        """The score for 3 lottery points stays above the one for 2: moving one past the other
+        moves the other along."""
+        if key not in self.LOTTERY:
+            return
+        two, three = (int(get(self.root, k)) for k in self.LOTTERY)
+        if three > two:
+            return
+        if key == self.LOTTERY[0]:
+            put(self.root, self.LOTTERY[1], two + 1)
+        else:
+            put(self.root, self.LOTTERY[0], max(1, three - 1))
+        self.message = ("امتیاز ۳ باید بیشتر از امتیاز ۲ باشد؛ دیگری هم جابه‌جا شد", "ok")
 
     def _one_limit(self, key: Key) -> None:
         """A round needs a time limit or a ball limit: turning off the last one turns the other on."""
@@ -743,6 +766,14 @@ class SettingsPage:
                 "کالیبره کردن دوربین: F2 و بعد K (صفحه نشانه‌ها را نشان می‌دهد و دوربین آن‌ها را پیدا می‌کند).",
                 "دیوار واقعی بدون صفحه‌نمایش: camtool.py calibrate     F7: دوربین دیوار خالی را دوباره یاد می‌گیرد.",
                 "نشانی و جریان دوربین در config/settings.json است و بعد از اجرای دوباره اعمال می‌شود."))
+        if extra == "lottery" and get(self.root, ("results", "lottery")):
+            a, b = int(get(self.root, self.LOTTERY[0])), int(get(self.root, self.LOTTERY[1]))
+            self._notes(surf, vp, y + 4, (
+                "امتیاز قرعه‌کشی فقط ۱ یا ۲ یا ۳ است",
+                f"امتیاز بازی کمتر از {a} یعنی ۱ امتیاز قرعه‌کشی",
+                f"امتیاز بازی از {a} تا کمتر از {b} یعنی ۲ امتیاز قرعه‌کشی",
+                f"امتیاز بازی {b} و بیشتر یعنی ۳ امتیاز قرعه‌کشی",
+                "روی جعبه بزنید، عدد را بنویسید و Enter بزنید"))
         if extra == "fusion":
             self._notes(surf, vp, y + 4, (
                 "هر دو سنسور هر توپ را جدا پیدا می‌کنند؛ از هر پرتاب فقط یک برخورد ثبت می‌شود.",
