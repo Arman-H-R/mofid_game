@@ -63,6 +63,28 @@ _WORDMARK = re.compile(rb'<g id="wordmark">(.*?)</g>', re.S)
 _PATH = re.compile(rb'<path\b[^>]*?fill="(#[0-9A-Fa-f]{6})"[^>]*?\sd="([^"]*)"[^>]*/>')
 
 
+_TAGLINE = re.compile(rb'\s*<g id="tagline">.*?</g>', re.S)
+_NUM = re.compile(rb"-?\d*\.?\d+(?:[eE]-?\d+)?")
+
+
+def _without_tagline(svg: bytes) -> bytes:
+    """The logo without its tagline («پیشرفت مداوم»), never shown in this game. On the stacked
+    logo, where the tagline is a line of its own under the name, the picture ends under the name."""
+    m = _TAGLINE.search(svg)
+    if not m:
+        return svg
+    bare = svg[:m.start()] + svg[m.end():]
+    vb = re.search(rb'viewBox="\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)"', bare)
+    tag_y = [float(v) for d in re.findall(rb' d="([^"]*)"', m.group(0)) for v in _NUM.findall(d)[1::2]]
+    rest_y = [float(v) for d in re.findall(rb' d="([^"]*)"', bare) for v in _NUM.findall(d)[1::2]]
+    if vb and tag_y and rest_y and max(rest_y) < min(tag_y):  # a line of its own: crop it away
+        x, y, w = vb.group(1), float(vb.group(2)), vb.group(3)
+        h = max(rest_y) + 2.0 - y
+        bare = bare.replace(vb.group(0), b'viewBox="%s %g %s %g"' % (x, y, w, h), 1)
+        bare = re.sub(rb'height="[\d.]+"', b'height="%g"' % h, bare, count=1)
+    return bare
+
+
 def _split_wordmark(svg: bytes):
     """Split the logo's wordmark at its widest gap into «مفید» (left) and the word before it
     (right, «کارگزاری»). Returns the SVG without that word, its box (x0, y0, x1, y1) in the
@@ -291,10 +313,15 @@ class Renderer:
 
     def _brand_logo(self, name: str, w: int) -> pygame.Surface | None:
         """The logo at w pixels wide, its name reading «گروه مالی مفید»: the artwork's own «مفید»
-        and the mark and tagline stay; the first word of the wordmark («کارگزاری») is taken
+        and the mark stay (the tagline does not, _without_tagline); the first word of the wordmark («کارگزاری») is taken
         out and BRAND_WORD drawn in its place, in its colour, filling the same box."""
         lib = self.sprites.assets
         src = lib.source(name)
+        if src is not None:  # never the tagline («پیشرفت مداوم»)
+            plain = name + "#plain"
+            if not lib.has(plain):
+                lib.add(plain, _without_tagline(src))
+            name, src = plain, lib.source(plain)
         split = _split_wordmark(src) if src is not None else None
         if split is None:
             return lib.render(name, w)
@@ -392,7 +419,8 @@ class Renderer:
                          max(1, vp.s(0.25)))
         self._micro(bg, "GROUP MOFID · INTERACTIVE CHALLENGE" if caption is None else "GROUP MOFID",
                     vp.px(16, y + 8), color=theme.MIST, size=2.8)
-        self.text.blit(bg, self.T.slogan, "body", vp.s(5), theme.MIST, vp.px(W - 16, y + 8), "midright")
+        if self.T.slogan:  # empty: no slogan (this game shows none)
+            self.text.blit(bg, self.T.slogan, "body", vp.s(5), theme.MIST, vp.px(W - 16, y + 8), "midright")
 
     def _build_field(self) -> pygame.Surface:
         """The play screen: the dark field, faint plus marks on a loose grid, the footer."""
@@ -1157,7 +1185,6 @@ class Renderer:
         surf.blit(box, box.get_rect(center=vp.px(sb.x_cm, sb.y_cm)))
         self.text.blit(surf, T.register_start, "title", vp.s(14), theme.WHITE if ready else theme.BLUE_PALE, vp.px(sb.x_cm, sb.y_cm))
         self.text.blit(surf, T.register_hint, "body", vp.s(6.5), theme.WHITE, vp.px(W / 2, sb.y_cm + sb.size_cm / 2 + 14))
-        self._steady_progress(surf, theme.TURQUOISE, theme.WHITE)
         self.fx.draw(surf, vp, vp.rect, theme.DARK_BLUE)
 
     # -- instructions --------------------------------------------------------------------------
@@ -1759,8 +1786,6 @@ class Renderer:
         w = int(bar.w * (1 - p))
         if w:
             surf.fill(theme.TURQ, pygame.Rect(bar.right - w, bar.y, w, bar.h))
-        if self.photo_slot:  # the card has no frame of its own
-            self._steady_progress(surf, theme.TURQUOISE, theme.WHITE)
 
     def _pill(self, surf, label: str, bg, fg, center_cm, size_cm: float) -> None:
         vp = self.vp

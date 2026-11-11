@@ -552,7 +552,7 @@ DEFAULTS: dict[str, Any] = {
         "leaderboard": "برترین‌های امروز",
         "leaderboard_empty": "اولین امتیاز امروز را شما ثبت کنید",
         "guest": "مهمان",
-        "slogan": "پیشرفت مداوم",
+        "slogan": "",  # no slogan: «پیشرفت مداوم» is never shown
         "paused": "توقف",
         "simulation": "حالت شبیه‌سازی",
         "sensor_offline": "حسگر متصل نیست",
