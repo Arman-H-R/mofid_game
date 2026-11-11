@@ -465,7 +465,9 @@ class Round:
         rush = self.rush
         spawned = []
         if rush is not None or not target.rush_extra:
-            spawned.append(self._new_target(now, avoid=(target.product,)))
+            # it appears a moment later (layout.spawn_delay_s), once the hit box has shattered
+            spawned.append(self._new_target(now, avoid=(target.product,),
+                                            delay=float(self.cfg.layout.get("spawn_delay_s", 0.0))))
             if target.rush_extra:
                 self._mark_rush_extra(spawned[0], now)
         # ...and the new box takes a free spot, the others staying where they are (or, with
@@ -501,7 +503,8 @@ class Round:
         )
 
     # -- targets ----------------------------------------------------------------
-    def _new_target(self, now: float, tier: str | None = None, avoid: tuple[str, ...] = ()) -> Target:
+    def _new_target(self, now: float, tier: str | None = None, avoid: tuple[str, ...] = (),
+                    delay: float = 0.0) -> Target:
         """A box with the next product (none already on the wall, nor ``avoid``) at the
         given size, or the next size from the picker."""
         if tier is None:
@@ -534,8 +537,9 @@ class Round:
             x=0.0,
             y=0.0,
             motion=motion,
-            born=now,
+            born=now + max(0.0, delay),
             spawn_dur=float(self.cfg.layout.spawn_s),
+            drop=float(self.cfg.layout.get("spawn_drop_cm", 0.0)),
             speed=float(self.cfg.motion.speed),
             warp=self.warp,
         )

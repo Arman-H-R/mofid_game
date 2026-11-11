@@ -117,17 +117,19 @@ hit area is the tile itself.
   (F5, tab «باکس‌ها», row «باکس‌های بیشتر با گذشت زمان، تا»).
 - **Results records** now hold `hits` and `points_by_tier` per size, plus `products` (hits
   per product) and `product_points` (points per product). The CSV gets the matching columns.
-- **Motion from the reference clip** (rings of dots, as on a floor):
-  - A new tile is born small as a thin sliver and turns to face you as a circle. It then
-    morphs into the tile's rounded square while it keeps growing, and its artwork fades in
-    (0.9 s, `SHOW_S`), as rings of dots close in. Then a thin halo opens.
+- **Motion**:
+  - A new tile drops in at its full size from `layout.spawn_drop_cm` above its place, with a
+    small bounce (`layout.spawn_s`), and four white corner marks close in where it lands.
   - Tiles float slowly a few cm in place (`motion`: `sway_y`, 2–3 cm, 6–8 s; `motion.enabled`
     false keeps them still). A resting tile also turns a little now and then (down to 93 % of
     its width, `TURN_S` 6.5 s), and a thin halo opens around it and fades every 5.5 s
     (`HALO_EVERY`), as in the clip. After a hit the other tiles stay where they are, and the new
     one takes a free spot. `layout.move_on_hit` true brings back the glide to new spots.
-  - A hit tile sends rings of dots out under its badge.
-  - A leaving tile (Market Rush extras) shrinks while rings of dots spread out.
+  - A hit box and a new box never look alike: the hit box **shatters** into four pieces that
+    fly apart, and only its points (and the product's name) float up; the new box **drops in**
+    `layout.spawn_delay_s` (0.4 s) later, from `spawn_drop_cm` above its place, with white corner
+    marks closing in where it lands. It cannot be hit before it appears. F5, tab «باکس‌ها».
+  - A leaving tile (Market Rush extras) shrinks and fades away, without rings.
   - On the results screen, «سبد محصولات شما» is a rising bar chart: one bar per product hit,
     as tall as its points, lowest on the left. Each tile pops up on a thin stem with a halo,
     and moving dots join the tiles. The photo card (`results.show_photo`) keeps its row of tiles.
@@ -500,7 +502,7 @@ the installation. Keys starting with `_` are ignored (use them for comments).
 |---|---|
 | `display` | `fullscreen`, `display_index`, `resolution`, `fill_screen`, `fps`, `vsync`, `hide_cursor` |
 | `wall` | `width_cm`, `height_cm` |
-| `layout` | `hud_height_cm`, `footer_height_cm`, `side_margin_cm`, `gap_cm` (between boxes), `min_move_cm`, `transition_s`, `spawn_s`, `start_button` |
+| `layout` | `hud_height_cm`, `footer_height_cm`, `side_margin_cm`, `gap_cm` (between boxes), `min_move_cm`, `transition_s`, `spawn_s`, `spawn_drop_cm` (a new box drops in from this far above), `spawn_delay_s` (after a hit, the new box appears this much later), `start_button` |
 | `round` | `balls` (touches; 0 = no limit), `duration_s`, `initial`, `max_targets`, `end_delay_s` |
 | `rush` | Market Rush: see section 1.3 |
 | `profiles` | Play-style thresholds, score ranges and sentences: see section 1.4 |

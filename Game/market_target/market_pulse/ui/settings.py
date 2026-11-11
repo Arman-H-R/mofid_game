@@ -89,6 +89,9 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
              Item(("targets", "grow_to"), "باکس‌های بیشتر با گذشت زمان، تا", 0, C.MAX_BOXES, 1, "boxes", zero="خاموش")]
     for tier, name in TIER_NAMES:
         boxes += [Item(("targets", tier, "size_cm"), f"اندازه‌ی باکس {name}", 15, 100, 1, "cm")]
+    # a hit box shatters; the new one drops in a moment later: the two never look alike
+    boxes += [Item(("layout", "spawn_delay_s"), "باکس تازه بعد از برخورد، با تأخیر", 0, 2, 0.1, "s", zero="بی‌درنگ"),
+              Item(("layout", "spawn_drop_cm"), "افتادن باکس تازه از بالا", 0, 40, 1, "cm", zero="بدون افتادن")]
     # every product its own points (its box size stays: 10 big, 15 medium, 30 small)
     points = [Item(("products", i, "points"), p["name"], 0, 200, 5, "pts") for i, p in enumerate(raw["products"])]
 
@@ -220,6 +223,8 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 # A key with "*" stands for every colour or multiplier level.
 HINTS: dict[Key, tuple[str, str]] = {
     ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا 20؛ بالای 10 بعضی محصول‌ها دو بار): آسان‌تر"),
+    ("layout", "spawn_delay_s"): ("0: باکس تازه همان لحظه می‌آید", "باکس تازه دیرتر، بعد از شکستن باکس زده‌شده"),
+    ("layout", "spawn_drop_cm"): ("0: باکس تازه از کوچک بزرگ می‌شود", "باکس تازه از بالاتر می‌افتد"),
     ("targets", "grow_to"): ("خاموش یا کمتر از تعداد بالا: تعداد باکس‌ها ثابت می‌ماند",
                             "بیشتر: با گذشت زمان یکی‌یکی باکس اضافه می‌شود"),
     ("targets", "min_tiny"): ("0: باکس کوچک فقط به شانس می‌آید", "باکس کوچک بیشتر: طوفان زودتر"),

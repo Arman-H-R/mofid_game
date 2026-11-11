@@ -155,7 +155,8 @@ class Renderer:
         self.badge_shake_t = -10.0
         self.results_t0 = 0.0
         self.rush_title_t = -10.0
-        self._leaving: set[int] = set()  # boxes whose leaving rings have been started (draw_play)
+        self._leaving: set[int] = set()  # kept for older callers; boxes leave without rings now
+        self._shatters: list[dict] = []  # the boxes that were hit, breaking apart (on_event "hit")
         self._fade_pending = False
         self._fade_t0 = -10.0
         self._prewarm: list[tuple[str, int]] = []
@@ -517,20 +518,17 @@ class Renderer:
             storm = flow.round is not None and flow.round.rush is not None
             color = theme.CORAL if storm else theme.TURQ
             half = o.target_side / 2
-            if o.target_side:  # rings of dots spread out from the box that was hit
-                fx.dot_ring(o.target_x, o.target_y, half * 0.8, half * 2.4, color, 0.6)
+            # The hit box breaks into four pieces that fly apart, and only its points float up:
+            # nothing round or box-shaped stays behind (a new box drops in elsewhere, later).
+            self._shatters = self._shatters[-5:]
+            self._shatters.append({
+                "t0": now, "product": o.product, "x": o.target_x if o.target_side else o.x,
+                "y": o.target_y if o.target_side else o.y, "side": o.target_side or 20.0,
+                "points": f"+{o.points}", "mult": f"×{o.multiplier:g}" if o.multiplier > 1 else "",
+                "name": self.product_name(o.product), "color": color, "big": storm or o.tier == "tiny"})
             if o.tier == "tiny":  # the brand's symbols fly out: this one starts Market Rush
                 fx.burst(o.x, o.y, color, count=10, speed=(50.0, 110.0), life=0.9, start_r=half)
-            # the product's name, the points and the multiplier in rings where the ball hit
-            # (MOFID_UI v4.1 page 6); the inner ring and its words stay inside the field, the
-            # quieter outer rings may run past its edge
-            bx, by = self._badge_spot(o, flow, now)
-            tile = (o.target_x, o.target_y, o.target_side, o.target_side * o.target_aspect) if o.target_side else None
-            fx.badge(bx, by, self.product_name(o.product), f"+{o.points}",
-                     f"×{o.multiplier:g}" if o.multiplier > 1 else "", color, big=storm or o.tier == "tiny", tile=tile,
-                     home=(self.W - 34.0, 37.0))  # at the end it flies into the HUD's score, which then counts it
-            if flow.round is not None:
-                self._spawn_rings(flow, now, set(o.spawned))
+            self.score_pop_t = now  # the score counts it at once
             if o.level_up:
                 self.badge_pop_t = now
                 if self.cfg.ui.combo_banner and flow.round is not None:
@@ -552,8 +550,6 @@ class Renderer:
         elif name == "rush_end":
             if data["reason"] == "time":
                 fx.banner(self.T.rush_end, theme.TURQ, 1.6)
-        elif name in ("rush_spawn", "target_added") and flow.round is not None:
-            self._spawn_rings(flow, now, set(data["ids"]))
         elif name == "start_hit":
             sb = self.cfg.layout.start_button
             fx.ripple(sb.x_cm + layout_left(self.cfg), sb.y_cm + layout_top(self.cfg), sb.size_cm / 2, sb.size_cm / 2 + 40, 2.5, theme.TURQ, 0.6)
@@ -561,26 +557,16 @@ class Renderer:
             self.end_t0 = now
         elif name == "go" and flow.round is not None:
             self._leaving.clear()
-            self._spawn_rings(flow, now, {tg.id for tg in flow.round.targets})
+            self._shatters.clear()
         elif name == "results":
             self.results_t0 = now
         elif name == "state":
             if data["state"] in (F.ATTRACT, F.RESULTS):
                 fx.clear()
+                self._shatters.clear()
             # Screens cross-fade; the steps of a round (countdown to play to end) share one screen.
             if data["state"] not in (F.PLAYING, F.ENDING):
                 self._fade_pending = True
-
-    def _spawn_rings(self, flow: F.Flow, now: float, ids: set[int]) -> None:
-        """Each newly placed box: rings of dots close in on it as it pops up, then a thin halo
-        opens around it (its corner ticks close in as it is drawn, draw_play)."""
-        storm = flow.round.rush is not None
-        color = theme.CORAL if storm else theme.TURQ
-        for tg in flow.round.targets:
-            if tg.id in ids:
-                cx, cy = tg.center_at(now + tg.spawn_dur)
-                self.fx.dot_ring(cx, cy, tg.size * 1.3, tg.size * 0.3, color, 0.5)
-                self.fx.ripple(cx, cy, tg.size * 0.55, tg.size * 0.95, 0.7, color, 0.5, 0.55)
 
     # -- frame ----------------------------------------------------------------------------
     def draw(self, surf: pygame.Surface, flow: F.Flow, now: float, overlays: dict) -> None:
@@ -640,12 +626,11 @@ class Renderer:
             fade = 1.0 - _ease_in_out((now - self.end_t0) / 0.4) if st == F.ENDING else 1.0
             self.fx.draw_under(surf, vp, bg)
             for tg in rnd.targets:
-                if tg.die_at is not None and tg.die_at <= t and tg.id not in self._leaving:
-                    self._leaving.add(tg.id)  # rings of dots spread out as it shrinks away
-                    cx, cy = tg.center_at(tg.die_at)
-                    self.fx.dot_ring(cx, cy, tg.size * 0.4, tg.size * 1.5, theme.CORAL if storm > 0.5 else theme.TURQ, 0.5)
                 if fade > 0.0:
                     self._draw_target(surf, tg, t, bg, storm, fade)
+            self._shatters = [h for h in self._shatters if now - h["t0"] < self.HIT_FX_S]
+            for h in self._shatters:
+                self.draw_hit_fx(surf, h, now - h["t0"], bg)
         field_rect = vp.cm_rect(0, self.hud_h, self.W, self.footer_y)
         self.fx.draw(surf, vp, field_rect, bg)
         self._hud(surf, flow, t)
@@ -673,39 +658,44 @@ class Renderer:
         appears (and always around a tiny box: the one that starts Market Rush)."""
         vp = self.vp
         age = t - tg.born
-        showing = 0.0 <= age < self.SHOW_S and alpha >= 1.0
-        side = tg.full_side_at(t) if showing else tg.side_at(t)
+        if age < 0.0:
+            return  # a new box that appears a moment after the hit (layout.spawn_delay_s)
+        side = tg.side_at(t)
         if side < 0.5:
             return
-        cx, cy = tg.center_at(t)
+        cx, cy = tg.center_at(t)  # while it drops in, a little above its place (the hit test too)
         c = vp.px(cx, cy)
-        if showing:
-            self._draw_showing(surf, tg, side, c, age / self.SHOW_S)
-        else:
-            if alpha >= 1.0:
-                self._rest_halo(surf, tg, side, c, age, bg)
-            spr = self.sprites.product_turned(tg.product, vp.sf(side), vp.s(tg.size), self._turn(tg, age), ring=True)
-            if alpha < 1.0:
-                spr.set_alpha(int(255 * alpha))
-            surf.blit(spr, spr.get_rect(center=c))
-            spr.set_alpha(255)
+        landed = max(0.05, tg.spawn_dur)
+        a = alpha * min(1.0, age / 0.1)  # it fades in at the top of its drop, in full colour and size
+        if a >= 1.0 and age >= landed:
+            self._rest_halo(surf, tg, side, c, age, bg)
+        spr = self.sprites.product_turned(tg.product, vp.sf(side), vp.s(tg.size), self._turn(tg, age), ring=True)
+        if a < 1.0:
+            spr.set_alpha(int(255 * a))
+        surf.blit(spr, spr.get_rect(center=c))
+        spr.set_alpha(255)
         h = side * tg.aspect
-        grow = min(1.0, max(0.0, (age / self.SHOW_S - 0.7) / 0.3)) if showing else 1.0
-        if grow > 0.0 and alpha >= 1.0:  # its points under it, in mist, once it has formed
+        grow = min(1.0, max(0.0, (age - landed) / 0.25))
+        if grow > 0.0 and alpha >= 1.0:  # its points under it, in mist, once it has landed
             pts = points_of(self.cfg.raw(), tg.product, tg.tier)
             self.text.blit(surf, f"+{pts}", "numbers", vp.s(4.6), theme.MIST, vp.px(cx, cy + h / 2 + 6.5),
                            alpha=int(255 * grow))
-        age = t - tg.born
-        spawn = 1.0 - min(1.0, age / 0.45)
+        # A new box: four white corner marks close in on the place where it lands, then fade
+        # (they stay faint on tiny boxes, the ones that start Market Rush)
+        spawn = 1.0 - min(1.0, max(0.0, (age - landed) / self.TICKS_FADE_S))
         if spawn > 0.0 or tg.tier == "tiny":
-            # the ticks close in over the first moments (6 frames on the design), then stay faint on tiny boxes
-            close = _ease_out(min(1.0, age / 0.2))
-            inset = 3.0 + 9.0 * (1.0 - close)
-            strength = max(spawn, 0.55 if tg.tier == "tiny" else 0.0) * alpha
+            close = _ease_out(min(1.0, age / landed))
+            inset = 3.0 + 14.0 * (1.0 - close)
+            strength = max(spawn, 0.55 if tg.tier == "tiny" else 0.0) * alpha * min(1.0, age / 0.08)
             col = theme.lerp_color(bg, theme.CORAL if storm > 0.5 else theme.WHITE, strength)
-            self._ticks(surf, cx, cy, tg.size / 2 + inset, tg.size * tg.aspect / 2 + inset, min(7.0, tg.size * 0.2), col)
+            lx, ly = cx, cy + tg._drop_offset(t)  # its place, not where it is in the drop
+            self._ticks(surf, lx, ly, tg.size / 2 + inset, tg.size * tg.aspect / 2 + inset,
+                        min(7.0, tg.size * 0.2), col, 0.75)
 
-    SHOW_S = 0.9  # s, a new tile's appear morph (after the reference clip's icon)
+    SHOW_S = 0.9  # s, after this a resting tile's halo may open now and then
+    TICKS_FADE_S = 0.5  # s, a new box's corner marks fade after it has landed
+    SHATTER_S = 0.45  # s, a hit box breaking into four pieces that fly apart
+    HIT_FX_S = 1.0  # s, the hit's points floating up (the shatter is the first part)
     # A resting tile, besides its slow float (motion): it turns a little now and then, as under the
     # clip's slowly moving camera, and a thin halo opens around it and fades every so often.
     TURN_DEPTH = 0.07  # the narrowest it gets: 93 % of its width
@@ -728,6 +718,56 @@ class Renderer:
         r = side * 0.62 + 7.0 * _ease_out(q)
         col = theme.lerp_color(bg, theme.MIST, 0.55 * (1.0 - q) ** 1.3)
         pygame.draw.aacircle(surf, col, c, int(self.vp.sf(r)), max(1, self.vp.s(0.3)))
+
+    def draw_hit_fx(self, surf, h: dict, age: float, bg) -> None:
+        """A box that was hit, ``age`` s ago: it breaks into four pieces that fly apart, spin and
+        fade, and its points float up where it was. h: product, x, y (cm), side (cm), points,
+        mult, name, color, big. Also the attract screen's demonstration."""
+        vp = self.vp
+        if age < 0.0:
+            return
+        if age < self.SHATTER_S:
+            q = age / self.SHATTER_S
+            e = _ease_out(q)
+            spr = self.sprites.product(h["product"], vp.s(h["side"]))
+            w, hh = spr.get_size()
+            cx, cy = vp.px(h["x"], h["y"])
+            reach = vp.sf(h["side"]) * 0.75 * e  # how far the pieces have flown
+            fall = vp.sf(h["side"]) * 0.5 * q * q  # and dropped
+            alpha = int(255 * (1.0 - q) ** 1.2)
+            for k, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
+                piece = spr.subsurface(pygame.Rect(0 if sx < 0 else w // 2, 0 if sy < 0 else hh // 2,
+                                                   w // 2 if sx < 0 else w - w // 2,
+                                                   hh // 2 if sy < 0 else hh - hh // 2))
+                img = pygame.transform.rotozoom(piece, sx * sy * -(35 + 12 * k) * e, 1.0 - 0.35 * q)
+                img.set_alpha(alpha)
+                px = cx + sx * (w / 4 + reach)
+                py = cy + sy * (hh / 4 + reach * 0.8) + fall
+                surf.blit(img, img.get_rect(center=(int(px), int(py))))
+            if q < 0.35:  # a short white flash on the cracks as it breaks
+                f = 1.0 - q / 0.35
+                col = theme.lerp_color(bg, theme.WHITE, f)
+                lw = max(1, vp.s(0.8))
+                pygame.draw.line(surf, col, (cx - w // 2 - reach, cy), (cx + w // 2 + reach, cy), lw)
+                pygame.draw.line(surf, col, (cx, cy - hh // 2 - reach), (cx, cy + hh // 2 + reach), lw)
+        # the points (and the multiplier) float up where the box was, the product's name under them
+        p = age / self.HIT_FX_S
+        if p < 1.0:
+            rise = 16.0 * _ease_out(p)
+            fade = 1.0 if p < 0.6 else 1.0 - (p - 0.6) / 0.4
+            pop = 0.7 + 0.3 * _ease_back(min(1.0, age / 0.2))
+            x, y = h["x"], h["y"] - rise
+            big = 15.0 if h.get("big") else 12.0
+            img = self.text.render(h["points"], "numbers", vp.s(big * pop), h["color"])
+            img.set_alpha(int(255 * fade))
+            surf.blit(img, img.get_rect(center=vp.px(x, y)))
+            img.set_alpha(255)
+            if h.get("mult"):
+                self.text.blit(surf, h["mult"], "numbers", vp.s(7 * pop), theme.WHITE,
+                               vp.px(x + big * 0.9 + 4, y - 2), "midleft", alpha=int(255 * fade))
+            if h.get("name"):
+                self.text.blit(surf, h["name"], "heading", vp.s(4.6), theme.MIST, vp.px(x, y + big * 0.62 + 2),
+                               alpha=int(230 * fade))
 
     def _draw_showing(self, surf, tg, side: float, c: tuple[int, int], p: float) -> None:
         """A new tile appearing, p 0..1 (the reference clip's icon): born small as a thin sliver

@@ -2,8 +2,8 @@
 to play, with nobody to explain it.
 
     title   the 10 product tiles circle the title slowly (1 turn in 40 s), 01 ATTRACT
-    demo    a round played by itself on a small field: products appear, a ball hits one, its
-            name and points open in rings, a new product takes its place and the boxes move;
+    demo    a round played by itself on a small field: products drop in, a ball hits one, it
+            shatters and its points float up, a new product drops in and the boxes move;
             then the three sizes and their points (the smaller, the more), and a tiny box
             hit that sets off Market Rush
     board   today's best three, 02 LEADERBOARD (only once somebody has played today)
@@ -20,10 +20,10 @@ import pygame
 
 from .. import config as C
 from . import theme
-from .effects import Badge
 
 TITLE_TURN_S = 40.0  # one turn of the circle of tiles
 DEMO_TILE = {"medium": 40.0, "small": 31.0, "tiny": 22.0}  # tile widths on the demo field, cm
+DROP_CM, DROP_S = 14.0, 0.35  # a new tile drops in from this far above, in this long (as layout.spawn_*)
 
 
 def _ease(p: float) -> float:
@@ -71,9 +71,16 @@ class DemoTile:
     def scale(self, t: float) -> float:
         if t < self.born:
             return 0.0
-        if t >= self.gone:
-            return max(0.0, 1.0 - (t - self.gone) / 0.22)
-        return _back((t - self.born) / 0.35)
+        if t >= self.gone:  # a hit tile breaks apart at once (Renderer.draw_hit_fx); others shrink away
+            return 0.0 if self.hit else max(0.0, 1.0 - (t - self.gone) / 0.22)
+        return 1.0  # it drops in at its full size (drop)
+
+    def drop(self, t: float) -> float:
+        """cm above its place while it drops in, as the game's new boxes (Target.drop)."""
+        p = (t - self.born) / DROP_S
+        if p >= 1.0 or p < 0.0:
+            return 0.0
+        return DROP_CM * (1.0 - _back(p))
 
 
 class Attract:
@@ -262,8 +269,17 @@ class Attract:
             if tile.extra:
                 s *= 1.0 - _smooth(_phase(t, self.CALM, 0.4))
             x, y = tile.pos(t, speed)
+            land_y = y
+            y -= tile.drop(t)
             w = DEMO_TILE[tile.tier]
-            alpha = int(255 * fade_out * (1.0 - 0.92 * sizes))
+            alpha = int(255 * fade_out * (1.0 - 0.92 * sizes) * min(1.0, (t - tile.born) / 0.1))
+            if 0.0 <= t - tile.born < DROP_S + 0.5:  # its corner marks close in where it lands, then fade
+                age = t - tile.born
+                close = _ease(min(1.0, age / DROP_S))
+                k = 1.0 - max(0.0, (age - DROP_S) / 0.5)
+                col = theme.lerp_color(theme.FIELD, theme.WHITE, k * fade_out)
+                inset = 3 + 12 * (1 - close)
+                r._ticks(surf, x, land_y, w / 2 + inset, w * 0.46 + inset, 5, col, 0.6)
             self._tile(surf, tile.key, w, x, y, s, alpha=alpha)
             if tile.tier == "tiny" and s > 0.5:  # the tiny box keeps its ticks
                 col = theme.lerp_color(theme.FIELD, theme.CORAL if storm > 0.5 else theme.WHITE, 0.6 * alpha / 255)
@@ -328,18 +344,15 @@ class Attract:
             ball = r.sprites.dot(vp.sf(4.2 * (1 - 0.3 * p)), theme.WHITE)
             surf.blit(ball, ball.get_rect(center=vp.px(x, y)))
         age = t - when
-        if 0.0 <= age < 1.35:
+        if 0.0 <= age < r.HIT_FX_S:  # the same as in the game: it shatters and its points float up
             storm = target is self.tiny
             color = theme.CORAL if storm else theme.TURQ
-            q = age / 0.5
-            if q < 1.0:
-                rad = vp.sf(DEMO_TILE[target.tier] / 2 + 18 * _ease(q))
-                pygame.draw.aacircle(surf, theme.lerp_color(color, theme.FIELD, q), vp.px(tx, ty), int(rad), max(1, vp.s(1.0)))
             pts = C.points_of(r.cfg.raw(), target.key, target.tier)
             if storm:
                 pts = int(round(pts))  # the hit that starts the rush is not multiplied
-            badge = Badge(tx, ty, r.product_name(target.key), f"+{pts}", "", color, storm, age=age)
-            r.fx._draw_badge(surf, vp, badge, theme.DEEP if storm else theme.FIELD)
+            r.draw_hit_fx(surf, {"product": target.key, "x": tx, "y": ty, "side": DEMO_TILE[target.tier],
+                                 "points": f"+{pts}", "mult": "", "name": r.product_name(target.key),
+                                 "color": color, "big": storm}, age, theme.DEEP if storm else theme.FIELD)
 
     def _sizes(self, surf, a: float) -> None:
         """The three sizes side by side with their points: the smaller, the more (03 SCORING)."""

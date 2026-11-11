@@ -122,8 +122,11 @@ class Target:
     y: float
     motion: Motion = field(default_factory=Motion)
     motion_scale: float = 1.0  # dense layouts shrink the movement so targets never overlap
-    born: float = 0.0  # game time the target appeared
+    born: float = 0.0  # game time the target appears (after a hit: a moment later, see layout.spawn_delay_s)
     spawn_dur: float = 0.3
+    # cm: a new box drops in from this far above its place, with a small bounce, at its full size
+    # (0: it pops up from small instead). Part of center_at, so the hit test follows the drop.
+    drop: float = 0.0
     # Glide from the previous layout position (set by move_to).
     from_x: float = 0.0
     from_y: float = 0.0
@@ -173,9 +176,21 @@ class Target:
 
     # -- what is on screen --------------------------------------------------
     def spawn_factor(self, t: float) -> float:
-        if self.spawn_dur <= 0.0:
+        if t < self.born:
+            return 0.0  # not on the wall yet
+        if self.spawn_dur <= 0.0 or self.drop > 0.0:
             return 1.0
         return max(0.0, ease_out_back((t - self.born) / self.spawn_dur))
+
+    def shown(self, t: float) -> bool:
+        """On the wall at t: appeared and not gone."""
+        return t >= self.born and not self.gone(t)
+
+    def _drop_offset(self, t: float) -> float:
+        """cm above its place while it drops in (a little below it at the bounce)."""
+        if self.drop <= 0.0 or self.spawn_dur <= 0.0 or t >= self.born + self.spawn_dur:
+            return 0.0
+        return self.drop * (1.0 - ease_out_back(max(0.0, (t - self.born) / self.spawn_dur), 1.2))
 
     def gone(self, t: float) -> bool:
         return self.die_at is not None and t >= self.die_at + self.die_dur
@@ -189,7 +204,7 @@ class Target:
         lx, ly = self._layout_pos(t)
         dx, dy = self.motion.offset(self._age(t), self.speed)
         s = self._motion_scale(t)
-        return lx + dx * s, ly + dy * s
+        return lx + dx * s, ly + dy * s - self._drop_offset(t)
 
     def full_side_at(self, t: float) -> float:
         """The width without the pop-in (the drawing's appear morph grows it by itself)."""
@@ -199,7 +214,7 @@ class Target:
         return self.size * self.motion.scale(self._age(t), self.speed) * self.spawn_factor(t) * self._leave_factor(t)
 
     def contains(self, px: float, py: float, t: float, tolerance: float = 0.0) -> bool:
-        if self.gone(t):
+        if not self.shown(t):  # gone, or a new box that has not appeared yet
             return False
         cx, cy = self.center_at(t)
         side = self.side_at(t)

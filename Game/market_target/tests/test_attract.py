@@ -88,19 +88,22 @@ def test_starting_a_game_leaves_the_loop_and_it_comes_back_after(app):
     assert app.flow.state == F.ATTRACT and app.frame_errors == 0
 
 
-def test_a_hit_shows_the_products_name_and_its_points(app):
+def test_a_hit_shatters_and_shows_the_products_name_and_its_points(app):
     app, clock = app
     app.flow.start_for("سارا", app.clock.now())
     step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.3)
     rnd = app.flow.round
     tg = rnd.targets[0]
     name = next(p["name"] for p in app.cfg.raw()["products"] if p["key"] == tg.product)
+    points = next(p["points"] for p in app.cfg.raw()["products"] if p["key"] == tg.product)
     sensor_hit(app, clock, *tg.center_at(app.clock.now()))
     step(app, clock, 0.05)
-    badge = app.renderer.fx.badges[-1]
-    assert badge.name == name and badge.points == f"+{next(p['points'] for p in app.cfg.raw()['products'] if p['key'] == tg.product)}"
-    step(app, clock, 2.0)
-    assert not app.renderer.fx.badges  # gone after a moment
+    h = app.renderer._shatters[-1]
+    assert h["name"] == name and h["points"] == f"+{points}" and h["product"] == tg.product
+    assert not app.renderer.fx.badges and not app.renderer.fx.dot_rings  # no rings: nothing that looks like a box
+    for _ in range(40):  # through the shatter and the points floating up
+        step(app, clock, 0.035)
+    assert not app.renderer._shatters  # gone after a moment
     assert app.frame_errors == 0
 
 
@@ -145,7 +148,7 @@ def test_the_hit_morphs_out_of_the_box_and_zooms_away():
     assert all(math.hypot(x, y) == pytest.approx(10) for x, y in circle)
 
 
-def test_a_hit_badge_starts_from_the_box_that_was_hit(app):
+def test_the_shatter_starts_from_the_box_that_was_hit(app):
     app, clock = app
     app.flow.start_for("سارا", app.clock.now())
     step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.3)
@@ -153,8 +156,5 @@ def test_a_hit_badge_starts_from_the_box_that_was_hit(app):
     x, y = tg.center_at(app.clock.now())
     sensor_hit(app, clock, x, y)
     step(app, clock, 0.02)
-    b = app.renderer.fx.badges[-1]
-    assert b.tile is not None and b.tile[0] == pytest.approx(x, abs=1.0) and b.tile[2] > 0
-    for _ in range(40):  # through the morph, the hold and the zoom out
-        step(app, clock, 0.035)
-    assert app.frame_errors == 0
+    h = app.renderer._shatters[-1]
+    assert h["x"] == pytest.approx(x, abs=1.0) and h["y"] == pytest.approx(y, abs=1.0) and h["side"] > 0

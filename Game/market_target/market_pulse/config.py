@@ -101,7 +101,13 @@ DEFAULTS: dict[str, Any] = {
         # After a hit: false, the other boxes stay where they are and the new one takes a free
         # spot (as in the reference clip); true, every box glides to a new spot (min_move_cm).
         "move_on_hit": False,
-        "spawn_s": 0.32,
+        "spawn_s": 0.32,  # s, a new box dropping in (or popping up, with spawn_drop_cm 0)
+        # A new box drops in from this far above its place, with a small bounce (0: it pops up
+        # from small). Unlike a hit box, which shatters: the two never look alike.
+        "spawn_drop_cm": 14,
+        # After a hit the new box appears this much later, when the hit box has shattered: no
+        # new box shows while the old one breaks, so nobody takes one for the other.
+        "spawn_delay_s": 0.4,
         # below the circle of tiles on the attract screen (MOFID_UI v4.1 page 1)
         "start_button": {"x_cm": 150, "y_cm": 318, "size_cm": 70},
     },
@@ -530,6 +536,8 @@ _RANGES: dict[tuple[str, ...], tuple[float, float]] = {
     ("rush", "spawn_interval_s"): (0.2, 60),
     ("rush", "spawn_lifetime_s"): (0.5, 600),
     ("rush", "transition_s"): (0, 5),
+    ("layout", "spawn_delay_s"): (0, 3),
+    ("layout", "spawn_drop_cm"): (0, 60),
     ("flow", "registration_timeout_s"): (5, 3600),
     ("flow", "name_max_chars"): (1, 40),
     ("flow", "intro_s"): (0, 10),
