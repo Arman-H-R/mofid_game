@@ -159,8 +159,7 @@ class Attract:
         """The turquoise start square with its corner ticks breathing around it (06 START TARGET)."""
         r, vp = self.r, self.r.vp
         sb = r.cfg.layout.start_button
-        if not r.cfg.flow.start_by_throw:
-            r.text.blit(surf, r.T.cta_operator, "heading", vp.s(10), theme.WHITE, vp.px(r.W / 2, sb.y_cm))
+        if not r.cfg.flow.start_by_throw:  # started from the phone page or the keys: nothing on the wall
             return
         beat = 0.5 - 0.5 * math.cos(now * math.tau / 1.6)
         half = sb.size_cm / 2

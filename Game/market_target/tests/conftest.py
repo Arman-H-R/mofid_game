@@ -34,6 +34,7 @@ def v4_cfg(overrides: dict | None = None) -> config.Section:
     """The game with the rules before MOFID_UI v11, plus ``overrides``."""
     raw = copy.deepcopy(config.DEFAULTS)
     warnings: list[str] = []
+    config._merge(raw, copy.deepcopy(START_BOX), (), warnings)
     config._merge(raw, copy.deepcopy(V4), (), warnings)
     if overrides:
         config._merge(raw, overrides, (), warnings)
@@ -42,10 +43,18 @@ def v4_cfg(overrides: dict | None = None) -> config.Section:
     return config.Section(raw)
 
 
-def game_cfg(overrides: dict | None = None) -> config.Section:
-    """The game as it ships, plus ``overrides``; fails on any config warning."""
+# The start box and the name screen (still there, behind settings; the game ships without them:
+# it starts from the phone page or Space / Enter at once). Their tests run with them on.
+START_BOX = {"flow": {"start_by_throw": True, "quick_start": False}}
+
+
+def game_cfg(overrides: dict | None = None, shipped: bool = False) -> config.Section:
+    """The game as it ships (with the start box and name screen on, unless ``shipped``), plus
+    ``overrides``; fails on any config warning."""
     raw = copy.deepcopy(config.DEFAULTS)
     warnings: list[str] = []
+    if not shipped:
+        config._merge(raw, copy.deepcopy(START_BOX), (), warnings)
     if overrides:
         config._merge(raw, overrides, (), warnings)
     config._validate(raw, warnings)

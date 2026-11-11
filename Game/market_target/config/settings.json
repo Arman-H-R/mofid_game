@@ -262,7 +262,7 @@
     }
   },
   "flow": {
-    "start_by_throw": true,
+    "start_by_throw": false,
     "show_instructions": false,
     "registration": true,
     "registration_timeout_s": 120,
@@ -274,7 +274,8 @@
     "attract_panel_s": 8.0,
     "attract_demo": true,
     "attract_demo_s": 14.0,
-    "time_warning_s": 8
+    "time_warning_s": 8,
+    "quick_start": true
   },
   "input": {
     "sources": [

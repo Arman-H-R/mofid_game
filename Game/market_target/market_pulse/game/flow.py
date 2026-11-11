@@ -186,7 +186,8 @@ class Flow:
         return out
 
     def _after_instructions(self, now: float) -> None:
-        if self.cfg.flow.registration and not (self.player and self.player.get("name")):
+        quick = bool(self.cfg.flow.get("quick_start", False))  # the start keys: no name screen
+        if self.cfg.flow.registration and not quick and not (self.player and self.player.get("name")):
             self.name_input = ""
             self.register_error_at = None
             self._register_touched = now

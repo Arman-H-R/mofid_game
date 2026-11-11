@@ -4,8 +4,8 @@
     .venv\\Scripts\\python tools\\make_gameplay_video.py --seconds 20   (a short test run)
 
 The real game runs headless with config/settings.json and plays one whole session, frame by
-frame on a simulated clock: the start box is hit, a name is typed, the how-to page, the
-countdown, a full round with thrown balls (most hit a box, some miss), the ending and the
+frame on a simulated clock: started as the operator does (a name and Play on the phone
+page), the countdown, a full round with thrown balls (most hit a box, some miss), the ending and the
 results. Each frame is the game's own picture; a ball is drawn flying to where it lands. A
 1920 x 1080 frame shows the wall on the right and, on the left, which step of the game this
 is. No sound. H.264, 30 frames a second.
@@ -42,13 +42,12 @@ FPS = 30
 OUT_W, OUT_H = 1920, 1080
 GAME_W, GAME_H = 810, 1080  # the 3:4 wall, the full height of the video
 FLY_S = 0.4  # a ball's flight to the wall
+MAX_S = 180.0  # the longest video
 NAME = "آرمان"
 
-STEPS = [  # (flow states, title, what to do)
-    ({F.ATTRACT}, "شروع", "توپ را به مربع «شروع» بزنید"),
-    ({F.INSTRUCTIONS}, "راهنما", "باکس‌های کوچکتر، امتیاز بیشتر"),
-    ({F.REGISTER}, "نام", "نام خود را بنویسید و Enter بزنید"),
-    ({F.INTRO, F.COUNTDOWN}, "آماده", "شمارش معکوس، بعد بازی شروع می‌شود"),
+STEPS = [  # (flow states, title, what happens)
+    ({F.ATTRACT}, "شروع", "اپراتور نام بازیکن را می‌نویسد و بازی شروع می‌شود"),
+    ({F.INSTRUCTIONS, F.REGISTER, F.INTRO, F.COUNTDOWN}, "آماده", "شمارش معکوس، بعد بازی شروع می‌شود"),
     ({F.PLAYING}, "بازی", "۶۰ ثانیه، توپ نامحدود: به باکس‌ها بزنید"),
     ({F.ENDING}, "پایان", "زمان تمام شد"),
     ({F.RESULTS}, "نتیجه", "امتیاز، امتیاز قرعه‌کشی و رتبه‌ی امروز"),
@@ -73,7 +72,7 @@ def game_settings(tmp: Path) -> Path:
     raw.setdefault("camera", {})["enabled"] = False
     raw.setdefault("results", {}).update({"log_file": str(tmp / "results.jsonl"), "webhook_url": ""})
     raw.setdefault("web", {})["enabled"] = False
-    raw.setdefault("flow", {}).update({"show_instructions": True, "instructions_s": 7.0})
+    raw.setdefault("flow", {}).update({"show_instructions": False})
     path = tmp / "settings.json"
     path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
     return path
@@ -89,12 +88,13 @@ class Recorder:
         self.app = App(cfg, Paths(ROOT), clock_source=self.clock, start_inputs=False)
         self.W, self.H = float(cfg.wall.width_cm), float(cfg.wall.height_cm)
         self.frame_n = 0
-        self.max_frames = int(max_s * FPS) if max_s else None
+        self.max_frames = int((max_s or MAX_S) * FPS)  # a run that went wrong never loops forever
         self.flights: list[tuple[float, float, float, float, float]] = []  # (land_t, x, y, from_x, from_y) cm
         self.rng = random.Random(7)
         self.canvas = pygame.Surface((OUT_W, OUT_H))
         out.parent.mkdir(parents=True, exist_ok=True)
-        self.container = av.open(str(out), "w")
+        self.part = out.with_name(out.stem + ".part.mp4")  # the real file is replaced only when complete
+        self.container = av.open(str(self.part), "w", options={"movflags": "+faststart"})
         self.stream = self.container.add_stream("libx264", rate=FPS)
         self.stream.width, self.stream.height = OUT_W, OUT_H
         self.stream.pix_fmt = "yuv420p"
@@ -205,11 +205,15 @@ class Recorder:
             img = text.render(pts, "body", 32, theme.MIST)
             cv.blit(img, img.get_rect(topright=(right, y + 70)))
 
-    def close(self) -> None:
+    def close(self, ok: bool = True) -> None:
         for packet in self.stream.encode():
             self.container.mux(packet)
         self.container.close()
         self.app.shutdown()
+        if ok:
+            os.replace(self.part, self.out)
+        else:
+            self.part.unlink(missing_ok=True)
 
     # -- the session --------------------------------------------------------------------------------
     def run(self) -> None:
@@ -218,21 +222,9 @@ class Recorder:
         if hasattr(app.renderer, "attract"):
             now = app.clock.now()
             self.clock.t += app.renderer.attract.start_of("title", now, False) - now + 0.05
-        go = self.step(5.0)  # the attract screen
-        sb = cfg.layout.start_button
-        from market_pulse.config import layout_left, layout_top
-        if go:
-            self.throw(sb.x_cm + layout_left(cfg), sb.y_cm + layout_top(cfg))  # the start box
-            go = self.step(1.0)
-        while go and app.flow.state == F.INSTRUCTIONS:
-            go = self.step(0.5)
-        if go and app.flow.state == F.REGISTER:
-            go = self.step(1.2)
-            for ch in NAME:  # the name, one letter at a time
-                app._handle_event(pygame.event.Event(pygame.TEXTINPUT, text=ch), app.clock.now())
-                go = go and self.step(0.25)
-            go = go and self.step(0.8)
-            app._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0, unicode="\r"), app.clock.now())
+        go = self.step(6.0)  # the attract screen
+        if go and not app.flow.start_for(NAME, app.clock.now()):  # as the operator's phone page: a name and Play
+            raise RuntimeError(f"the round did not start (state {app.flow.state})")
         while go and app.flow.state != F.PLAYING:
             go = self.step(0.2)
         n = 0
@@ -253,10 +245,12 @@ def main() -> int:
     ap.add_argument("--seconds", type=float, help="stop after this many seconds of video (a test)")
     args = ap.parse_args()
     rec = Recorder(args.out, args.seconds)
+    ok = False
     try:
         rec.run()
+        ok = True
     finally:
-        rec.close()
+        rec.close(ok)
     print(f"{args.out}  {rec.frame_n / FPS:.1f} s, {rec.frame_n} frames")
     return 0
 

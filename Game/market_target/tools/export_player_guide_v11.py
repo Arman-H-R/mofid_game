@@ -121,18 +121,17 @@ def screens() -> tuple[dict[str, str], str, config.Section]:
     clock.t += app.renderer.attract.start_of("title", now, False) - now + 2.0
     run(0.5)
     shots["start"] = app.screen.copy()
-    sb = cfg.layout.start_button
-    ball(sb.x_cm + config.layout_left(cfg), sb.y_cm + config.layout_top(cfg))
-    run(1.0)
-    while app.flow.state == F.INSTRUCTIONS:
-        run(0.5)
-    if app.flow.state == F.REGISTER:
-        for ch in "سارا":
-            app._handle_event(pygame.event.Event(pygame.TEXTINPUT, text=ch), app.clock.now())
-        run(0.5)
-        shots["name"] = app.screen.copy()
-        app._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0, unicode="\r"), app.clock.now())
-    while app.flow.state != F.PLAYING:
+    if not app.flow.start_for("سارا", app.clock.now()):  # as the operator's phone page does
+        raise RuntimeError(f"the round did not start (state {app.flow.state})")
+    for _ in range(200):
+        if app.flow.state == F.COUNTDOWN:
+            break
+        run(0.2)
+    run(0.6)
+    shots["ready"] = app.screen.copy()
+    for _ in range(200):
+        if app.flow.state == F.PLAYING:
+            break
         run(0.2)
     run(4.0)
     rnd = app.flow.round
@@ -142,7 +141,9 @@ def screens() -> tuple[dict[str, str], str, config.Section]:
         ball(*tg.center_at(now))
         run(0.3 if k == 8 else 1.6)
     shots["play"] = app.screen.copy()
-    while app.flow.state != F.RESULTS:
+    for _ in range(400):  # never forever
+        if app.flow.state == F.RESULTS:
+            break
         run(0.5)
     run(5.0)
     shots["result"] = app.screen.copy()
@@ -171,8 +172,8 @@ def build(cfg, pics: dict[str, str], logo: str) -> Path:
     size_html = "".join(
         f'<div class="size"><div class="tile"><img src="{tile_uri(k)}" style="width:{px}px;height:{px}px"></div>'
         f'<b>+{n(t[tier]["points"])}</b><span>{label}</span></div>' for tier, label, px, k in sizes)
-    steps = (("start", "شروع", "توپ را به مربع «شروع» بزنید."),
-             ("name", "نام", "نام خود را بنویسید و Enter بزنید."),
+    steps = (("start", "شروع", "نام خود را به اپراتور بگویید؛ او بازی را برای شما شروع می‌کند."),
+             ("ready", "آماده", "روبه‌روی دیوار بایستید؛ بعد از شمارش معکوس بازی شروع می‌شود."),
              ("play", "بازی", f"بعد از شمارش معکوس، {secs} ثانیه فرصت دارید. به باکس‌ها بزنید."),
              ("result", "نتیجه", "امتیاز، امتیاز قرعه‌کشی و رتبه‌ی امروز خود را ببینید."))
     step_html = "".join(f'<div class="step">' + (f'<img src="{pics[k]}">' if k in pics else '<div class="noimg"></div>')

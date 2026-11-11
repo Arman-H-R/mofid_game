@@ -285,7 +285,12 @@ DEFAULTS: dict[str, Any] = {
         },
     },
     "flow": {
-        "start_by_throw": True,
+        # false: no start box on the wall (nothing about how to start is shown); the round starts
+        # from the phone page or the start keys (Space, Enter). true: a ball at the start box.
+        "start_by_throw": False,
+        # true: the start keys (and the operator's start message) begin the round at once, no name
+        # screen; a name comes from the phone page (without one the round is the guest's)
+        "quick_start": True,
         "show_instructions": False,  # the how-to page; off: players go straight to the logo intro
         # Ask for the player's name before the countdown. A name sent by a registration
         # system over the network skips the screen.

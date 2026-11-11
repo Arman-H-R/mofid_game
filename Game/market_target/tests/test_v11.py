@@ -144,3 +144,52 @@ def test_typing_the_lottery_scores_on_the_settings_page_keeps_them_in_order(tmp_
         assert saved["results"]["lottery_two_from"] == 4000 and saved["results"]["lottery_three_from"] == 4001
     finally:
         app.shutdown()
+
+
+# -- starting: no start box on the wall; the phone page or Space / Enter --------------------------------
+def shipped_app(tmp_path):
+    cfg = game_cfg({"display": {"resolution": [450, 600]}, "input": {"sources": []}, "camera": {"enabled": False},
+                    "results": {"log_file": str(tmp_path / "r.jsonl")}}, shipped=True)
+    clock = FakeTime()
+    return App(cfg, Paths(ROOT), clock_source=clock, start_inputs=False), clock
+
+
+def test_the_wall_shows_no_start_box_or_how_to_start(tmp_path):
+    assert config.DEFAULTS["flow"]["start_by_throw"] is False and config.DEFAULTS["flow"]["quick_start"] is True
+    app, clock = shipped_app(tmp_path)
+    try:
+        step(app, clock, 1.0)
+        sb = app.cfg.layout.start_button
+        x, y = app.vp.px(sb.x_cm, sb.y_cm)
+        from market_pulse.ui import theme
+        assert tuple(app.screen.get_at((x, y)))[:3] != tuple(theme.TURQ)[:3]  # no turquoise box there
+        sensor_hit(app, clock, sb.x_cm, sb.y_cm)  # a ball where the box was starts nothing
+        step(app, clock, 0.5)
+        assert app.flow.state == F.ATTRACT
+    finally:
+        app.shutdown()
+
+
+@pytest.mark.parametrize("key", [pygame.K_SPACE, pygame.K_RETURN])
+def test_space_or_enter_starts_the_round_at_once_without_the_name_screen(tmp_path, key):
+    app, clock = shipped_app(tmp_path)
+    try:
+        step(app, clock, 0.5)
+        app._handle_event(pygame.event.Event(pygame.KEYDOWN, key=key, mod=0, unicode=""), app.clock.now())
+        seen = set()
+        for _ in range(int((app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.5) * 30)):
+            step(app, clock, 1 / 30)
+            seen.add(app.flow.state)
+        assert F.REGISTER not in seen and app.flow.state == F.PLAYING
+    finally:
+        app.shutdown()
+
+
+def test_the_phone_page_still_starts_with_the_players_name(tmp_path):
+    app, clock = shipped_app(tmp_path)
+    try:
+        assert app.flow.start_for("آرمان", app.clock.now())
+        step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.5)
+        assert app.flow.state == F.PLAYING and app.flow.round_player["name"] == "آرمان"
+    finally:
+        app.shutdown()
