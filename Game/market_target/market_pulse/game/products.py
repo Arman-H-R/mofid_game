@@ -18,7 +18,7 @@ from typing import Iterable
 
 import numpy as np
 
-from ..config import TIERS, Section, products_of
+from ..config import TIERS, Section, by_size, products_of
 
 
 class Picker:
@@ -89,6 +89,8 @@ class Picker:
         fewest = min(count.values(), default=0.0)
         tier_of = {p["key"]: p.get("tier", "medium") for p in self.cfg.raw()["products"]}
         open_sizes = {tier_of[k] for k, n in count.items() if n == fewest}
+        if by_size(self.cfg.raw()):  # any product at any size: every size has one to show
+            open_sizes = set(self.sizes)
         for _ in range(2):  # the bag may hold only sizes with nothing new to show; then a fresh bag
             if not self._tier_bag:
                 self._refill_tiers()

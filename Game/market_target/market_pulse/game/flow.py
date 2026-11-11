@@ -356,6 +356,8 @@ class Flow:
             "player_name": player.get("name", ""),
             **summary,
             "profile": classify(summary, self.cfg.profiles),
+            # MOFID_UI v11: lottery points, results.lottery_per_1000 for every full 1000 points
+            "lottery_points": int(summary.get("score", 0)) // 1000 * int(self.cfg.results.get("lottery_per_1000", 0)),
             "balls": rnd.balls,
             "round_duration_s": rnd.duration if rnd.timed else 0,  # 0: no time limit
         }

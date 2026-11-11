@@ -212,7 +212,7 @@ def test_a_game_paused_before_stays_paused(tmp_path):
 
 
 def test_keys_change_values_live_and_save_writes_them(tmp_path):
-    app, clock = make_app(tmp_path)
+    app, clock = make_app(tmp_path, {"targets": {"points_by_size": False}})  # every product its own points
     page = app.settings
     try:
         key(app, pygame.K_F5)
@@ -233,6 +233,8 @@ def test_keys_change_values_live_and_save_writes_them(tmp_path):
         assert not page.open and page.changed() == []
         saved = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
         assert list(saved) == ["products"] and saved["products"][i] == {**config.PRODUCTS[i], "points": 60}
+        saved["targets"] = {"points_by_size": False}
+        (tmp_path / "settings.json").write_text(json.dumps(saved, ensure_ascii=False), encoding="utf-8")
         cfg, warnings = config.load(tmp_path / "settings.json")
         assert not warnings and config.points_of(cfg.raw(), "atiyeh", "tiny") == 60
     finally:
@@ -300,7 +302,8 @@ def test_the_mouse_drags_sliders_presses_buttons_and_flips_switches(tmp_path):
 
 
 def test_the_next_round_uses_the_new_values(tmp_path):
-    app, clock = make_app(tmp_path, {"rush": {"enabled": False}})
+    app, clock = make_app(tmp_path, {"rush": {"enabled": False}, "targets": {"points_by_size": False},
+                                     "layout": {"move_on_hit": False}})
     page = app.settings
     try:
         app.open_settings()

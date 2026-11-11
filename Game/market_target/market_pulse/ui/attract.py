@@ -22,8 +22,10 @@ from .. import config as C
 from . import theme
 
 TITLE_TURN_S = 40.0  # one turn of the circle of tiles
+from .effects import Badge  # noqa: E402
+
 DEMO_TILE = {"medium": 40.0, "small": 31.0, "tiny": 22.0}  # tile widths on the demo field, cm
-DROP_CM, DROP_S = 14.0, 0.35  # a new tile drops in from this far above, in this long (as layout.spawn_*)
+DROP_CM, DROP_S = 0.0, 0.35  # a new tile drops in from this far above, in this long (as layout.spawn_*)
 
 
 def _ease(p: float) -> float:
@@ -71,9 +73,9 @@ class DemoTile:
     def scale(self, t: float) -> float:
         if t < self.born:
             return 0.0
-        if t >= self.gone:  # a hit tile breaks apart at once (Renderer.draw_hit_fx); others shrink away
-            return 0.0 if self.hit else max(0.0, 1.0 - (t - self.gone) / 0.22)
-        return 1.0  # it drops in at its full size (drop)
+        if t >= self.gone:
+            return max(0.0, 1.0 - (t - self.gone) / 0.22)
+        return 1.0 if DROP_CM > 0 else _back((t - self.born) / 0.35)  # MOFID_UI v11: it scales 0 -> 100 %
 
     def drop(self, t: float) -> float:
         """cm above its place while it drops in, as the game's new boxes (Target.drop)."""
@@ -210,15 +212,15 @@ class Attract:
             y = cy + math.sin(a) * rad * (0.85 + 0.15 * come) + 1.5 * math.sin(now * 1.4 + i)
             self._tile(surf, p["key"], 27.0, x, y, come)
         a = int(255 * _phase(t, 0.2, 0.5))
-        r._micro(surf, r.T.attract_tag, vp.px(W / 2, 112), "center", theme.TURQ, 2.8)
-        img = r.text.render(r.T.title, "title", vp.s(36), theme.WHITE)
+        # MOFID_UI v11, 01 ATTRACT: «چالش تعاملی» in turquoise over «پرتاب هدفمند», the pulse under them
+        r.text.blit(surf, r.T.subtitle, "heading", vp.s(9), theme.TURQ, vp.px(W / 2 + 18, 126), alpha=a)
+        img = r.text.render(r.T.title, "title", r._fit(r.T.title, "title", 30, 150), theme.WHITE)
         k = 0.9 + 0.1 * _ease(_phase(t, 0.0, 0.5))
         img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
         img.set_alpha(a)
-        surf.blit(img, img.get_rect(center=vp.px(W / 2, 146)))
+        surf.blit(img, img.get_rect(center=vp.px(W / 2, 150)))
         img.set_alpha(255)
-        r.text.blit(surf, r.T.subtitle, "body", vp.s(7), theme.MIST, vp.px(W / 2, 172), alpha=a)
-        self._pulse_line(surf, W / 2, 192, 56, now)
+        self._pulse_line(surf, W / 2, 176, 56, now)
 
     # -- 02 how to play: a round that plays itself ----------------------------------------------------
     FIELD = (24.0, 96.0, 276.0, 268.0)  # the demo field, cm (x0, y0, x1, y1)
@@ -246,12 +248,13 @@ class Attract:
         r, vp, W = self.r, self.r.vp, self.r.W
         T = r.T
         x0, y0, x1, y1 = self.FIELD
-        storm = _smooth(_phase(t, self.HIT2 + 0.05, 0.4)) * (1.0 - _smooth(_phase(t, self.CALM, 0.6)))
+        rush_on = bool(r.cfg.rush.enabled)
+        storm = _smooth(_phase(t, self.HIT2 + 0.05, 0.4)) * (1.0 - _smooth(_phase(t, self.CALM, 0.6))) if rush_on else 0.0
         if storm > 0.0:
             self._storm_bg(surf, storm, t)
         r.text.blit(surf, T.demo_title, "title", vp.s(13), theme.WHITE, vp.px(W / 2, 50))
         step = T.demo_hit if t < self.NEW else T.demo_new if t < self.SIZES else T.demo_sizes if t < self.HIT2 - 0.6 \
-            else T.demo_rush
+            else (T.demo_rush if rush_on else T.demo_tiny)
         start = 0.0 if t < self.NEW else self.NEW if t < self.SIZES else self.SIZES if t < self.HIT2 - 0.6 else self.HIT2 - 0.6
         p = _phase(t, start, 0.35)
         r.text.blit(surf, step, "heading", vp.s(7), theme.CORAL if storm > 0.5 else theme.TURQ,
@@ -266,8 +269,10 @@ class Attract:
             s = tile.scale(t)
             if s <= 0:
                 continue
-            if tile.extra:
-                s *= 1.0 - _smooth(_phase(t, self.CALM, 0.4))
+            if tile.extra:  # Market Rush brings more boxes (none without it)
+                s *= (1.0 - _smooth(_phase(t, self.CALM, 0.4))) if rush_on else 0.0
+                if s <= 0:
+                    continue
             x, y = tile.pos(t, speed)
             land_y = y
             y -= tile.drop(t)
@@ -344,12 +349,19 @@ class Attract:
             ball = r.sprites.dot(vp.sf(4.2 * (1 - 0.3 * p)), theme.WHITE)
             surf.blit(ball, ball.get_rect(center=vp.px(x, y)))
         age = t - when
-        if 0.0 <= age < r.HIT_FX_S:  # the same as in the game: it shatters and its points float up
-            storm = target is self.tiny
-            color = theme.CORAL if storm else theme.TURQ
-            pts = C.points_of(r.cfg.raw(), target.key, target.tier)
-            if storm:
-                pts = int(round(pts))  # the hit that starts the rush is not multiplied
+        storm = target is self.tiny and bool(r.cfg.rush.enabled)
+        color = theme.CORAL if storm else theme.TURQ
+        pts = C.points_of(r.cfg.raw(), target.key, target.tier)
+        if r.cfg.ui.get("hit_style", "rings") != "shatter":  # as in the game: rings, the name and points
+            if 0.0 <= age < 1.35:
+                q = age / 0.5
+                if q < 1.0:
+                    rad = vp.sf(DEMO_TILE[target.tier] / 2 + 18 * _ease(q))
+                    pygame.draw.aacircle(surf, theme.lerp_color(color, theme.FIELD, q), vp.px(tx, ty), int(rad),
+                                         max(1, vp.s(1.0)))
+                badge = Badge(tx, ty, r.product_name(target.key), f"+{pts}", "", color, storm, age=age)
+                r.fx._draw_badge(surf, vp, badge, theme.DEEP if storm else theme.FIELD)
+        elif 0.0 <= age < r.HIT_FX_S:  # as in the game: it shatters and its points float up
             r.draw_hit_fx(surf, {"product": target.key, "x": tx, "y": ty, "side": DEMO_TILE[target.tier],
                                  "points": f"+{pts}", "mult": "", "name": r.product_name(target.key),
                                  "color": color, "big": storm}, age, theme.DEEP if storm else theme.FIELD)
@@ -369,7 +381,7 @@ class Attract:
             pts = C.points_of(raw, key, tier)
             r.text.blit(surf, f"+{pts}", "numbers", vp.s(13), theme.WHITE, vp.px(x, 196), alpha=alpha)
             r.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 214), alpha=alpha)
-            if tier == "tiny":
+            if tier == "tiny" and r.cfg.rush.enabled:
                 r.text.blit(surf, T.tiny_rush, "heading", vp.s(4.8), theme.CORAL, vp.px(x, 225), alpha=alpha)
         r.text.blit(surf, T.rule_size, "body", vp.s(5.2), theme.MIST, vp.px(W / 2, 246), alpha=alpha)
 

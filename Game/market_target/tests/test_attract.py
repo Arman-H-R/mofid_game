@@ -88,18 +88,44 @@ def test_starting_a_game_leaves_the_loop_and_it_comes_back_after(app):
     assert app.flow.state == F.ATTRACT and app.frame_errors == 0
 
 
-def test_a_hit_shatters_and_shows_the_products_name_and_its_points(app):
+def test_a_hit_shows_the_products_name_and_its_points(app):
+    """MOFID_UI v11, 05 GAMEPLAY: rings open with the product's name and its points."""
     app, clock = app
     app.flow.start_for("سارا", app.clock.now())
     step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.3)
     rnd = app.flow.round
     tg = rnd.targets[0]
     name = next(p["name"] for p in app.cfg.raw()["products"] if p["key"] == tg.product)
-    points = next(p["points"] for p in app.cfg.raw()["products"] if p["key"] == tg.product)
+    sensor_hit(app, clock, *tg.center_at(app.clock.now()))
+    step(app, clock, 0.05)
+    badge = app.renderer.fx.badges[-1]
+    assert badge.name == name and badge.points == f"+{app.cfg.targets[tg.tier].points}"
+    step(app, clock, 2.0)
+    assert not app.renderer.fx.badges  # gone after a moment
+    assert app.frame_errors == 0
+
+
+@pytest.fixture
+def shatter_app(tmp_path):
+    cfg = game_cfg({"display": {"resolution": [600, 800]}, "input": {"sources": []}, "camera": {"enabled": False},
+                    "results": {"log_file": str(tmp_path / "r.jsonl")}, "ui": {"hit_style": "shatter"}})
+    clock = FakeTime()
+    app = App(cfg, Paths(ROOT), clock_source=clock, start_inputs=False)
+    yield app, clock
+    app.shutdown()
+
+
+def test_a_hit_shatters_and_shows_the_products_name_and_its_points(shatter_app):
+    app, clock = shatter_app
+    app.flow.start_for("سارا", app.clock.now())
+    step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.3)
+    rnd = app.flow.round
+    tg = rnd.targets[0]
+    name = next(p["name"] for p in app.cfg.raw()["products"] if p["key"] == tg.product)
     sensor_hit(app, clock, *tg.center_at(app.clock.now()))
     step(app, clock, 0.05)
     h = app.renderer._shatters[-1]
-    assert h["name"] == name and h["points"] == f"+{points}" and h["product"] == tg.product
+    assert h["name"] == name and h["points"] == f"+{app.cfg.targets[tg.tier].points}" and h["product"] == tg.product
     assert not app.renderer.fx.badges and not app.renderer.fx.dot_rings  # no rings: nothing that looks like a box
     for _ in range(40):  # through the shatter and the points floating up
         step(app, clock, 0.035)
@@ -148,8 +174,8 @@ def test_the_hit_morphs_out_of_the_box_and_zooms_away():
     assert all(math.hypot(x, y) == pytest.approx(10) for x, y in circle)
 
 
-def test_the_shatter_starts_from_the_box_that_was_hit(app):
-    app, clock = app
+def test_the_shatter_starts_from_the_box_that_was_hit(shatter_app):
+    app, clock = shatter_app
     app.flow.start_for("سارا", app.clock.now())
     step(app, clock, app.cfg.flow.intro_s + app.cfg.flow.countdown_s + 0.3)
     tg = app.flow.round.targets[0]

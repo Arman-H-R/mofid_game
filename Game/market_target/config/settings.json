@@ -25,12 +25,13 @@
     "min_move_cm": 35,
     "transition_s": 0.35,
     "spawn_s": 0.32,
-    "move_on_hit": false,
+    "move_on_hit": true,
     "start_button": {
       "x_cm": 150,
       "y_cm": 318,
       "size_cm": 70
-    }
+    },
+    "spawn_drop_cm": 0
   },
   "round": {
     "balls": 10,
@@ -43,21 +44,22 @@
     "grow_to": 12,
     "medium": {
       "size_cm": 54,
-      "points": 10,
+      "points": 100,
       "weight": 3
     },
     "small": {
       "size_cm": 41,
-      "points": 15,
+      "points": 150,
       "weight": 3
     },
     "tiny": {
       "size_cm": 29,
-      "points": 30,
+      "points": 300,
       "weight": 2
     },
     "min_tiny": 1,
-    "min_size_cm": 20
+    "min_size_cm": 20,
+    "points_by_size": true
   },
   "products": [
     {
@@ -160,7 +162,7 @@
     }
   },
   "combo": {
-    "enabled": true,
+    "enabled": false,
     "levels": [
       {
         "after_hits": 2,
@@ -177,7 +179,7 @@
     ]
   },
   "rush": {
-    "enabled": true,
+    "enabled": false,
     "duration_s": 4,
     "trigger_tiny_hits": 1,
     "restart_on_tiny_hit": true,
@@ -398,14 +400,15 @@
     "webhook_url": "",
     "webhook_timeout_s": 4.0,
     "leaderboard_size": 5,
-    "show_names": true
+    "show_names": true,
+    "lottery_per_1000": 2
   },
   "web": {
     "enabled": true,
     "host": "0.0.0.0",
     "port": 8080,
     "pin": "",
-    "title": "بازار هدف"
+    "title": "پرتاب هدفمند"
   },
   "camera": {
     "enabled": true,
@@ -437,7 +440,8 @@
   "ui": {
     "digits": "fa",
     "target_shadow": true,
-    "combo_banner": true
+    "combo_banner": true,
+    "hit_style": "rings"
   },
   "fonts": {
     "title": [
@@ -471,15 +475,15 @@
     ]
   },
   "text": {
-    "title": "نبض بازار",
-    "subtitle": "بازی تعاملی گروه مالی مفید",
+    "title": "پرتاب هدفمند",
+    "subtitle": "چالش تعاملی",
     "start": "شروع",
     "cta_throw": "برای شروع، توپ را به این مربع بزنید",
     "cta_operator": "برای شروع آماده شوید",
     "next_player": "نوبت",
     "how_to_title": "راهنمای بازی",
     "rule_balls": "{balls} توپ و {seconds} ثانیه فرصت دارید",
-    "rule_time": "{seconds} ثانیه فرصت دارید",
+    "rule_time": "{seconds} ثانیه فرصت دارید؛ تعداد توپ نامحدود است",
     "rule_rush": "هر برخورد به باکس کوچک، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
     "register_title": "ثبت‌نام بازیکن",
     "register_prompt": "نام خود را وارد کنید",
@@ -488,21 +492,21 @@
     "register_start": "شروع بازی",
     "register_hint": "بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید",
     "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
-    "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
+    "rule_move": "بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند",
     "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-    "rule_size": "هر محصول امتیاز خودش را دارد؛ باکس کوچک‌تر، امتیاز بیشتر",
+    "rule_size": "باکس‌های کوچکتر، امتیاز بیشتر",
     "points_unit": "امتیاز",
     "tier_medium": "باکس بزرگ",
     "tier_small": "باکس متوسط",
     "tier_tiny": "باکس کوچک",
     "tiny_rush": "+ طوفان بازار",
-    "attract_tag": "9 PRODUCTS · ONE MARKET",
+    "attract_tag": "GROUP MOFID · INTERACTIVE CHALLENGE",
     "demo_title": "چطور بازی کنیم؟",
     "demo_hit": "توپ را به محصول‌ها بزنید",
     "demo_new": "محصول تازه جای آن را می‌گیرد",
-    "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
+    "demo_sizes": "باکس‌های کوچکتر، امتیاز بیشتر",
     "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-    "loading_market": "LOADING THE MARKET · 9 PRODUCTS",
+    "loading_market": "GET READY · 9 PRODUCTS",
     "portfolio": "سبد محصولات شما",
     "rush_title": "طوفان بازار",
     "rush_start": "طوفان بازار! امتیاز {m}",
@@ -517,7 +521,7 @@
     "multiplier": "ضریب",
     "combo_up": "ضریب {m}!",
     "market_busier": "بازار شلوغ‌تر شد!",
-    "end_title": "پایان دور!",
+    "end_title": "پایان",
     "end_time": "زمان تمام شد",
     "end_balls": "توپ‌ها تمام شد",
     "results_title": "امتیاز شما",
@@ -537,7 +541,13 @@
     "slogan": "پیشرفت مداوم",
     "paused": "توقف",
     "simulation": "حالت شبیه‌سازی",
-    "sensor_offline": "حسگر متصل نیست"
+    "sensor_offline": "حسگر متصل نیست",
+    "how_to_sub": "باکس‌ها را هدف بگیرید",
+    "balls_unlimited": "توپ نامحدود",
+    "results_lottery": "امتیاز شما در قرعه‌کشی",
+    "results_lottery_rule": "هر ۱۰۰۰ امتیاز معادل {n} امتیاز قرعه‌کشی",
+    "results_hits_ok": "برخورد موفق",
+    "demo_tiny": "باکس کوچک: بیشترین امتیاز"
   },
   "debug": {
     "overlay": false,

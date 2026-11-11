@@ -1,4 +1,15 @@
-# Market Pulse · نبض بازار
+# پرتاب هدفمند · چالش تعاملی (Market Pulse)
+
+**MOFID_UI v11** (this version): the game is «چالش تعاملی / پرتاب هدفمند», a simple game of
+aiming at the boxes. The box's size sets the points (big +100, medium +150, small +300) and
+any product can show at any size (`targets.points_by_size`); no multiplier (`combo.enabled`
+false) and no Market Rush (`rush.enabled` false); after every hit all boxes move
+(`layout.move_on_hit`); a hit opens rings with the product and its points (`ui.hit_style`
+"rings", or "shatter"); a new box scales up inside its corner ticks, 0.4 s after a hit. The
+results page (PDF page 8) shows the score and its line, the lottery points
+(`results.lottery_per_1000` for every full 1000 points, also saved as `lottery_points`), the
+hits and today's rank: no play style, multiplier or product chart. The older rules are still
+there and come back by turning those settings on.
 
 An interactive ball-throwing game for a Mofid Securities (کارگزاری مفید) LED wall. Players
 throw soft balls at moving coloured boxes on a 3 × 4 m wall. Python with pygame-ce, built

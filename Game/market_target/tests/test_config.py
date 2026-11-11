@@ -38,6 +38,10 @@ def test_the_9_product_tiles_ship_with_the_game_with_their_size_and_points():
     assert {p["name"] for p in raw["products"]} == set(TABLE)
     for gone in ("gold", "hamnag", "tavan", "hami", "boursview2", "jet"):  # taken out, tile files too
         assert gone not in keys and not (ROOT / "assets" / "products" / f"{gone}.png").exists()
+    # MOFID_UI v11: the size sets the points and any product shows at any size
+    assert config.tier_points(raw, "tiny") == 300 and config.products_of(raw, "small") == keys
+    assert [config.tier_points(raw, t) for t in ("medium", "small", "tiny")] == [100, 150, 300]
+    raw["targets"]["points_by_size"] = False  # the rules before: every product its own size and points
     assert config.tier_points(raw, "tiny") == 30 and config.products_of(raw, "small") == ["bimeh", "amoozesh", "jetcard"]
 
 

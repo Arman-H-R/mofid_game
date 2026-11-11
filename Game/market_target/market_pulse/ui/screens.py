@@ -53,6 +53,7 @@ LOGOS = {  # key: (SVG asset in assets/manifest.json, raster fallback in assets/
     "fa_h_white_small": ("logo.fa_horizontal_white", "logo_fa_horizontal_white.png"),
     "fa_s_white": ("logo.fa_stacked_white", "logo_fa_stacked_white.png"),
     "fa_s": ("logo.fa_stacked", "logo_fa_stacked.png"),
+    "fa_s_white_small": ("logo.fa_stacked_white", "logo_fa_stacked_white.png"),
 }
 
 BRAND_NAME = "گروه مالی مفید"  # the name shown with the logo (the artwork itself says «کارگزاری مفید»)
@@ -198,6 +199,7 @@ class Renderer:
             "fa_h_white": self._logo("fa_h_white", width_cm=100),
             "fa_h_white_small": self._logo("fa_h_white_small", width_cm=58),
             "fa_s_white": self._logo("fa_s_white", width_cm=84),
+            "fa_s_white_small": self._logo("fa_s_white_small", width_cm=46),
         }
         self.bg_field = self._build_field()
         # The instructions page is dense text: plain dot grid, no symbol accents behind it. On a
@@ -380,7 +382,7 @@ class Renderer:
         every MOFID_UI v4.1 screen shares. On the menus' frame (self.vp)."""
         vp, W, H = self.vp, self.W, self.H
         if caption is not None:
-            self._micro(bg, "MARKET PULSE", vp.px(16, 16))
+            self._micro(bg, "GROUP MOFID", vp.px(16, 16))
             self._micro(bg, caption, vp.px(16, 23))
             logo = self.logos.get("fa_h_white_small")
             if logo is not None:
@@ -388,7 +390,7 @@ class Renderer:
         y = H - 20
         pygame.draw.line(bg, theme.lerp_color(theme.FIELD, theme.MIST, 0.25), vp.px(16, y), vp.px(W - 16, y),
                          max(1, vp.s(0.25)))
-        self._micro(bg, "MOFID SECURITIES · MARKET PULSE" if caption is None else "MOFID SECURITIES",
+        self._micro(bg, "GROUP MOFID · INTERACTIVE CHALLENGE" if caption is None else "GROUP MOFID",
                     vp.px(16, y + 8), color=theme.MIST, size=2.8)
         self.text.blit(bg, self.T.slogan, "body", vp.s(5), theme.MIST, vp.px(W - 16, y + 8), "midright")
 
@@ -518,17 +520,27 @@ class Renderer:
             storm = flow.round is not None and flow.round.rush is not None
             color = theme.CORAL if storm else theme.TURQ
             half = o.target_side / 2
-            # The hit box breaks into four pieces that fly apart, and only its points float up:
-            # nothing round or box-shaped stays behind (a new box drops in elsewhere, later).
+            rings = self.cfg.ui.get("hit_style", "rings") != "shatter"
+            if rings:  # MOFID_UI v11, 05 GAMEPLAY: rings open around the box, the product and its points
+                if o.target_side:
+                    fx.dot_ring(o.target_x, o.target_y, half * 0.8, half * 2.4, color, 0.6)
+                bx, by = self._badge_spot(o, flow, now)
+                tile = (o.target_x, o.target_y, o.target_side, o.target_side * o.target_aspect) if o.target_side else None
+                fx.badge(bx, by, self.product_name(o.product), f"+{o.points}",
+                         f"×{o.multiplier:g}" if o.multiplier > 1 else "", color, big=storm or o.tier == "tiny",
+                         tile=tile, home=(self.W - 34.0, 37.0))  # then it flies into the HUD's score
+            # or: the hit box breaks into four pieces that fly apart, and only its points float up
             self._shatters = self._shatters[-5:]
-            self._shatters.append({
-                "t0": now, "product": o.product, "x": o.target_x if o.target_side else o.x,
-                "y": o.target_y if o.target_side else o.y, "side": o.target_side or 20.0,
-                "points": f"+{o.points}", "mult": f"×{o.multiplier:g}" if o.multiplier > 1 else "",
-                "name": self.product_name(o.product), "color": color, "big": storm or o.tier == "tiny"})
-            if o.tier == "tiny":  # the brand's symbols fly out: this one starts Market Rush
+            if not rings:
+                self._shatters.append({
+                    "t0": now, "product": o.product, "x": o.target_x if o.target_side else o.x,
+                    "y": o.target_y if o.target_side else o.y, "side": o.target_side or 20.0,
+                    "points": f"+{o.points}", "mult": f"×{o.multiplier:g}" if o.multiplier > 1 else "",
+                    "name": self.product_name(o.product), "color": color, "big": storm or o.tier == "tiny"})
+            if o.tier == "tiny" and self.cfg.rush.enabled:  # the brand's symbols fly out: this one starts Market Rush
                 fx.burst(o.x, o.y, color, count=10, speed=(50.0, 110.0), life=0.9, start_r=half)
-            self.score_pop_t = now  # the score counts it at once
+            if not rings:
+                self.score_pop_t = now  # the score counts it at once
             if o.level_up:
                 self.badge_pop_t = now
                 if self.cfg.ui.combo_banner and flow.round is not None:
@@ -802,38 +814,38 @@ class Renderer:
                 x, y = cx + sx * hw, cy + sy * hh
                 pygame.draw.lines(surf, col, False, [vp.px(x - sx * arm, y), vp.px(x, y), vp.px(x, y - sy * arm)], w)
 
-    PILE = 13  # tiles that fall into the pile when the round ends (07 ENDING)
+    PILE = 13  # at most this many tiles fall into place when the round ends
 
     def _ending(self, surf: pygame.Surface, rnd, t: float) -> None:
-        """The round is over: the big words, and every product falls and settles into a pile."""
+        """MOFID_UI v11, 06 ENDING: «پایان» big, a thin line, and every product falls into place
+        in two neat rows under it."""
         vp, W = self.vp, self.W
         p = min(1.0, t / 0.35)
-        self._dim_field(surf, int(150 * p))
-        reason = self.T.end_balls if rnd.end_reason == "balls" else self.T.end_time
+        self._dim_field(surf, int(170 * p))
         k = 0.85 + 0.15 * _ease_back(min(1.0, t / 0.35))
-        img = self.text.render(self.T.end_title, "title", vp.s(34), theme.WHITE)
+        img = self.text.render(self.T.end_title, "title", vp.s(48), theme.WHITE)
         img = pygame.transform.smoothscale(img, (int(img.get_width() * k), int(img.get_height() * k)))
-        surf.blit(img, img.get_rect(center=vp.px(W / 2, 160)))
-        self.text.blit(surf, reason, "heading", vp.s(9), theme.TURQ, vp.px(W / 2, 198), alpha=int(255 * p))
-        half = 64 * _ease_out(min(1.0, t / 0.5))
-        surf.fill(theme.lerp_color(theme.FIELD, theme.TURQ, 0.7), vp.cm_rect(W / 2 - half, 214, W / 2 + half, 214.5))
-        products = self.cfg.raw()["products"]
-        rng = random.Random(41)
-        for i, prod in enumerate(products[: self.PILE]):
-            row, col = divmod(i, 7)
-            x = W / 2 + (col - (min(7, len(products) - row * 7) - 1) / 2) * 36 + rng.uniform(-6, 6) + (12 if row else 0)
-            y_end = self.footer_y - 26 - (1 - row) * 24 + rng.uniform(-3, 3)
-            angle = rng.uniform(-16, 16)
+        surf.blit(img, img.get_rect(center=vp.px(W / 2, 172)))
+        half = 90 * _ease_out(min(1.0, t / 0.5))
+        surf.fill(theme.lerp_color(theme.FIELD, theme.TURQ, 0.6), vp.cm_rect(W / 2 - half, 221, W / 2 + half, 221.5))
+        products = self.cfg.raw()["products"][: self.PILE]
+        n = len(products)
+        per_row = (n + 1) // 2
+        tile_w, step = 38.0, 48.0
+        for i, prod in enumerate(products):
+            row, col = divmod(i, per_row)
+            in_row = per_row if row == 0 else n - per_row
+            x = W / 2 + ((in_row - 1) / 2 - col) * step  # from the right, as Persian is read
+            y_end = 293 + row * 48
             delay = 0.05 * i
             q = min(1.0, max(0.0, (t - delay) / 0.55))
             if q <= 0.0:
                 continue
             fall = q * q  # gravity, then a small bounce as it lands
-            y = -30 + (y_end + 30) * fall - (math.sin(min(1.0, (t - delay - 0.55) / 0.25) * math.pi) * 4
+            y = -30 + (y_end + 30) * fall - (math.sin(min(1.0, (t - delay - 0.55) / 0.25) * math.pi) * 3
                                              if t - delay > 0.55 else 0)
-            tile = self.sprites.product(prod["key"], vp.s(32))
-            img = pygame.transform.rotozoom(tile, angle * (0.3 + 0.7 * q), 1.0)
-            surf.blit(img, img.get_rect(center=vp.px(x, y)))
+            tile = self.sprites.product(prod["key"], vp.s(tile_w))
+            surf.blit(tile, tile.get_rect(center=vp.px(x, y)))
 
     def _roll_score(self, score: int, now: float) -> int:
         """The HUD's score, rolling up to ``score``: most of the way in about 0.3 s, always at
@@ -923,10 +935,6 @@ class Renderer:
             self.text.blit(surf, self.T.multiplier, "body", vp.s(4.6), theme.MIST, vp.px(W / 2, 22))
             col = theme.CORAL if rush is not None else (theme.TURQ if m > 1 else theme.MIST)
             self.text.blit(surf, f"×{m:g}", "numbers", vp.s(13 * (1 + 0.18 * pop)), col, vp.px(x, 38))
-        # the player's name, small, between the multiplier and the score
-        name = self._player_name(flow)
-        if name:
-            self.text.blit(surf, _short(name, 14), "heading", vp.s(5.2), theme.MIST, vp.px(W / 2 + 64, 13))
         # the timeline: shrinks from the left; a tick every ten seconds
         y = self.hud_h - 6
         x0, x1 = 16.0, W - 16
@@ -1154,42 +1162,50 @@ class Renderer:
 
     # -- instructions --------------------------------------------------------------------------
     def draw_instructions(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
-        """MOFID_UI v4.1, 03 HOW TO PLAY: the balls and seconds big, the three sizes with their
-        points, and the rules."""
+        """MOFID_UI v11, 02 INSTRUCTIONS: the logo, «راهنمای بازی», the seconds and the balls big,
+        the three sizes with their points, and the two rules."""
         vp, W, T, cfg = self.vp, self.W, self.T, self.cfg
         el = flow.elapsed(now)
         surf.blit(self.bg_dark, (0, 0))
-        self._frame_marks(surf, "03 — HOW TO PLAY")
-        self.text.blit(surf, T.how_to_title, "title", vp.s(22), theme.WHITE, vp.px(W - 16, 52), "midright")
-        p = min(1.0, el / max(0.1, cfg.flow.instructions_s))  # the page's time, as a line that shrinks from the left
-        pygame.draw.line(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.3), vp.px(16, 70), vp.px(W - 16, 70), max(1, vp.s(0.4)))
-        pygame.draw.line(surf, theme.TURQ, vp.px(16 + (W - 32) * p, 70), vp.px(W - 16, 70), max(1, vp.s(0.6)))
+        self._blit_logo(surf, "fa_s_white_small", vp.px(W / 2, 26), theme.WHITE)
+        self.text.blit(surf, T.how_to_title, "title", vp.s(22), theme.WHITE, vp.px(W - 16, 66), "midright")
+        self.text.blit(surf, T.how_to_sub, "heading", vp.s(7.5), theme.TURQ, vp.px(W - 16, 86), "midright")
         rd = cfg.round
         balls = int(rd.balls) if rd.get("ball_limit", False) else 0
-        cols = [(str(int(rd.duration_s)), T.time)] if rd.get("time_limit", True) or not balls else []
-        if balls:
-            cols.insert(0, (str(balls), T.balls))
+        timed = rd.get("time_limit", True) or not balls
+        secs = int(rd.duration_s)
+        # right: the balls (∞ without a limit); left: the seconds
+        cols = [(str(balls) if balls else "∞", T.balls if balls else T.balls_unlimited)]
+        if timed:
+            cols.append((str(secs), T.time))
         for i, (num, label) in enumerate(cols):
-            x = W * (0.72 - 0.44 * i) if len(cols) == 2 else W / 2
-            self.text.blit(surf, num, "numbers", vp.s(40), theme.WHITE, vp.px(x, 108))
-            self.text.blit(surf, label, "title", vp.s(9), theme.TURQ, vp.px(x, 142))
+            x = (224 if i == 0 else 80) if len(cols) == 2 else W / 2
+            role = "latin" if num == "∞" else "numbers"
+            self.text.blit(surf, num, role, vp.s(40 if num != "∞" else 46), theme.WHITE, vp.px(x, 128),
+                           localize=num != "∞")
+            self.text.blit(surf, label, "title", vp.s(9), theme.TURQ, vp.px(x, 170))
+        line = theme.lerp_color(theme.FIELD, theme.MIST, 0.25)
+        lw = max(1, vp.s(0.25))
         if len(cols) == 2:
-            pygame.draw.line(surf, theme.lerp_color(theme.FIELD, theme.MIST, 0.25), vp.px(W / 2, 86), vp.px(W / 2, 148),
-                             max(1, vp.s(0.25)))
-        self.text.blit(surf, T.rule_size, "body", vp.s(5.6), theme.MIST, vp.px(W - 16, 166), "midright")
+            pygame.draw.line(surf, line, vp.px(W / 2, 106), vp.px(W / 2, 176), lw)
+        sentence = T.rule_time.format(seconds=secs) if timed and not balls else T.rule_balls.format(balls=balls, seconds=secs)
+        self.text.blit(surf, sentence, "body", vp.s(5.4), theme.MIST, vp.px(W / 2, 189))
+        pygame.draw.line(surf, line, vp.px(16, 204), vp.px(W - 16, 204), lw)
+        self.text.blit(surf, T.rule_size, "heading", vp.s(6.2), theme.WHITE, vp.px(W - 16, 216), "midright")
         raw = cfg.raw()
-        for i, (tier, x, key) in enumerate((("medium", 236, product_for(raw, "medium")), ("small", 150, product_for(raw, "small")),
-                                           ("tiny", 64, product_for(raw, "tiny")))):
+        for i, (tier, x, key) in enumerate((("medium", 232, product_for(raw, "medium")), ("small", 149, product_for(raw, "small")),
+                                           ("tiny", 67, product_for(raw, "tiny")))):
             appear = _ease_back((el - 0.15 * i) / 0.4)
             if appear <= 0:
                 continue
             size = cfg.targets[tier].size_cm  # true size on the wall
             spr = self.sprites.product(key, max(4, vp.s(size * appear)), ring=True)
-            surf.blit(spr, spr.get_rect(center=vp.px(x, 205)))
-            self.text.blit(surf, f"+{points_of(raw, key, tier)}", "numbers", vp.s(12), theme.WHITE, vp.px(x, 244))
-            self.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 260))
+            surf.blit(spr, spr.get_rect(center=vp.px(x, 254)))
+            self.text.blit(surf, f"+{points_of(raw, key, tier)}", "numbers", vp.s(13), theme.WHITE, vp.px(x, 297))
+            self.text.blit(surf, T[f"tier_{tier}"], "heading", vp.s(5.6), theme.MIST, vp.px(x, 315))
             if tier == "tiny" and cfg.rush.enabled:
-                self.text.blit(surf, T.tiny_rush, "heading", vp.s(5), theme.CORAL, vp.px(x, 270))
+                self.text.blit(surf, T.tiny_rush, "heading", vp.s(5), theme.CORAL, vp.px(x, 325))
+        pygame.draw.line(surf, line, vp.px(16, 336), vp.px(W - 16, 336), lw)
         lines = [("slash", T.rule_move)]
         if cfg.combo.enabled and cfg.combo.levels:
             top = max(lv["multiplier"] for lv in cfg.combo.levels)
@@ -1197,10 +1213,10 @@ class Renderer:
         lines.append(("plus", T.rule_positive))
         if cfg.rush.enabled and cfg.rush.max_per_round > 0:
             lines.append(("dot", T.rule_rush.format(seconds=int(cfg.rush.duration_s), m=f"×{float(cfg.rush.score_multiplier):g}")))
-        y = 286
-        for mark, line in lines:
+        y = 345
+        for mark, text in lines:
             draw_symbol(surf, mark, vp.px(W - 18, y + 3.2), vp.s(2.6), theme.CORAL if mark == "dot" else theme.TURQ)
-            y = self.text.blit_lines(surf, line, "body", vp.s(5.4), theme.WHITE, vp.px(W - 24, y), vp.s(250), 1.3,
+            y = self.text.blit_lines(surf, text, "body", vp.s(5.4), theme.WHITE, vp.px(W - 24, y), vp.s(250), 1.3,
                                      anchor_x="right")
             y = int((y - vp.rect.y) / vp.ppc + 2.5)
 
@@ -1650,99 +1666,56 @@ class Renderer:
                 self.text.blit(surf, T.profile_note, "body", vp.s(4.6), theme.BLUE_PALE, vp.px(W / 2, 336), alpha=a)
             self._results_footer(surf, flow, now)
             return
-        # MOFID_UI v4.1, 08 RESULTS: well done, the score huge, three numbers, the play style,
-        # the products hit (the portfolio). Type only, no cards.
+        # MOFID_UI v11, 07 RESULTS: the logo, «امتیاز شما» and the score huge over its line, the
+        # lottery points, the hits and today's rank. Type only: no cards, icons or play style.
         surf.blit(self.bg_dark, (0, 0))
-        self._frame_marks(surf, "08 — RESULTS")
+        self._blit_logo(surf, "fa_s_white_small", vp.px(W / 2, 30), theme.WHITE)
         line = theme.lerp_color(theme.FIELD, theme.MIST, 0.22)
         lw = max(1, vp.s(0.25))
-        # 0.0 well done, name      0.25 the score counts up while its line draws under it
-        name = _short(rec.get("player_name") or "", cfg.flow.name_max_chars)
-        head = T.well_done.format(name=name) if name and cfg.results.show_names else T.results_title
-        img = self.text.render(head, "title", self._fit(head, "title", 14, W - 40), theme.TURQ)
-        self._wipe(surf, img, vp.px(W / 2, 42), _ease_out(_phase(t, 0.0, 0.45)))
-        a = int(255 * _phase(t, 0.2, 0.3))
-        if head != T.results_title and a:
-            self.text.blit(surf, T.results_title, "body", vp.s(6), theme.MIST, vp.px(W / 2, 57), alpha=a)
+        img = self.text.render(T.results_title, "title", vp.s(14), theme.TURQ)
+        self._wipe(surf, img, vp.px(W / 2, 74), _ease_out(_phase(t, 0.0, 0.45)))
         final = rec.get("score", 0)
         COUNT = (0.25, 1.4)
         p_count = _ease_out(_phase(t, *COUNT))
         score = int(round(final * p_count))
-        img = self.text.render(str(score), "numbers", vp.s(50), theme.WHITE, cache=score == final)
+        img = self.text.render(str(score), "numbers", vp.s(62), theme.WHITE, cache=score == final)
         beat = math.sin(math.pi * _phase(t, sum(COUNT), 0.3))  # one small beat as it lands
         if beat > 0:
             img = pygame.transform.smoothscale(img, (int(img.get_width() * (1 + 0.07 * beat)), int(img.get_height() * (1 + 0.07 * beat))))
-        surf.blit(img, img.get_rect(center=vp.px(W / 2, 90)))
-        self._score_line(surf, rec.get("score_path") or [], _phase(t, *COUNT), (16, 116, W - 16, 133))
-        pygame.draw.line(surf, line, vp.px(16, 139), vp.px(W - 16, 139), lw)
+        surf.blit(img, img.get_rect(center=vp.px(W / 2, 128)))
+        self._score_line(surf, rec.get("score_path") or [], _phase(t, *COUNT), (20, 178, W - 20, 200))
+        pygame.draw.line(surf, line, vp.px(16, 214), vp.px(W - 16, 214), lw)
 
-        # 1.4 three numbers, right to left: hits of throws, best multiplier, today's rank
-        hits_n, throws = rec.get("total_hits", 0), rec.get("throws", 0)
-        cols = []
-        balls = int(rec.get("balls") or 0) or max(throws, 1)  # no ball limit: one dot per throw
-        balls = min(balls, 30)  # dots never run out of their column
-        cols.append((245, None, T.results_hits.format(hits=hits_n, throws=throws)))
-        if cfg.combo.enabled and cfg.combo.levels:
-            cols.append((150, f"×{rec.get('best_multiplier', 1):g}", T.results_best))
+        # 1.4 the lottery points: the title and its rule on the right, the number on the left
+        per = int(cfg.results.get("lottery_per_1000", 0))
+        y = 214
+        if per > 0:
+            q = _phase(t, 1.4, 0.4)
+            if q > 0:
+                a, dy = int(255 * q), 4 * (1 - _ease_out(q))
+                lottery = rec.get("lottery_points", final // 1000 * per)
+                self.text.blit(surf, T.results_lottery, "title", vp.s(8.5), theme.WHITE, vp.px(W - 20, 228 + dy),
+                               "midright", alpha=a)
+                self.text.blit(surf, T.results_lottery_rule.format(n=per), "body", vp.s(4.8), theme.MIST,
+                               vp.px(W - 20, 241 + dy), "midright", alpha=a)
+                self.text.blit(surf, str(lottery), "numbers", vp.s(26), theme.TURQ, vp.px(44, 234 + dy), alpha=a)
+            y = 254
+            pygame.draw.line(surf, line, vp.px(16, y), vp.px(W - 16, y), lw)
+
+        # 1.6 the hits (right) and today's rank (left)
+        cols = [(str(rec.get("total_hits", 0)), T.results_hits_ok)]
         if flow.rank is not None:
-            cols.append((55, str(flow.rank), T.results_rank.format(rank=flow.rank)))
-        for i, (x, big, label) in enumerate(cols):
-            q = _phase(t, 1.4 + 0.15 * i, 0.4)
+            cols.append((str(flow.rank), T.results_rank.format(rank=flow.rank)))
+        xs = (216, 84) if len(cols) == 2 else (W / 2,)
+        for i, ((big, label), x) in enumerate(zip(cols, xs)):
+            q = _phase(t, 1.6 + 0.15 * i, 0.4)
             if q <= 0:
                 continue
             a, dy = int(255 * q), 5 * (1 - _ease_out(q))  # each rises into place
-            if big is None:  # the balls: filled for a hit, a ring for a miss or one not thrown
-                step = min(4.6, 70.0 / max(1, balls))
-                for j in range(balls):
-                    c = vp.px(x + (balls - 1) * step / 2 - j * step, 152 + dy)
-                    s = _ease_back(_phase(t, 1.45 + 0.04 * j, 0.3))
-                    if j < hits_n and s > 0:
-                        dot = self.sprites.dot(vp.sf(1.5 * s), theme.TURQ)
-                        surf.blit(dot, dot.get_rect(center=c))
-                    elif j >= hits_n:
-                        pygame.draw.aacircle(surf, theme.MIST, c, int(vp.sf(1.5)), max(1, vp.s(0.3)))
-            else:
-                self.text.blit(surf, big, "numbers", vp.s(15), theme.WHITE, vp.px(x, 152 + dy), alpha=a)
-            self.text.blit(surf, label, "heading", vp.s(5.2), theme.WHITE, vp.px(x, 167 + dy), alpha=a)
-        if t > 1.4:
-            for x in (102, 198):
-                pygame.draw.line(surf, line, vp.px(x, 144), vp.px(x, 172), lw)
-            pygame.draw.line(surf, line, vp.px(16, 178), vp.px(W - 16, 178), lw)
-
-        # 1.9 the play style: its name read in, then the sentence about this player, line by line
-        y = 190
-        if profile:
-            a = int(255 * _phase(t, 1.9, 0.3))
-            if a:
-                self.text.blit(surf, T.profile_title, "body", vp.s(5.2), theme.MIST, vp.px(W / 2, y), alpha=a)
-            img = self.text.render(profile["label"], "title", self._fit(profile["label"], "title", 12, W - 40), theme.TURQ)
-            self._wipe(surf, img, vp.px(W / 2, y + 14), _ease_out(_phase(t, 2.0, 0.5)), theme.WHITE)
-            px = vp.s(5.8)
-            lines = self.text.wrap(self.text.localize(profile["statement"]), "body", px, vp.s(W - 50))
-            yy = vp.px(0, y + 25)[1]
-            for i, ln in enumerate(lines):
-                img = self.text.render(ln, "body", px, theme.WHITE, localize=False)
-                self._wipe(surf, img, img.get_rect(midtop=(vp.px(W / 2, 0)[0], yy)).center,
-                           _ease_out(_phase(t, 2.4 + 0.18 * i, 0.4)))
-                yy += int(px * 1.35)
-            y += 25 + len(lines) * 5.8 * 1.35
-        y = max(y + 16, 240)  # the portfolio chart needs room under it
-
-        # 2.9 the portfolio: the products hit
-        t_cards = 2.9 if profile else 1.9
-        a = int(255 * _phase(t, t_cards - 0.1, 0.4))
-        if a and rec.get("products"):
-            self.text.blit(surf, T.portfolio, "title", vp.s(8), theme.WHITE, vp.px(W - 16, y), "midright", alpha=a)
-            self._micro(surf, f"YOUR PORTFOLIO · {hits_n} HITS", vp.px(16, y), "midleft", theme.MIST, 2.6)
-            self._portfolio_bars(surf, rec, y, t, t_cards)
-        rush = rec.get("rush") or {}
-        a = int(255 * _phase(t, t_cards + 0.6, 0.4))
-        if rush.get("count") and a:
-            self.text.blit(surf, T.results_rush.format(hits=rush.get("hits", 0), points=rush.get("points", 0)), "body", vp.s(5),
-                           theme.CORAL, vp.px(W / 2, y + self.BARS_BASE + 11), alpha=a)
-        if profile:
-            self.text.blit(surf, T.profile_note, "body", self._fit(T.profile_note, "body", 4.2, W - 30), theme.MIST,
-                           vp.px(W / 2, 332), alpha=int(255 * _phase(t, t_cards + 0.8, 0.5)))
+            self.text.blit(surf, big, "numbers", vp.s(26), theme.TURQ, vp.px(x, y + 22 + dy), alpha=a)
+            self.text.blit(surf, label, "heading", vp.s(5.6), theme.WHITE, vp.px(x, y + 44 + dy), alpha=a)
+        if len(cols) == 2 and t > 1.6:
+            pygame.draw.line(surf, line, vp.px(W / 2, y + 8), vp.px(W / 2, y + 52), lw)
         self._results_footer(surf, flow, now)
 
     def _score_line(self, surf, path: list, p: float, box: tuple) -> None:
@@ -1772,8 +1745,8 @@ class Renderer:
     def _results_footer(self, surf: pygame.Surface, flow: F.Flow, now: float) -> None:
         vp, W, cfg = self.vp, self.W, self.cfg
         p = min(1.0, (now - flow.since) / max(0.1, cfg.flow.results_s))
-        self.text.blit(surf, self.T.results_next, "heading", vp.s(6.5), theme.MIST, vp.px(W / 2, 348))
-        bar = vp.cm_rect(60, 359, W - 60, 359.9)
+        self.text.blit(surf, self.T.results_next, "heading", vp.s(6.5), theme.MIST, vp.px(W / 2, 352))
+        bar = vp.cm_rect(60, 364, W - 60, 364.9)
         surf.fill(theme.lerp_color(theme.FIELD, theme.MIST, 0.25), bar)
         w = int(bar.w * (1 - p))
         if w:

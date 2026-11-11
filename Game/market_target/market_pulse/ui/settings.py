@@ -182,9 +182,20 @@ def pages(raw: dict) -> list[tuple[str, list[Item], str]]:
         Item((*fu, "offline_after_ms"), "سنسور بی‌داده قطع حساب شود بعد از", 200, 5000, 100, "ms",
              needs=(*fu, "enabled")),
     ]
-    return [("باکس‌ها", boxes, "boxes"), ("امتیاز محصولات", points, ""), ("ضریب‌ها", combo, "best"), ("طوفان بازار", rush, ""),
-            ("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen"),
-            ("دوربین", camera, "camera"), ("حساسیت", sensing, ""), ("ترکیب", fusion, "fusion")]
+    # MOFID_UI v11: the size sets the score (one row per size), and no multiplier or Market Rush:
+    # their tabs show only when settings.json turns them back on
+    if C.by_size(raw):
+        points = [Item(("targets", tier, "points"), f"امتیاز {name}", 10, 1000, 10, "pts")
+                  for tier, name in (("medium", "باکس بزرگ"), ("small", "باکس متوسط"), ("tiny", "باکس کوچک"))]
+        points.append(Item(("results", "lottery_per_1000"), "امتیاز قرعه‌کشی برای هر ۱۰۰۰ امتیاز", 0, 20, 1,
+                           zero="نمایش داده نشود"))
+    tabs = [("باکس‌ها", boxes, "boxes"), ("امتیاز" if C.by_size(raw) else "امتیاز محصولات", points, "")]
+    if raw["combo"].get("enabled", False):
+        tabs.append(("ضریب‌ها", combo, "best"))
+    if raw["rush"].get("enabled", False):
+        tabs.append(("طوفان بازار", rush, ""))
+    return tabs + [("دور بازی", play, ""), ("صدا و ویدیو", media, ""), ("نمایش", screen, "screen"),
+                   ("دوربین", camera, "camera"), ("حساسیت", sensing, ""), ("ترکیب", fusion, "fusion")]
 
 
 def lidar_item(name: str, label: str, zero: str = "") -> Item:
@@ -223,6 +234,8 @@ def lidar_pages() -> list[tuple[str, list[Item], str]]:
 # A key with "*" stands for every colour or multiplier level.
 HINTS: dict[Key, tuple[str, str]] = {
     ("targets", "active"): ("باکس کمتر روی دیوار: بازی سخت‌تر", "باکس بیشتر (تا 20؛ بالای 10 بعضی محصول‌ها دو بار): آسان‌تر"),
+    ("targets", "*", "points"): ("امتیاز کمتر برای این اندازه", "امتیاز بیشتر برای این اندازه"),
+    ("results", "lottery_per_1000"): ("0: امتیاز قرعه‌کشی نشان داده نمی‌شود", "امتیاز قرعه‌کشی بیشتر برای هر ۱۰۰۰ امتیاز"),
     ("layout", "spawn_delay_s"): ("0: باکس تازه همان لحظه می‌آید", "باکس تازه دیرتر، بعد از شکستن باکس زده‌شده"),
     ("layout", "spawn_drop_cm"): ("0: باکس تازه از کوچک بزرگ می‌شود", "باکس تازه از بالاتر می‌افتد"),
     ("targets", "grow_to"): ("خاموش یا کمتر از تعداد بالا: تعداد باکس‌ها ثابت می‌ماند",

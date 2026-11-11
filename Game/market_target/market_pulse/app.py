@@ -248,7 +248,7 @@ class App:
             else:
                 size = usual
             flags = pygame.SCALED | pygame.RESIZABLE
-        pygame.display.set_caption("Market Pulse · نبض بازار · Mofid")
+        pygame.display.set_caption("پرتاب هدفمند · Mofid")
         for vsync in ((1, 0) if d.vsync else (0,)):
             try:
                 screen = pygame.display.set_mode(size, flags, display=idx, vsync=vsync)

@@ -77,7 +77,8 @@ def test_zero_drop_pops_up_as_before():
 
 
 def test_the_settings_have_the_delay_and_the_drop():
-    assert config.DEFAULTS["layout"]["spawn_delay_s"] == 0.4 and config.DEFAULTS["layout"]["spawn_drop_cm"] > 0
+    # MOFID_UI v11: a new box scales up inside its corner ticks (no drop), 0.4 s after a hit
+    assert config.DEFAULTS["layout"]["spawn_delay_s"] == 0.4 and config.DEFAULTS["layout"]["spawn_drop_cm"] == 0
     import copy
     raw = copy.deepcopy(config.DEFAULTS)
     raw["layout"]["spawn_delay_s"] = 99

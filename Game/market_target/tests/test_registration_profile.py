@@ -270,9 +270,21 @@ def test_f4_cancels_registration(game):
     assert app.flow.state == F.ATTRACT
 
 
-def test_a_complete_game_as_it_ships(game):
+@pytest.fixture
+def game_v4(tmp_path):
+    """The game with the rules before MOFID_UI v11 switched back on (Market Rush, the multiplier)."""
+    from conftest import v4_cfg
+    cfg = v4_cfg({"display": {"resolution": [768, 1024]}, "results": {"log_file": str(tmp_path / "r.jsonl")},
+                  "input": {"sources": []}})
+    clock = FakeTime()
+    app = App(cfg, Paths(ROOT), clock_source=clock, start_inputs=False)
+    yield app, clock
+    app.shutdown()
+
+
+def test_a_complete_game_with_market_rush_switched_on(game_v4):
     """Register, the logo intro, countdown, 60 s with Market Rush, and the results, through App.frame()."""
-    app, clock = game
+    app, clock = game_v4
     seen = set()
     play_to_registration(app, clock)
     typed(app, "سارا")

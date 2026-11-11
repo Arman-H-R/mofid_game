@@ -39,21 +39,38 @@ PRODUCTS: list[dict[str, Any]] = [
 ]
 
 
+# A product's own points by its size, when it has none (targets.points_by_size off; MOFID_UI v11
+# sets the points by size instead: targets.<size>.points, +100 / +150 / +300)
+PRODUCT_POINTS = {"medium": 10, "small": 15, "tiny": 30}
+
+
 def products_of(raw: dict, tier: str) -> list[str]:
-    """The products shown in boxes of this size."""
+    """The products shown in boxes of this size (every product, with points_by_size)."""
+    if by_size(raw):
+        return [p["key"] for p in raw["products"]]
     return [p["key"] for p in raw["products"] if p.get("tier", "medium") == tier]
 
 
 def points_of(raw: dict, key: str | None, tier: str) -> int:
-    """A hit's base points: the product's own, else (a product not in the list) the size's."""
+    """A hit's base points: the size's (points_by_size), else the product's own, else the size's."""
+    if by_size(raw):
+        return int(raw["targets"][tier]["points"])
     for p in raw["products"]:
         if p["key"] == key and "points" in p:
             return int(p["points"])
     return int(raw["targets"][tier]["points"])
 
 
+def by_size(raw: dict) -> bool:
+    """MOFID_UI v11: the box's size sets the score (+100 / +150 / +300) and any product may show
+    at any size (targets.points_by_size). Off: every product its own size and points."""
+    return bool(raw.get("targets", {}).get("points_by_size", False))
+
+
 def tier_points(raw: dict, tier: str) -> int:
     """The points shown for a size (how-to-play, the settings preview): its products' highest."""
+    if by_size(raw):
+        return int(raw["targets"][tier]["points"])
     pts = [int(p["points"]) for p in raw["products"] if p.get("tier", "medium") == tier and "points" in p]
     return max(pts) if pts else int(raw["targets"][tier]["points"])
 
@@ -61,6 +78,8 @@ def tier_points(raw: dict, tier: str) -> int:
 def product_for(raw: dict, tier: str, i: int = 0) -> str:
     """The i-th product of a size (in turn), for the demos; any product if the size has none."""
     keys = products_of(raw, tier) or [p["key"] for p in raw["products"]] or ["atiyeh"]
+    if by_size(raw):  # every size shows every product: each size starts at its own one
+        i += 3 * TIERS.index(tier) if tier in TIERS else 0
     return keys[i % len(keys)]
 
 # Products taken out of the game (2026-11-09): left out even when a settings.json lists them.
@@ -100,11 +119,11 @@ DEFAULTS: dict[str, Any] = {
         "transition_s": 0.35,
         # After a hit: false, the other boxes stay where they are and the new one takes a free
         # spot (as in the reference clip); true, every box glides to a new spot (min_move_cm).
-        "move_on_hit": False,
+        "move_on_hit": True,  # MOFID_UI v11: after every hit all boxes move
         "spawn_s": 0.32,  # s, a new box dropping in (or popping up, with spawn_drop_cm 0)
         # A new box drops in from this far above its place, with a small bounce (0: it pops up
         # from small). Unlike a hit box, which shatters: the two never look alike.
-        "spawn_drop_cm": 14,
+        "spawn_drop_cm": 0,  # MOFID_UI v11: a new box scales 0 -> 100 % inside its corner ticks
         # After a hit the new box appears this much later, when the hit box has shattered: no
         # new box shows while the old one breaks, so nobody takes one for the other.
         "spawn_delay_s": 0.4,
@@ -136,9 +155,12 @@ DEFAULTS: dict[str, Any] = {
         # 6 -> 9 in 60 s: a 7th box at 15 s, an 8th at 30 s, a 9th at 45 s (every product once).
         # 0 (or not above active): no growth.
         "grow_to": 9,
-        "medium": {"size_cm": 54, "points": 10, "weight": 3},
-        "small": {"size_cm": 42, "points": 15, "weight": 3},
-        "tiny": {"size_cm": 29, "points": 30, "weight": 2},
+        # MOFID_UI v11: the size sets the score, any product at any size (false: each product
+        # keeps its own size and points from "products")
+        "points_by_size": True,
+        "medium": {"size_cm": 54, "points": 100, "weight": 3},
+        "small": {"size_cm": 42, "points": 150, "weight": 3},
+        "tiny": {"size_cm": 29, "points": 300, "weight": 2},
         "min_tiny": 1,
         "min_size_cm": 20,
     },
@@ -159,8 +181,9 @@ DEFAULTS: dict[str, Any] = {
     },
     # Add-on 1.2: after N consecutive hits, the following hits use this multiplier.
     # A miss resets it to x1. Nothing is ever subtracted.
+    # MOFID_UI v11: no multiplier, every hit scores only its size's points (off).
     "combo": {
-        "enabled": True,
+        "enabled": False,
         "levels": [
             {"after_hits": 2, "multiplier": 2},
             {"after_hits": 4, "multiplier": 3},
@@ -169,8 +192,9 @@ DEFAULTS: dict[str, Any] = {
     },
     # Market Rush: one high-intensity phase, started by hitting tiny boxes.
     # Tiny boxes that are merely on the wall never start or extend it.
+    # MOFID_UI v11: no Market Rush, a simple game of aiming at the boxes (off).
     "rush": {
-        "enabled": True,
+        "enabled": False,
         "duration_s": 4,
         "trigger_tiny_hits": 1,  # tiny-box hits needed to start it
         "restart_on_tiny_hit": True,  # a tiny hit during it gives a fresh duration_s from that hit
@@ -377,6 +401,8 @@ DEFAULTS: dict[str, Any] = {
         # False (MOFID_UI v4.1, 08 RESULTS): the results are type only, no photo or replay.
         # True: with camera.enabled, the profile card with the player's replay.
         "show_photo": False,
+        # MOFID_UI v11, 07 RESULTS: lottery points, this many for every full 1000 points (0: not shown)
+        "lottery_per_1000": 2,
     },
     # The operator's phone page: name, Play, saved rounds and the CSV file.
     "web": {
@@ -384,7 +410,7 @@ DEFAULTS: dict[str, Any] = {
         "host": "0.0.0.0",  # reachable from phones on the same network
         "port": 8080,
         "pin": "",  # set this if other people use the same Wi-Fi: it protects the page and the names
-        "title": "بازار هدف",
+        "title": "پرتاب هدفمند",
     },
     # The player's score replay on the results screen, from the IP camera facing the
     # players: a few seconds around one of their scoring hits, in slow motion, zooming onto
@@ -420,6 +446,9 @@ DEFAULTS: dict[str, Any] = {
         "digits": "fa",
         "target_shadow": True,
         "combo_banner": True,
+        # a hit: "rings" (MOFID_UI v11: rings open with the product and its points) or "shatter"
+        # (the box breaks into four pieces and only its points float up)
+        "hit_style": "rings",
     },
     "fonts": {
         # First file found in assets/fonts wins. The brand book names Dana for
@@ -435,15 +464,21 @@ DEFAULTS: dict[str, Any] = {
                   "IRANSansX-Medium.ttf"],
     },
     "text": {
-        "title": "نبض بازار",
-        "subtitle": "بازی تعاملی گروه مالی مفید",
+        "title": "پرتاب هدفمند",  # MOFID_UI v11: «چالش تعاملی / پرتاب هدفمند»
+        "subtitle": "چالش تعاملی",
+        "how_to_sub": "باکس‌ها را هدف بگیرید",
+        "balls_unlimited": "توپ نامحدود",
+        "results_lottery": "امتیاز شما در قرعه‌کشی",
+        "results_lottery_rule": "هر ۱۰۰۰ امتیاز معادل {n} امتیاز قرعه‌کشی",
+        "results_hits_ok": "برخورد موفق",
+        "demo_tiny": "باکس کوچک: بیشترین امتیاز",
         "start": "شروع",
         "cta_throw": "برای شروع، توپ را به این مربع بزنید",
         "cta_operator": "برای شروع آماده شوید",
         "next_player": "نوبت",
         "how_to_title": "راهنمای بازی",
         "rule_balls": "{balls} توپ و {seconds} ثانیه فرصت دارید",
-        "rule_time": "{seconds} ثانیه فرصت دارید",
+        "rule_time": "{seconds} ثانیه فرصت دارید؛ تعداد توپ نامحدود است",
         "rule_rush": "هر برخورد به باکس کوچک، «طوفان بازار» را شروع می‌کند: {seconds} ثانیه با سرعت و باکس بیشتر و امتیاز {m}",
         "register_title": "ثبت‌نام بازیکن",
         "register_prompt": "نام خود را وارد کنید",
@@ -452,22 +487,22 @@ DEFAULTS: dict[str, Any] = {
         "register_start": "شروع بازی",
         "register_hint": "بعد از نوشتن نام، Enter را بزنید یا توپ را به این مربع بزنید",
         "rule_positive": "همه‌ی باکس‌ها امتیاز مثبت دارند؛ امتیاز منفی وجود ندارد",
-        "rule_move": "بعد از هر برخورد، محصول تازه‌ای جای باکس را می‌گیرد و همه‌ی باکس‌ها جابه‌جا می‌شوند",
+        "rule_move": "بعد از هر برخورد، همه‌ی باکس‌ها جابه‌جا می‌شوند",
         "rule_combo": "برخوردهای پشت‌سرهم، ضریب امتیاز را تا {max} بالا می‌برند",
-        "rule_size": "هر محصول امتیاز خودش را دارد؛ باکس کوچک‌تر، امتیاز بیشتر",
+        "rule_size": "باکس‌های کوچکتر، امتیاز بیشتر",
         "points_unit": "امتیاز",
         # the three sizes as the design names them (MOFID_UI v4.1): big, medium, small box
         "tier_medium": "باکس بزرگ",
         "tier_small": "باکس متوسط",
         "tier_tiny": "باکس کوچک",
         "tiny_rush": "+ طوفان بازار",
-        "attract_tag": "9 PRODUCTS · ONE MARKET",
+        "attract_tag": "GROUP MOFID · INTERACTIVE CHALLENGE",
         "demo_title": "چطور بازی کنیم؟",
         "demo_hit": "توپ را به محصول‌ها بزنید",
         "demo_new": "محصول تازه جای آن را می‌گیرد",
-        "demo_sizes": "باکس کوچک‌تر، امتیاز بیشتر",
+        "demo_sizes": "باکس‌های کوچکتر، امتیاز بیشتر",
         "demo_rush": "باکس کوچک، «طوفان بازار» را شروع می‌کند",
-        "loading_market": "LOADING THE MARKET · 9 PRODUCTS",
+        "loading_market": "GET READY · 9 PRODUCTS",
         "portfolio": "سبد محصولات شما",
         "rush_title": "طوفان بازار",
         "rush_start": "طوفان بازار! امتیاز {m}",
@@ -482,7 +517,7 @@ DEFAULTS: dict[str, Any] = {
         "multiplier": "ضریب",
         "combo_up": "ضریب {m}!",
         "market_busier": "بازار شلوغ‌تر شد!",
-        "end_title": "پایان دور!",
+        "end_title": "پایان",
         "end_time": "زمان تمام شد",
         "end_balls": "توپ‌ها تمام شد",
         "results_title": "امتیاز شما",
@@ -701,10 +736,11 @@ def _validate(cfg: dict, warnings: list[str]) -> None:
             if tier not in TIERS:
                 warnings.append(f"product {p['key']!r}: 'tier' must be one of {', '.join(TIERS)}; using medium")
                 tier = "medium"
-            points = p.get("points", cfg["targets"][tier]["points"])
+            # a product's own points (used with targets.points_by_size off): its size's classic value
+            points = p.get("points", PRODUCT_POINTS[tier])
             if not _number(points) or points < 0:
                 warnings.append(f"product {p['key']!r}: 'points' must be 0 or more; using the {tier} box's")
-                points = cfg["targets"][tier]["points"]
+                points = PRODUCT_POINTS[tier]
             products.append({"key": p["key"], "name": p["name"], "file": p["file"], "aspect": aspect,
                              "tier": tier, "points": int(points)})
             seen.add(p["key"])

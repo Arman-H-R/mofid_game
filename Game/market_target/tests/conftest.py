@@ -21,7 +21,25 @@ from market_pulse import config  # noqa: E402
 # The original scenario, which stays available through settings: 10 balls, the how-to
 # page, no name screen, no logo intro, no Market Rush. The tests of those rules run in this mode.
 CLASSIC = {"round": {"ball_limit": True, "balls": 10}, "flow": {"registration": False, "show_instructions": True, "intro_s": 0},
-           "rush": {"enabled": False}}
+           "rush": {"enabled": False}, "combo": {"enabled": True},
+           "targets": {"points_by_size": False}, "layout": {"move_on_hit": False}}
+
+# The rules before MOFID_UI v11 (still there, behind settings): the multiplier, Market Rush,
+# every product its own size and points, and the other boxes staying put after a hit.
+V4 = {"combo": {"enabled": True}, "rush": {"enabled": True}, "targets": {"points_by_size": False},
+      "layout": {"move_on_hit": False}}
+
+
+def v4_cfg(overrides: dict | None = None) -> config.Section:
+    """The game with the rules before MOFID_UI v11, plus ``overrides``."""
+    raw = copy.deepcopy(config.DEFAULTS)
+    warnings: list[str] = []
+    config._merge(raw, copy.deepcopy(V4), (), warnings)
+    if overrides:
+        config._merge(raw, overrides, (), warnings)
+    config._validate(raw, warnings)
+    assert not warnings, warnings
+    return config.Section(raw)
 
 
 def game_cfg(overrides: dict | None = None) -> config.Section:

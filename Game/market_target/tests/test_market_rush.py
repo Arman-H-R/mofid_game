@@ -5,7 +5,7 @@ import pytest
 
 from market_pulse.game.rules import Round
 from market_pulse.game.targets import Motion, Target, TimeWarp
-from conftest import game_cfg
+from conftest import v4_cfg as game_cfg  # Market Rush is off in MOFID_UI v11
 
 T0 = 100.0
 
